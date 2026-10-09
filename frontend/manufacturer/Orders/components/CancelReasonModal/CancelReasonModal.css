@@ -1,0 +1,218 @@
+/* ==========================================
+   Cancel Reason Modal Component
+========================================== */
+
+.cancel-reason-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(15, 23, 42, 0.65);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1050;
+    padding: 20px;
+}
+
+.cancel-reason-modal {
+    background: #FFFFFF;
+    border-radius: 16px;
+    width: 100%;
+    max-width: 480px;
+    box-shadow: 0 20px 45px rgba(0, 0, 0, 0.18);
+    overflow: hidden;
+    animation: cancelModalAppear 0.2s ease-out;
+}
+
+@keyframes cancelModalAppear {
+    from {
+        opacity: 0;
+        transform: scale(0.95) translateY(8px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+.cancel-reason-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 18px 22px;
+    border-bottom: 1px solid #F1F5F9;
+}
+
+.header-title-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.modal-icon-badge {
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-icon-badge.view-badge {
+    background: #EFF6FF;
+    color: #2563EB;
+}
+
+.modal-icon-badge.cancel-badge {
+    background: #FEE2E2;
+    color: #DC2626;
+}
+
+.cancel-reason-modal-header h2 {
+    font-size: 16px;
+    font-weight: 700;
+    color: #0F172A;
+    margin: 0;
+}
+
+.cancel-reason-modal-body {
+    padding: 20px 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.order-summary-card {
+    background: #F8FAFC;
+    border-radius: 10px;
+    padding: 12px 14px;
+    border: 1px solid #E2E8F0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.summary-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+}
+
+.summary-label {
+    color: #64748B;
+    font-weight: 500;
+}
+
+.summary-val {
+    color: #0F172A;
+    font-weight: 600;
+}
+
+.font-mono {
+    font-family: monospace;
+}
+
+.reason-display-box {
+    background: #FFF1F2;
+    border-left: 4px solid #E11D48;
+    border-radius: 8px;
+    padding: 14px 16px;
+}
+
+.reason-display-label {
+    font-size: 10px;
+    font-weight: 700;
+    color: #9F1239;
+    letter-spacing: 0.5px;
+    display: block;
+    margin-bottom: 6px;
+}
+
+.reason-text {
+    font-size: 13px;
+    color: #881337;
+    margin: 0;
+    line-height: 1.5;
+    font-weight: 500;
+}
+
+.reason-form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.form-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: #475569;
+    letter-spacing: 0.5px;
+}
+
+.reason-select,
+.reason-textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: 1px solid #E2E8F0;
+    font-size: 13px;
+    color: #0F172A;
+    outline: none;
+    transition: border-color 0.2s ease;
+}
+
+.reason-select:focus,
+.reason-textarea:focus {
+    border-color: #2563EB;
+}
+
+.custom-reason-input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 6px;
+}
+
+.cancel-reason-modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 14px 22px;
+    border-top: 1px solid #F1F5F9;
+    background: #FAFAFA;
+}
+
+.btn-secondary {
+    padding: 8px 16px;
+    border-radius: 8px;
+    border: 1px solid #CBD5E1;
+    background: #FFFFFF;
+    color: #475569;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.btn-secondary:hover {
+    background: #F1F5F9;
+}
+
+.btn-danger-confirm {
+    padding: 8px 16px;
+    border-radius: 8px;
+    border: none;
+    background: #DC2626;
+    color: #FFFFFF;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.btn-danger-confirm:hover {
+    background: #B91C1C;
+}

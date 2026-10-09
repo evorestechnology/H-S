@@ -1,0 +1,131 @@
+.wallet-table-container {
+    background: #FFFFFF;
+    border-radius: 16px;
+    border: 1px solid #E2E8F0;
+    box-shadow: 0 4px 20px rgba(15, 23, 42, 0.04);
+    overflow: hidden;
+}
+
+.table-header-row {
+    padding: 18px 24px;
+    border-bottom: 1px solid #E2E8F0;
+    background: #FAFAFA;
+}
+
+.table-header-row h2 {
+    font-size: 16px;
+    font-weight: 700;
+    color: #0F172A;
+}
+
+.wallet-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+.wallet-table th {
+    background: #F8FAFC;
+    color: #475569;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    padding: 14px 18px;
+    border-bottom: 1px solid #E2E8F0;
+    text-align: left;
+}
+
+.wallet-table td {
+    padding: 16px 18px;
+    border-bottom: 1px solid #F1F5F9;
+    color: #0F172A;
+}
+
+.col-id {
+    font-family: 'Poppins', monospace;
+    font-weight: 700;
+    color: #2563EB;
+}
+
+.credit-total {
+    font-weight: 700;
+    color: #7C3AED;
+}
+
+.badge-adj-mfg {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    background: #ECFDF5;
+    color: #059669;
+    border: 1px solid #A7F3D0;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.badge-adj-mfg-none {
+    display: inline-flex;
+    padding: 4px 10px;
+    background: #F1F5F9;
+    color: #64748B;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.badge-adj-mfg-rejected {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    background: #FEF2F2;
+    color: #DC2626;
+    border: 1px solid #FECACA;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.badge-adj-mfg-pending {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    background: #FFFBEB;
+    color: #D97706;
+    border: 1px solid #FDE68A;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.badge-status-paid {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    background: #DCFCE7;
+    color: #15803D;
+    border-radius: 20px;
+    font-weight: 700;
+    font-size: 12px;
+}
+
+.badge-status-unpaid {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    background: #FEF3C7;
+    color: #B45309;
+    border-radius: 20px;
+    font-weight: 700;
+    font-size: 12px;
+}
+
+.col-notes {
+    color: #64748B;
+    font-size: 12px;
+}

@@ -1,0 +1,139 @@
+/* ==========================================
+   User Action Buttons & Status Dropdown
+========================================== */
+
+.user-action-buttons {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    position: relative;
+}
+
+.change-status-wrapper {
+    position: relative;
+}
+
+.change-status-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: #F1F5F9;
+    border: 1px solid #E2E8F0;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #334155;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.change-status-btn:hover {
+    background: #16A34A;
+    color: #FFFFFF;
+    border-color: #16A34A;
+}
+
+.action-btn {
+    border: 1px solid #E2E8F0;
+    background: #F1F5F9;
+    color: #475569;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.action-btn.edit-btn:hover {
+    background: #EFF6FF;
+    color: #2563EB;
+    border-color: #BFDBFE;
+}
+
+/* Dropdown Menu */
+.status-dropdown-menu {
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    background: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    border-radius: 10px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    z-index: 100;
+    min-width: 140px;
+    padding: 6px;
+    animation: fadeIn 0.15s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-4px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.dropdown-title {
+    font-size: 10px;
+    font-weight: 700;
+    color: #94A3B8;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 6px 10px 4px;
+}
+
+.dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 7px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    color: #334155;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    transition: background 0.15s ease;
+    text-align: left;
+}
+
+.dropdown-item:hover {
+    background: #F8FAFC;
+}
+
+.dropdown-item.selected {
+    font-weight: 700;
+    background: #F1F5F9;
+}
+
+.status-dot-mini {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+}
+
+.status-dot-mini.active {
+    background-color: #10B981;
+}
+
+.status-dot-mini.live {
+    background-color: #06B6D4;
+    box-shadow: 0 0 6px #06B6D4;
+}
+
+.status-dot-mini.inactive {
+    background-color: #94A3B8;
+}
+
+.status-dot-mini.blocked {
+    background-color: #EF4444;
+}

@@ -1,0 +1,70 @@
+/* ==========================================
+   Coupons SearchBar & Toolbar
+========================================== */
+
+.coupons-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+}
+
+.coupons-filter {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #FFFFFF;
+    padding: 6px;
+    border-radius: 12px;
+    border: 1px solid #F1F5F9;
+}
+
+.filter-btn {
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #64748B;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.filter-btn:hover {
+    color: #0F172A;
+    background: #F8FAFC;
+}
+
+.filter-btn.active {
+    background: #16A34A;
+    color: #FFFFFF;
+}
+
+.coupons-search {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    border-radius: 12px;
+    padding: 10px 16px;
+    min-width: 280px;
+    color: #64748B;
+    transition: border-color 0.2s ease;
+}
+
+.coupons-search:focus-within {
+    border-color: #16A34A;
+}
+
+.coupons-search input {
+    border: none;
+    outline: none;
+    background: transparent;
+    width: 100%;
+    font-size: 13px;
+    color: #0F172A;
+}

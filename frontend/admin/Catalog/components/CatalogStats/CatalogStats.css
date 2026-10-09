@@ -1,0 +1,134 @@
+/* ==========================================
+   Catalog Stats
+========================================== */
+
+.catalog-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 24px;
+    margin-bottom: 10px;
+}
+
+/* ==========================================
+   Card
+========================================== */
+
+.catalog-card {
+    background: #ffffff;
+    border: 1px solid #e4e4e7;
+    border-radius: 18px;
+    padding: 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: all 0.25s ease;
+    color: #09090b;
+}
+
+.catalog-card:hover {
+    transform: translateY(-4px);
+    border-color: #a1a1aa;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.06);
+}
+
+.catalog-card-title {
+    display: block;
+    font-size: 11px;
+    font-weight: 700;
+    color: #71717a;
+    letter-spacing: 1px;
+    margin-bottom: 8px;
+}
+
+.catalog-card h2 {
+    font-size: 28px;
+    font-weight: 700;
+    color: #09090b;
+}
+
+/* ==========================================
+   Icons
+========================================== */
+
+.catalog-icon {
+    width: 52px;
+    height: 52px;
+    border-radius: 14px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.catalog-icon.drops {
+    background: #f4f4f5;
+    color: #52525b;
+    border: 1px solid #e4e4e7;
+}
+
+.catalog-icon.products {
+    background: #e0e7ff;
+    color: #4338ca;
+    border: 1px solid #c7d2fe;
+}
+
+.catalog-icon.live {
+    background: #dcfce7;
+    color: #15803d;
+    border: 1px solid #bbf7d0;
+}
+
+.catalog-icon.draft {
+    background: #fef3c7;
+    color: #b45309;
+    border: 1px solid #fde68a;
+}
+
+/* ==========================================
+   Skeleton Loaders
+========================================== */
+
+.skeleton-card {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 12px;
+}
+
+.skeleton-title {
+    width: 60%;
+    height: 12px;
+    background: #E2E8F0;
+    border-radius: 6px;
+    animation: pulse 1.5s infinite;
+}
+
+.skeleton-value {
+    width: 40%;
+    height: 32px;
+    background: #E2E8F0;
+    border-radius: 8px;
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 0.6; }
+    50% { opacity: 1; }
+    100% { opacity: 0.6; }
+}
+
+/* ==========================================
+   Responsive
+========================================== */
+
+@media (max-width: 1200px) {
+    .catalog-stats {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 640px) {
+    .catalog-stats {
+        grid-template-columns: 1fr;
+    }
+}

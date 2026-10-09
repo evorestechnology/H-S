@@ -1,0 +1,15 @@
+/* ==========================================
+   Orders Page Stylesheet
+========================================== */
+
+.orders-page {
+    padding: 30px;
+    max-width: 1500px;
+    margin: 0 auto;
+}
+
+@media (max-width: 768px) {
+    .orders-page {
+        padding: 16px;
+    }
+}

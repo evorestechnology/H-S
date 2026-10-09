@@ -1,0 +1,134 @@
+.wallet-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 18px;
+    margin-bottom: 24px;
+}
+
+.wallet-stat-card {
+    background: #FFFFFF;
+    border-radius: 16px;
+    padding: 20px;
+    border: 1px solid #E2E8F0;
+    box-shadow: 0 4px 20px rgba(15, 23, 42, 0.04);
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.wallet-stat-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+}
+
+.wallet-stat-card::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    border-radius: 4px 0 0 4px;
+}
+
+.card-gross-revenue::before { background: #3B82F6; }
+.card-mfg-earnings::before { background: #8B5CF6; }
+.card-paid-mfg::before { background: #10B981; }
+.card-pending-mfg::before { background: #F59E0B; }
+.card-total-gst::before { background: #0284C7; }
+.card-our-earnings::before { background: linear-gradient(180deg, #10B981 0%, #059669 100%); }
+
+.highlight-card {
+    background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%);
+    color: #FFFFFF;
+    border-color: #334155;
+}
+
+.highlight-card .stat-label {
+    color: #94A3B8;
+}
+
+.highlight-card .stat-subtext {
+    color: #34D399;
+}
+
+.stat-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.stat-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    color: #64748B;
+    text-transform: uppercase;
+}
+
+.stat-value {
+    font-size: 22px;
+    font-weight: 700;
+    font-family: 'Poppins', sans-serif;
+    color: #0F172A;
+    margin: 4px 0 2px 0;
+    line-height: 1.2;
+}
+
+.highlight-card .stat-value {
+    color: #FFFFFF;
+}
+
+.text-emerald { color: #059669; }
+.text-amber { color: #D97706; }
+.text-cyan { color: #0284C7; }
+
+.text-gradient {
+    background: linear-gradient(135deg, #34D399 0%, #10B981 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.stat-subtext {
+    font-size: 12px;
+    color: #94A3B8;
+    font-weight: 500;
+}
+
+.stat-icon-wrapper {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.icon-gross { background: #EFF6FF; color: #2563EB; }
+.icon-mfg { background: #F5F3FF; color: #7C3AED; }
+.icon-paid { background: #ECFDF5; color: #059669; }
+.icon-pending { background: #FFFBEB; color: #D97706; }
+.icon-gst { background: #F0F9FF; color: #0284C7; }
+.icon-earnings { background: rgba(52, 211, 153, 0.15); color: #34D399; }
+
+@media (max-width: 1200px) {
+    .wallet-stats-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+@media (max-width: 768px) {
+    .wallet-stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 480px) {
+    .wallet-stats-grid {
+        grid-template-columns: 1fr;
+    }
+}

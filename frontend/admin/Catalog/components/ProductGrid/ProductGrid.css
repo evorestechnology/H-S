@@ -1,0 +1,34 @@
+/* ==========================================
+   Product Grid
+========================================== */
+
+.product-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 20px;
+    padding: 20px;
+    background: #F8FAFC;
+    border-radius: 0 0 16px 16px;
+    border-top: 1px solid #E2E8F0;
+}
+
+.product-grid-empty {
+    padding: 40px;
+    text-align: center;
+    color: #64748B;
+    background: #F8FAFC;
+    border-radius: 0 0 16px 16px;
+    border-top: 1px solid #E2E8F0;
+    font-size: 14px;
+}
+
+/* ==========================================
+   Responsive
+========================================== */
+
+@media (max-width: 640px) {
+    .product-grid {
+        grid-template-columns: 1fr;
+        padding: 16px;
+    }
+}

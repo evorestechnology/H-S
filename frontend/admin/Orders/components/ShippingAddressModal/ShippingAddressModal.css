@@ -1,0 +1,290 @@
+/* ==========================================
+   Shipping Address Small Popup Modal
+========================================== */
+
+.shipping-address-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1070;
+    padding: 16px;
+    animation: addressOverlayFadeIn 0.15s ease-out;
+}
+
+@keyframes addressOverlayFadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+.shipping-address-modal-container {
+    background: #FFFFFF;
+    border-radius: 16px;
+    width: 100%;
+    max-width: 430px;
+    box-shadow: 0 20px 40px -10px rgba(15, 23, 42, 0.25), 0 0 0 1px rgba(15, 23, 42, 0.05);
+    overflow: hidden;
+    animation: addressModalScaleIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    display: flex;
+    flex-direction: column;
+}
+
+@keyframes addressModalScaleIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95) translateY(6px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+/* Header */
+.shipping-address-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    border-bottom: 1px solid #F1F5F9;
+    background: #FAFAFC;
+}
+
+.shipping-address-header-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.shipping-address-icon-badge {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: #EFF6FF;
+    color: #2563EB;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.shipping-address-header-title h3 {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 700;
+    color: #0F172A;
+    line-height: 1.2;
+}
+
+.order-id-subtext {
+    font-size: 12px;
+    font-weight: 600;
+    color: #64748B;
+    font-family: monospace;
+}
+
+.modal-close-btn {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    color: #94A3B8;
+    padding: 6px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s ease;
+}
+
+.modal-close-btn:hover {
+    background: #F1F5F9;
+    color: #0F172A;
+}
+
+/* Body */
+.shipping-address-modal-body {
+    padding: 18px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+/* Recipient Info Card */
+.shipping-recipient-card {
+    background: #F8FAFC;
+    border: 1px solid #E2E8F0;
+    border-radius: 10px;
+    padding: 10px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.recipient-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: #334155;
+}
+
+.recipient-icon {
+    color: #64748B;
+    flex-shrink: 0;
+}
+
+.recipient-label {
+    font-weight: 500;
+    color: #64748B;
+    min-width: 65px;
+    font-size: 12px;
+}
+
+.recipient-val {
+    color: #0F172A;
+}
+
+/* Address Box */
+.shipping-address-box-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.shipping-address-box-label {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 11px;
+    font-weight: 700;
+    color: #475569;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.address-status-tag {
+    font-size: 10px;
+    font-weight: 600;
+    color: #2563EB;
+    background: #EFF6FF;
+    padding: 1px 6px;
+    border-radius: 4px;
+}
+
+.shipping-address-box {
+    background: #F1F5F9;
+    border: 1px solid #E2E8F0;
+    border-radius: 10px;
+    padding: 14px;
+    max-height: 180px;
+    overflow-y: auto;
+}
+
+.shipping-address-full-text {
+    margin: 0;
+    font-size: 13.5px;
+    line-height: 1.55;
+    color: #0F172A;
+    font-weight: 500;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+/* Custom Scrollbar */
+.shipping-address-box::-webkit-scrollbar {
+    width: 6px;
+}
+.shipping-address-box::-webkit-scrollbar-track {
+    background: #E2E8F0;
+    border-radius: 3px;
+}
+.shipping-address-box::-webkit-scrollbar-thumb {
+    background: #CBD5E1;
+    border-radius: 3px;
+}
+.shipping-address-box::-webkit-scrollbar-thumb:hover {
+    background: #94A3B8;
+}
+
+/* Footer */
+.shipping-address-modal-footer {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 20px;
+    border-top: 1px solid #F1F5F9;
+    background: #FAFAFC;
+}
+
+.btn-copy-address-main {
+    flex: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: #2563EB;
+    color: #FFFFFF;
+    border: none;
+    padding: 10px 16px;
+    border-radius: 9px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    box-shadow: 0 2px 6px rgba(37, 99, 235, 0.25);
+}
+
+.btn-copy-address-main:hover {
+    background: #1D4ED8;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 10px rgba(37, 99, 235, 0.35);
+}
+
+.btn-copy-address-main:active {
+    transform: translateY(0);
+}
+
+.btn-copy-address-main.copied {
+    background: #059669;
+    box-shadow: 0 2px 6px rgba(5, 150, 105, 0.25);
+}
+
+.btn-copy-all-secondary {
+    flex: 1.2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    background: #FFFFFF;
+    color: #475569;
+    border: 1px solid #CBD5E1;
+    padding: 10px 12px;
+    border-radius: 9px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+}
+
+.btn-copy-all-secondary:hover {
+    background: #F8FAFC;
+    color: #0F172A;
+    border-color: #94A3B8;
+}
+
+.btn-copy-all-secondary.copied {
+    background: #ECFDF5;
+    color: #059669;
+    border-color: #A7F3D0;
+}

@@ -1,0 +1,9 @@
+/* ==========================================
+   Users Pagination Stylesheet
+========================================== */
+
+.users-pagination {
+    margin-top: 24px;
+    display: flex;
+    justify-content: flex-end;
+}

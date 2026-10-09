@@ -1,0 +1,15 @@
+/* ==========================================
+   Users Page Stylesheet
+========================================== */
+
+.users-page {
+    padding: 30px;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+@media (max-width: 768px) {
+    .users-page {
+        padding: 16px;
+    }
+}

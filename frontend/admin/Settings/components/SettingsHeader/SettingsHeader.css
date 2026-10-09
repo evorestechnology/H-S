@@ -1,0 +1,52 @@
+.settings-header-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.settings-header-top h1 {
+    font-size: 24px;
+    font-weight: 800;
+    color: #0F172A;
+    margin: 0;
+    letter-spacing: -0.5px;
+}
+
+.settings-header-top p {
+    font-size: 13px;
+    color: #64748B;
+    margin: 4px 0 0 0;
+}
+
+.settings-tabs-row {
+    display: flex;
+    gap: 8px;
+    border-bottom: 1px solid #E2E8F0;
+    padding-bottom: 12px;
+}
+
+.settings-tab-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 18px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #64748B;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.settings-tab-btn:hover {
+    background: #F1F5F9;
+    color: #0F172A;
+}
+
+.settings-tab-btn.active-tab {
+    background: #EFF6FF;
+    color: #2563EB;
+    font-weight: 700;
+}

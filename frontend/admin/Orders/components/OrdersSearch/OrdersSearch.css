@@ -1,0 +1,83 @@
+/* ==========================================
+   Orders Toolbar (Filter Tabs & Search)
+========================================== */
+
+.orders-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+}
+
+.orders-filter {
+    display: flex;
+    gap: 6px;
+    background: #F1F5F9;
+    padding: 4px;
+    border-radius: 12px;
+}
+
+.orders-filter-btn {
+    border: none;
+    background: transparent;
+    padding: 8px 18px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #64748B;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.orders-filter-btn:hover {
+    color: #0F172A;
+}
+
+.orders-filter-btn.active {
+    background: #FFFFFF;
+    color: #0F172A;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+}
+
+.orders-search-box {
+    position: relative;
+    display: flex;
+    align-items: center;
+    min-width: 260px;
+}
+
+.orders-search-box svg {
+    position: absolute;
+    left: 14px;
+    color: #94A3B8;
+}
+
+.orders-search-box input {
+    width: 100%;
+    padding: 10px 16px 10px 40px;
+    border-radius: 10px;
+    border: 1px solid #E2E8F0;
+    background: #FAFAFA;
+    font-size: 13px;
+    color: #0F172A;
+    outline: none;
+    transition: all 0.2s ease;
+}
+
+.orders-search-box input:focus {
+    background: #FFFFFF;
+    border-color: #2563EB;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+@media (max-width: 768px) {
+    .orders-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .orders-search-box {
+        width: 100%;
+    }
+}

@@ -1,0 +1,95 @@
+.dashboard-page {
+    width: 100%;
+    min-height: 100vh;
+    padding: 30px;
+    background: #F8FAFC;
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+}
+
+.dashboard-main-layout {
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: 24px;
+    align-items: start;
+}
+
+.dashboard-main-content {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    min-width: 0;
+}
+
+.dashboard-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.charts-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+}
+
+.chart-span-2 {
+    grid-column: span 2;
+}
+
+.chart-span-1 {
+    grid-column: span 1;
+}
+
+.widgets-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 24px;
+}
+
+/* ==========================================
+   Responsive Breakpoints
+========================================== */
+
+@media (max-width: 1280px) {
+    .charts-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .chart-span-2, .chart-span-1 {
+        grid-column: span 1;
+    }
+}
+
+@media (max-width: 1024px) {
+    .dashboard-page {
+        padding: 24px;
+    }
+    
+    .dashboard-main-layout {
+        grid-template-columns: 1fr;
+    }
+    
+    .dashboard-sidebar {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    }
+}
+
+@media (max-width: 768px) {
+    .dashboard-page {
+        padding: 18px;
+        gap: 22px;
+    }
+    
+    .widgets-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 480px) {
+    .dashboard-page {
+        padding: 15px;
+    }
+}

@@ -1,0 +1,760 @@
+/* ==========================================
+   Orders Table Component & Status Transitions
+========================================== */
+
+.orders-table-container {
+    background: #FFFFFF;
+    border-radius: 14px;
+    border: 1px solid #F1F5F9;
+    overflow-x: auto;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
+}
+
+/* Custom Scrollbar */
+.orders-table-container::-webkit-scrollbar {
+    height: 8px;
+}
+
+.orders-table-container::-webkit-scrollbar-track {
+    background: #F1F5F9;
+    border-radius: 4px;
+}
+
+.orders-table-container::-webkit-scrollbar-thumb {
+    background: #CBD5E1;
+    border-radius: 4px;
+}
+
+.orders-table-container::-webkit-scrollbar-thumb:hover {
+    background: #94A3B8;
+}
+
+.orders-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 2650px;
+}
+
+.orders-table thead {
+    background: #FAFAFA;
+}
+
+.orders-table th {
+    padding: 14px 16px;
+    text-align: left;
+    font-size: 11px;
+    font-weight: 700;
+    color: #64748B;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    white-space: nowrap;
+    border-bottom: 1px solid #F1F5F9;
+}
+
+.orders-table td {
+    padding: 14px 16px;
+    border-bottom: 1px solid #F8FAFC;
+    font-size: 13px;
+    color: #334155;
+    white-space: nowrap;
+    vertical-align: middle;
+}
+
+.orders-table tbody tr {
+    transition: background 0.15s ease;
+}
+
+.orders-table tbody tr:hover {
+    background: #F8FAFC;
+}
+
+/* Columns */
+.col-order-id-val {
+    font-weight: 700;
+    color: #0F172A;
+    font-family: monospace;
+    min-width: 100px;
+}
+
+.col-item-name-val {
+    font-weight: 600;
+    color: #0F172A;
+    min-width: 180px;
+}
+
+.item-name-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.user-item-name {
+    font-weight: 600;
+    color: #0F172A;
+    font-size: 13px;
+}
+
+.mfg-item-subtext {
+    font-weight: 500;
+    color: #6366F1;
+    font-size: 11px;
+    font-family: monospace;
+    background: #EEF2FF;
+    padding: 1px 6px;
+    border-radius: 4px;
+    display: inline-block;
+    width: fit-content;
+}
+
+.col-size {
+    min-width: 70px;
+}
+
+.col-color {
+    min-width: 80px;
+}
+
+.col-user-val {
+    color: #2563EB;
+    font-weight: 600;
+    font-size: 12px;
+    min-width: 110px;
+}
+
+.col-fullname {
+    min-width: 140px;
+}
+
+.col-phone {
+    min-width: 130px;
+}
+
+.col-country {
+    min-width: 120px;
+}
+
+.col-address {
+    max-width: 260px;
+    min-width: 210px;
+    color: #64748B;
+}
+
+.shipping-address-cell {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    max-width: 100%;
+}
+
+.address-preview-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: #F8FAFC;
+    border: 1px solid #E2E8F0;
+    padding: 5px 10px;
+    border-radius: 8px;
+    color: #334155;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.15s ease;
+    flex: 1;
+    min-width: 0;
+    max-width: 200px;
+}
+
+.address-preview-btn:hover {
+    background: #EFF6FF;
+    border-color: #BFDBFE;
+    color: #1D4ED8;
+    transform: translateY(-1px);
+}
+
+.address-pin-icon {
+    color: #2563EB;
+    flex-shrink: 0;
+}
+
+.address-snippet {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 12.5px;
+    font-weight: 500;
+}
+
+.btn-address-quick-copy {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 7px;
+    background: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    color: #64748B;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: all 0.15s ease;
+}
+
+.btn-address-quick-copy:hover {
+    background: #F1F5F9;
+    color: #0F172A;
+    border-color: #CBD5E1;
+    transform: scale(1.05);
+}
+
+.btn-address-quick-copy.copied {
+    background: #ECFDF5;
+    color: #059669;
+    border-color: #A7F3D0;
+}
+
+.copy-check-icon {
+    color: #059669;
+}
+
+.col-amount-val {
+    font-weight: 700;
+    color: #0F172A;
+    min-width: 110px;
+}
+
+.col-gst-collected {
+    min-width: 120px;
+}
+
+.col-gst-collected-val {
+    font-weight: 700;
+    color: #0284C7;
+    min-width: 120px;
+}
+
+.col-mfg-payment {
+    min-width: 120px;
+}
+
+.col-mfg-payment-val {
+    font-weight: 700;
+    color: #059669;
+    min-width: 120px;
+}
+
+.col-shipper {
+    min-width: 140px;
+}
+
+.col-tracking {
+    min-width: 150px;
+}
+
+.col-link {
+    min-width: 100px;
+}
+
+.col-status {
+    min-width: 130px;
+}
+
+.col-actions {
+    min-width: 240px;
+}
+
+.col-text {
+    color: #334155;
+}
+
+.col-text.font-semibold {
+    font-weight: 600;
+}
+
+.col-text.font-medium {
+    font-weight: 500;
+}
+
+.shipper-text {
+    font-weight: 500;
+    color: #334155;
+}
+
+.text-none {
+    font-style: italic;
+    color: #CBD5E1;
+}
+
+.tracking-badge {
+    background: #F1F5F9;
+    color: #475569;
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    font-family: monospace;
+    border: 1px solid #E2E8F0;
+}
+
+.track-link-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    color: #2563EB;
+    background: #EFF6FF;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: background 0.2s;
+}
+
+.track-link-btn:hover {
+    background: #DBEAFE;
+}
+
+/* Status Badges */
+.order-status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.order-status-badge.in-progress {
+    background-color: #FEF3C7;
+    color: #B45309;
+}
+.order-status-badge.in-progress .status-dot {
+    background-color: #F59E0B;
+}
+
+.order-status-badge.shipping {
+    background-color: #EFF6FF;
+    color: #2563EB;
+}
+.order-status-badge.shipping .status-dot {
+    background-color: #3B82F6;
+}
+
+.order-status-badge.completed,
+.order-status-badge.delivered {
+    background-color: #D1FAE5;
+    color: #059669;
+}
+.order-status-badge.completed .status-dot,
+.order-status-badge.delivered .status-dot {
+    background-color: #10B981;
+}
+
+.order-status-badge.cancelled {
+    background-color: #FEE2E2;
+    color: #DC2626;
+}
+.order-status-badge.cancelled .status-dot {
+    background-color: #EF4444;
+}
+
+.order-status-badge.cancel-requested {
+    background-color: #FFEDD5;
+    color: #C2410C;
+}
+.order-status-badge.cancel-requested .status-dot {
+    background-color: #F97316;
+}
+
+.btn-accept-cancel {
+    background: #ECFDF5;
+    color: #059669;
+    border: 1px solid #A7F3D0;
+}
+.btn-accept-cancel:hover {
+    background: #059669;
+    color: #FFFFFF;
+    border-color: #059669;
+}
+
+.btn-reject-cancel {
+    background: #FEF2F2;
+    color: #DC2626;
+    border: 1px solid #FCA5A5;
+}
+.btn-reject-cancel:hover {
+    background: #DC2626;
+    color: #FFFFFF;
+    border-color: #DC2626;
+}
+
+.status-pending-text {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #D97706;
+    background: #FEF3C7;
+    padding: 4px 10px;
+    border-radius: 6px;
+}
+
+/* Actions Cell */
+.order-actions-cell {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Price Adjustment Badges & Buttons for Admin */
+.btn-review-adj-req {
+    background: #FEF3C7;
+    color: #B45309;
+    border: 1px solid #FDE68A;
+    padding: 5px 10px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    transition: all 0.15s ease;
+}
+
+.btn-review-adj-req:hover {
+    background: #FDE68A;
+    color: #78350F;
+}
+
+.badge-adj-approved {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: #DCFCE7;
+    color: #15803D;
+    border: 1px solid #BBF7D0;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.badge-adj-rejected {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: #FEE2E2;
+    color: #991B1B;
+    border: 1px solid #FCA5A5;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.btn-review-adj-action {
+    background: #FEF3C7;
+    color: #B45309;
+    border: 1px solid #FDE68A;
+}
+
+.btn-review-adj-action:hover {
+    background: #FDE68A;
+    color: #78350F;
+}
+
+/* MFG Paid Status [Paid / Unpaid] */
+.mfg-paid-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.mfg-paid-badge.paid {
+    background: #DCFCE7;
+    color: #166534;
+    border: 1px solid #86EFAC;
+}
+
+.btn-mark-paid {
+    background: #EFF6FF;
+    color: #2563EB;
+    border: 1px solid #BFDBFE;
+    padding: 5px 12px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    transition: all 0.15s ease;
+}
+
+.btn-mark-paid:hover {
+    background: #2563EB;
+    color: #FFFFFF;
+    border-color: #2563EB;
+}
+
+.action-btn-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-shipping {
+    background: #EFF6FF;
+    color: #2563EB;
+    border: 1px solid #BFDBFE;
+}
+
+.btn-shipping:hover {
+    background: #2563EB;
+    color: #FFFFFF;
+    border-color: #2563EB;
+}
+
+.btn-complete {
+    background: #ECFDF5;
+    color: #059669;
+    border: 1px solid #A7F3D0;
+}
+
+.btn-complete:hover {
+    background: #10B981;
+    color: #FFFFFF;
+    border-color: #10B981;
+}
+
+.btn-cancel {
+    background: #FFF1F2;
+    color: #E11D48;
+    border: 1px solid #FECDD3;
+}
+
+.btn-cancel:hover {
+    background: #E11D48;
+    color: #FFFFFF;
+    border-color: #E11D48;
+}
+
+.status-completed-text {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #059669;
+}
+
+.status-cancelled-text {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #DC2626;
+}
+
+.col-cancel-reason {
+    min-width: 130px;
+}
+
+.col-cancel-reason-cell {
+    min-width: 130px;
+}
+
+.btn-view-reason {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 10px;
+    border-radius: 6px;
+    background: #EFF6FF;
+    color: #2563EB;
+    border: 1px solid #BFDBFE;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-view-reason:hover {
+    background: #2563EB;
+    color: #FFFFFF;
+    border-color: #2563EB;
+}
+
+.col-view-order {
+    min-width: 135px;
+}
+
+.col-view-order-cell {
+    min-width: 135px;
+}
+
+.btn-view-order-details {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 10px;
+    border-radius: 6px;
+    background: #F0FDF4;
+    color: #16A34A;
+    border: 1px solid #BBF7D0;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-view-order-details:hover {
+    background: #16A34A;
+    color: #FFFFFF;
+    border-color: #16A34A;
+}
+
+/* Coupon Applied & Discount Columns */
+.col-coupon-applied,
+.col-coupon-applied-cell {
+    min-width: 145px;
+}
+
+.col-coupon-discount,
+.col-coupon-discount-cell {
+    min-width: 135px;
+}
+
+.coupon-applied-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+}
+
+.coupon-applied-badge.applied {
+    background: #ECFDF5;
+    color: #059669;
+    border: 1px solid #A7F3D0;
+}
+
+.coupon-applied-badge.not-applied {
+    background: #F8FAFC;
+    color: #94A3B8;
+    border: 1px solid #E2E8F0;
+}
+
+.coupon-discount-val {
+    font-weight: 700;
+    color: #059669;
+    font-size: 13px;
+}
+
+/* ==========================================
+   Multi-Item Orders Styling
+   ========================================== */
+
+.multi-items-container {
+    padding: 2px 0;
+}
+
+.multi-items-badge-container {
+    margin-bottom: 5px;
+}
+
+.multi-items-count-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: #EFF6FF;
+    color: #2563EB;
+    border: 1px solid #BFDBFE;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 1.5px 7px;
+    border-radius: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}
+
+.multi-items-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.multi-item-entry {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 4px 8px;
+    background: #F8FAFC;
+    border-radius: 6px;
+    border-left: 3px solid #3B82F6;
+    border-top: 1px solid #F1F5F9;
+    border-right: 1px solid #F1F5F9;
+    border-bottom: 1px solid #F1F5F9;
+}
+
+.multi-item-entry:hover {
+    background: #F1F5F9;
+}
+
+.item-qty-tag {
+    color: #2563EB;
+    font-weight: 800;
+    margin-right: 3px;
+}
+
+.multi-props-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.prop-badge {
+    display: inline-block;
+    padding: 2px 7px;
+    border-radius: 5px;
+    font-size: 11.5px;
+    font-weight: 600;
+    width: fit-content;
+    white-space: nowrap;
+}
+
+.size-badge {
+    background: #F1F5F9;
+    color: #1E293B;
+    border: 1px solid #E2E8F0;
+}
+
+.color-badge {
+    background: #FAF5FF;
+    color: #6B21A8;
+    border: 1px solid #E9D5FF;
+}

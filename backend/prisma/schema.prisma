@@ -1,0 +1,288 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// -----------------------------------------------------------------------
+// 1. USER & AUTHENTICATION
+// -----------------------------------------------------------------------
+enum Role {
+  USER
+  ADMIN
+  MANUFACTURER
+}
+
+model User {
+  id          String    @id @default(uuid())
+  fullName    String
+  email       String    @unique
+  password    String
+  role        Role      @default(USER)
+  companyName String?
+  status      String    @default("Active")
+  mobile      String?
+  countryCode String?
+  country     String?
+  gender      String?
+  dob         DateTime?
+
+  // Security Tokens
+  refreshToken        String?
+  resetPasswordToken  String?
+  resetPasswordExpiry DateTime?
+
+  // Relationships
+  addresses Address[]
+  orders    Order[]
+  reviews   Review[]
+  cart      Cart?
+  wishlist  Product[] @relation("UserWishlist")
+
+  // Manufacturer relationships
+  manufacturerOrders   Order[]   @relation("ManufacturerAssignedOrders")
+  manufacturerProducts Product[] @relation("ManufacturerProducts")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([role])
+}
+
+model Address {
+  id        String  @id @default(uuid())
+  userId    String
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  street    String
+  city      String
+  state     String?
+  zipCode   String
+  country   String
+  isDefault Boolean @default(false)
+
+  @@index([userId])
+}
+
+// -----------------------------------------------------------------------
+// 2. CATALOG & INVENTORY
+// -----------------------------------------------------------------------
+model Product {
+  id               String   @id @default(uuid())
+  name             String
+  manufactureName  String?
+  description      String?
+  price            Float    @default(0)
+  userPrice        Float?
+  manufacturePrice Float?
+  images           String[]
+  coverPhoto       String?
+  category         String   @default("T-Shirts")
+  gender           String   @default("Unisex")
+  fit              String?
+  isNew            Boolean  @default(true)
+  isBestSeller     Boolean  @default(false)
+  stock            Int      @default(0)
+  inStock          Boolean  @default(true)
+  sizes            Json?
+  colors           Json?
+  sizeChart        String?
+  washCare         String?
+  shippingNote     String?
+  designerNote     String?
+  priceBreakdown   Json?
+  manufactureSpec  Json?
+
+  // Relationships
+  dropId         String?
+  drop           Drop?       @relation(fields: [dropId], references: [id], onDelete: SetNull)
+  manufacturerId String?
+  manufacturer   User?       @relation("ManufacturerProducts", fields: [manufacturerId], references: [id], onDelete: SetNull)
+  categoryId     String?
+  categoryRel    Category?   @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  orderItems     OrderItem[]
+  cartItems      CartItem[]
+  reviews        Review[]
+  wishlistedBy   User[]      @relation("UserWishlist")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([category])
+  @@index([dropId])
+  @@index([manufacturerId])
+  @@index([categoryId])
+  @@index([inStock, createdAt])
+}
+
+model Drop {
+  id          String    @id @default(uuid())
+  dropName    String?
+  title       String?
+  status      String    @default("Draft")
+  isActive    Boolean   @default(true)
+  releaseDate DateTime  @default(now())
+  products    Product[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([isActive, status])
+}
+
+model Review {
+  id        String   @id @default(uuid())
+  rating    Int // 1 to 5
+  comment   String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@index([productId])
+  @@index([userId])
+}
+
+// -----------------------------------------------------------------------
+// 3. SHOPPING CART
+// -----------------------------------------------------------------------
+model Cart {
+  id        String     @id @default(uuid())
+  userId    String     @unique
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items     CartItem[]
+  updatedAt DateTime   @updatedAt
+}
+
+model CartItem {
+  id        String  @id @default(uuid())
+  cartId    String
+  cart      Cart    @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  size      String
+  color     String?
+  quantity  Int
+
+  @@index([cartId])
+  @@index([productId])
+}
+
+// -----------------------------------------------------------------------
+// 4. ORDERS & CHECKOUT
+// -----------------------------------------------------------------------
+model Order {
+  id             String      @id @default(uuid())
+  userId         String
+  user           User        @relation(fields: [userId], references: [id])
+  manufacturerId String?
+  manufacturer   User?       @relation("ManufacturerAssignedOrders", fields: [manufacturerId], references: [id], onDelete: SetNull)
+  items          OrderItem[]
+
+  // Financials
+  taxPrice       Float   @default(0)
+  shippingPrice  Float   @default(0)
+  totalPrice     Float
+  mfgPayment     Float   @default(0)
+  couponCode     String?
+  couponDiscount Float   @default(0)
+  couponApplied  Boolean @default(false)
+
+  // Logistics
+  shippingAddress String
+  status          OrderStatus @default(IN_PROGRESS)
+  shipperName     String?
+  trackingNumber  String?
+  trackingLink    String?
+
+  // Payment
+  paymentStatus    String  @default("PENDING")
+  mfgPaymentStatus String  @default("Unpaid")
+  mfgPaidDate      String?
+  transactionId    String? // e.g., Stripe/Razorpay payment intent ID
+
+  // Price Adjustment & Cancel Requests
+  cancelReason          String?
+  cancelRequested       Boolean   @default(false)
+  cancelledByRole       String?
+  cancelledByUserId     String?
+  cancelledAt           DateTime?
+  priceAdjustmentAmount Float?
+  priceAdjustmentReason String?
+  priceAdjustmentStatus String?
+
+  completedDate String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([manufacturerId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+enum OrderStatus {
+  IN_PROGRESS
+  SHIPPING
+  DELIVERED
+  CANCELED
+}
+
+model OrderItem {
+  id        String  @id @default(uuid())
+  orderId   String
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+  name      String
+  size      String
+  color     String?
+  quantity  Int
+  price     Float // Price frozen at checkout
+
+  @@index([orderId])
+  @@index([productId])
+}
+
+enum paymentStatus{
+   NOT_SUCCESSFULL
+   PENDING
+   SUCCESSFULL
+}
+
+model Category {
+  id             String    @id @default(uuid())
+  name           String    @unique
+  description    String?
+  weightPerPiece Float     @default(0.500)
+  conversionRule String?
+  isActive       Boolean   @default(true)
+  products       Product[]
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+}
+
+model Coupon {
+  id            String    @id
+  code          String    @unique
+  type          String    @default("Public")
+  discountValue Float     @default(10)
+  discountType  String    @default("Percentage")
+  minSpend      Float     @default(0)
+  usageLimit    Int       @default(0)
+  usageCount    Int       @default(0)
+  expiryDate    String?   @default("2026-12-31")
+  status        String    @default("Active")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model Setting {
+  key       String   @id
+  value     Json
+  updatedAt DateTime @default(now()) @updatedAt
+}
+

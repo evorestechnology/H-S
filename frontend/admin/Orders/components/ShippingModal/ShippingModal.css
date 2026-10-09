@@ -1,0 +1,235 @@
+/* ==========================================
+   Shipping Modal Styles
+========================================== */
+
+.shipping-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 20px;
+}
+
+.shipping-modal {
+    background: #FFFFFF;
+    border-radius: 16px;
+    width: 100%;
+    max-width: 480px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+    overflow: hidden;
+    animation: modalAppear 0.25s ease-out;
+}
+
+@keyframes modalAppear {
+    from {
+        opacity: 0;
+        transform: scale(0.95) translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+.shipping-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 24px;
+    border-bottom: 1px solid #F1F5F9;
+}
+
+.header-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.header-icon {
+    color: #2563EB;
+}
+
+.header-title h2 {
+    font-size: 17px;
+    font-weight: 700;
+    color: #0F172A;
+    margin: 0;
+}
+
+.header-title p {
+    font-size: 12px;
+    color: #64748B;
+    margin-top: 2px;
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    color: #64748B;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+}
+
+.close-btn:hover {
+    background: #F1F5F9;
+    color: #0F172A;
+}
+
+.shipping-modal-body {
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.form-group label {
+    font-size: 11px;
+    font-weight: 700;
+    color: #475569;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.form-group input,
+.form-group select {
+    width: 100%;
+    padding: 10px 14px;
+    border-radius: 8px;
+    border: 1px solid #E2E8F0;
+    font-size: 13px;
+    color: #0F172A;
+    outline: none;
+    transition: border-color 0.2s ease;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+    border-color: #2563EB;
+}
+
+.shipping-modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    padding: 16px 24px;
+    border-top: 1px solid #F1F5F9;
+    background: #FAFAFA;
+}
+
+.shipping-modal-footer button {
+    padding: 10px 18px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.cancel-btn {
+    border: 1px solid #E2E8F0;
+    background: #FFFFFF;
+    color: #475569;
+}
+
+.cancel-btn:hover {
+    background: #F1F5F9;
+}
+
+.submit-btn {
+    border: none;
+    background: #2563EB;
+    color: #FFFFFF;
+}
+
+.submit-btn:hover {
+    background: #1D4ED8;
+}
+
+.complete-mode-btn {
+    background: #059669;
+}
+
+.complete-mode-btn:hover {
+    background: #047857;
+}
+
+.required-star {
+    color: #DC2626;
+    margin-left: 2px;
+}
+
+.optional-tag {
+    color: #64748B;
+    font-weight: 500;
+    text-transform: none;
+    font-size: 11px;
+    margin-left: 4px;
+}
+
+.completion-info-banner {
+    background: #FEF3C7;
+    border: 1px solid #FCD34D;
+    border-radius: 8px;
+    padding: 10px 14px;
+    color: #92400E;
+    font-size: 12px;
+    line-height: 1.4;
+}
+
+.custom-shipper-group {
+    background: #F8FAFC;
+    border: 1px dashed #CBD5E1;
+    border-radius: 8px;
+    padding: 12px;
+}
+
+.custom-shipper-group input {
+    background: #FFFFFF;
+}
+
+.field-label-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.field-hint {
+    font-size: 11px;
+    color: #64748B;
+    margin-top: 2px;
+}
+
+.btn-autofill-link {
+    background: none;
+    border: none;
+    color: #2563EB;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 0;
+    text-decoration: underline;
+    transition: color 0.15s ease;
+}
+
+.btn-autofill-link:hover {
+    color: #1D4ED8;
+}
+

@@ -1,0 +1,54 @@
+/* ==========================================
+   Catalog Page Layout
+========================================== */
+
+.catalog-page {
+    width: 100%;
+    min-height: 100vh;
+    padding: 30px;
+    background: #ffffff;
+    color: #09090b;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+/* ==========================================
+   Loading & Empty Results
+========================================== */
+
+.catalog-loading,
+.catalog-no-results {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 300px;
+    background: #ffffff;
+    border-radius: 16px;
+    border: 1px solid #e4e4e7;
+    color: #71717a;
+    font-size: 15px;
+}
+
+/* ==========================================
+   Responsive
+========================================== */
+
+@media (max-width: 1024px) {
+    .catalog-page {
+        padding: 24px;
+    }
+}
+
+@media (max-width: 768px) {
+    .catalog-page {
+        padding: 18px;
+        gap: 20px;
+    }
+}
+
+@media (max-width: 480px) {
+    .catalog-page {
+        padding: 15px;
+    }
+}

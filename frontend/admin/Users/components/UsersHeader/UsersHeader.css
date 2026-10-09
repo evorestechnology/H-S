@@ -1,0 +1,105 @@
+/* ==========================================
+   Users Header
+========================================== */
+
+.users-header {
+
+    display: flex;
+
+    justify-content: space-between;
+
+    align-items: center;
+
+    margin-bottom: 30px;
+
+}
+
+/* Left */
+
+.users-header-left h1 {
+
+    font-size: 34px;
+
+    font-weight: 700;
+
+    color: #0F172A;
+
+    margin-bottom: 8px;
+
+}
+
+.users-header-left p {
+
+    font-size: 15px;
+
+    color: #64748B;
+
+}
+
+/* Button */
+
+.add-user-btn {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 10px;
+
+    padding: 14px 22px;
+
+    background: #16A34A;
+
+    color: #FFFFFF;
+
+    border: none;
+
+    border-radius: 12px;
+
+    cursor: pointer;
+
+    font-size: 15px;
+
+    font-weight: 600;
+
+    transition: .25s;
+
+}
+
+.add-user-btn:hover {
+
+    background: #15803D;
+
+    transform: translateY(-2px);
+
+}
+
+.add-user-btn svg {
+
+    flex-shrink: 0;
+
+}
+
+/* Responsive */
+
+@media(max-width:768px) {
+
+    .users-header {
+
+        flex-direction: column;
+
+        align-items: flex-start;
+
+        gap: 20px;
+
+    }
+
+    .add-user-btn {
+
+        width: 100%;
+
+        justify-content: center;
+
+    }
+
+}

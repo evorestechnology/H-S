@@ -1,0 +1,193 @@
+/* ==========================================
+   Summary Metrics
+========================================== */
+
+.metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 20px;
+}
+
+.metric-card {
+    background: #FFFFFF;
+    border-radius: 20px;
+    padding: 24px;
+    border: 1px solid #E2E8F0;
+    box-shadow: 0 4px 20px rgba(15, 23, 42, 0.03);
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    transition: 0.3s ease;
+}
+
+.metric-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+}
+
+.metric-content {
+    display: flex;
+    flex-direction: column;
+}
+
+.metric-content h3 {
+    font-size: 14px;
+    font-weight: 600;
+    color: #64748B;
+    margin-bottom: 8px;
+}
+
+.metric-value {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--secondary);
+    letter-spacing: -0.5px;
+    margin-bottom: 8px;
+    line-height: 1.2;
+}
+
+.metric-change {
+    font-size: 13px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.metric-change.positive {
+    color: var(--success);
+}
+
+.metric-change.negative {
+    color: var(--danger);
+}
+
+.metric-change.neutral {
+    color: #94A3B8;
+}
+
+.metric-change-text {
+    font-weight: 500;
+    color: #94A3B8;
+    margin-left: 2px;
+}
+
+.metric-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Icon Colors */
+.icon-primary {
+    background: #DCFCE7;
+    color: #15803D;
+}
+
+.icon-secondary {
+    background: #F1F5F9;
+    color: #334155;
+}
+
+.icon-warning {
+    background: #FEF3C7;
+    color: #B45309;
+}
+
+.icon-success {
+    background: #DCFCE7;
+    color: #15803D;
+}
+
+.icon-danger {
+    background: #FEE2E2;
+    color: #B91C1C;
+}
+
+.icon-info {
+    background: #E0F2FE;
+    color: #0369A1;
+}
+
+.icon-purple {
+    background: #F3E8FF;
+    color: #7E22CE;
+}
+
+/* ==========================================
+   Skeleton Loading
+========================================== */
+
+.skeleton-card {
+    display: flex;
+    flex-direction: row-reverse;
+    pointer-events: none;
+}
+
+.skeleton-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    background: #F1F5F9;
+    animation: pulse 1.5s infinite ease-in-out;
+}
+
+.skeleton-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.skeleton-line {
+    height: 12px;
+    background: #F1F5F9;
+    border-radius: 6px;
+    animation: pulse 1.5s infinite ease-in-out;
+}
+
+.skeleton-line.short {
+    width: 40%;
+}
+
+.skeleton-line.large {
+    width: 70%;
+    height: 28px;
+    border-radius: 8px;
+}
+
+.skeleton-line.tiny {
+    width: 50%;
+    height: 10px;
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+}
+
+/* ==========================================
+   Responsive
+========================================== */
+
+@media (max-width: 1024px) {
+    .metrics-grid {
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    }
+}
+
+@media (max-width: 768px) {
+    .metrics-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+@media (max-width: 480px) {
+    .metrics-grid {
+        grid-template-columns: 1fr;
+    }
+}

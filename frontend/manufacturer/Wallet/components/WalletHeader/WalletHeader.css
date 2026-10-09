@@ -1,0 +1,25 @@
+.mfg-wallet-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: 8px;
+}
+
+.mfg-wallet-header-left h1 {
+    font-size: 24px;
+    font-weight: 800;
+    color: #0F172A;
+    margin: 0;
+}
+
+.mfg-wallet-header-left p {
+    font-size: 13px;
+    color: #64748B;
+    margin: 4px 0 0 0;
+}
+
+.mfg-wallet-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}

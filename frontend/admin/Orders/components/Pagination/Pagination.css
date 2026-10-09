@@ -1,0 +1,9 @@
+/* ==========================================
+   Orders Pagination Stylesheet
+========================================== */
+
+.orders-pagination {
+    margin-top: 24px;
+    display: flex;
+    justify-content: flex-end;
+}
