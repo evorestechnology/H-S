@@ -42,11 +42,14 @@ app.use(cookieParser());
 const allowedOrigins = [
   'https://www.hiandshi.shop',
   'https://hiandshi.shop',
-  ...(process.env.CLIENT_URL || '')
-    .split(',')
-    .map(url => url.trim().replace(/\/$/, ''))
-    .filter(Boolean)
-];
+  process.env.CLIENT_URL,
+  process.env.RENDER_EXTERNAL_URL,
+  process.env.SERVER_URL
+]
+  .filter(Boolean)
+  .flatMap(url => typeof url === 'string' ? url.split(',') : [])
+  .map(url => url.trim().replace(/\/$/, ''))
+  .filter(Boolean);
 
 const isAllowedOrigin = (origin) => {
   if (!origin) return true;
@@ -54,6 +57,7 @@ const isAllowedOrigin = (origin) => {
   if (/^https?:\/\/(www\.)?hiandshi\.shop$/.test(origin)) return true;
   if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) return true;
   if (/\.vercel\.app$/.test(origin)) return true;
+  if (/\.onrender\.com$/.test(origin)) return true;
   return false;
 };
 
@@ -62,7 +66,7 @@ app.use(cors({
     if (isAllowedOrigin(origin)) {
       return callback(null, true);
     }
-    return callback(new Error(`Origin ${origin} not allowed by CORS`));
+    return callback(null, false);
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'HEAD'],
