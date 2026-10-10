@@ -88,7 +88,7 @@ export const getCategories = async (req, res) => {
     });
 
     const timeoutPromise = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error('Categories DB query timeout')), 5000)
+      setTimeout(() => reject(new Error('Categories DB query timeout')), 20000)
     );
 
     const categories = await Promise.race([queryPromise, timeoutPromise]);

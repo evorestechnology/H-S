@@ -86,7 +86,7 @@ const fetchAndFormatDrops = async () => {
   });
 
   const timeoutPromise = new Promise((_, reject) =>
-    setTimeout(() => reject(new Error('Drops DB query timeout')), 8000)
+    setTimeout(() => reject(new Error('Drops DB query timeout')), 20000)
   );
 
   let drops;

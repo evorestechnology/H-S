@@ -21,25 +21,18 @@ if (dbUrl.includes('postgresql://') || dbUrl.includes('postgres://')) {
     // Ignore URL parse error fallback
   }
 
-  // If connecting to Supabase direct host on port 5432, rewrite to pooler port 6543 for IPv4 compatibility
-  if (dbUrl.includes('.supabase.co:5432')) {
-    dbUrl = dbUrl.replace('.supabase.co:5432', '.supabase.co:6543');
-    if (!dbUrl.includes('pgbouncer=true')) {
-      dbUrl += (dbUrl.includes('?') ? '&' : '?') + 'pgbouncer=true';
-    }
-  }
-
-  if (dbUrl.includes('supabase.co') && !dbUrl.includes('sslmode')) {
+  // Ensure SSL mode for Supabase connections if not specified
+  if ((dbUrl.includes('supabase.co') || dbUrl.includes('supabase.com')) && !dbUrl.includes('sslmode')) {
     dbUrl += (dbUrl.includes('?') ? '&' : '?') + 'sslmode=require';
   }
 
   if (dbUrl.includes('pooler.supabase.com') || dbUrl.includes('pgbouncer=true')) {
     if (!dbUrl.includes('connection_limit')) {
-      dbUrl += (dbUrl.includes('?') ? '&' : '?') + 'connection_limit=10&pool_timeout=10';
+      dbUrl += (dbUrl.includes('?') ? '&' : '?') + 'connection_limit=10&pool_timeout=20';
     }
   }
   if (!dbUrl.includes('connect_timeout')) {
-    dbUrl += (dbUrl.includes('?') ? '&' : '?') + 'connect_timeout=10';
+    dbUrl += (dbUrl.includes('?') ? '&' : '?') + 'connect_timeout=30';
   }
 }
 
