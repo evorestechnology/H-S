@@ -21,6 +21,21 @@ if (dbUrl.includes('postgresql://') || dbUrl.includes('postgres://')) {
     // Ignore URL parse error fallback
   }
 
+  // Convert Direct Supabase URL (db.ref.supabase.co:5432, which is IPv6-only)
+  // to Supabase IPv4 Pooler URL (aws-0-region.pooler.supabase.com) for platforms like Render
+  if (dbUrl.includes('.supabase.co')) {
+    const supabaseMatch = dbUrl.match(/^postgres(?:ql)?:\/\/([^:]+):([^@]+)@db\.([a-z0-9]+)\.supabase\.co(?::\d+)?\/(.+)$/i);
+    if (supabaseMatch) {
+      const [, user, pass, ref, path] = supabaseMatch;
+      const poolerUser = user.includes('.') ? user : `${user}.${ref}`;
+      const region = process.env.SUPABASE_REGION || 'ap-south-1';
+      const poolerHost = process.env.SUPABASE_POOLER_HOST || `aws-0-${region}.pooler.supabase.com`;
+      const pgbouncer = path.includes('pgbouncer=true') ? '' : (path.includes('?') ? '&pgbouncer=true' : '?pgbouncer=true');
+      dbUrl = `postgresql://${poolerUser}:${pass}@${poolerHost}:6543/${path}${pgbouncer}`;
+      console.log(`[Database] Transformed direct Supabase IPv6 URL to IPv4 connection pooler (${poolerHost}:6543)`);
+    }
+  }
+
   // Ensure SSL mode for Supabase connections if not specified
   if ((dbUrl.includes('supabase.co') || dbUrl.includes('supabase.com')) && !dbUrl.includes('sslmode')) {
     dbUrl += (dbUrl.includes('?') ? '&' : '?') + 'sslmode=require';
