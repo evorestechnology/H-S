@@ -30,6 +30,7 @@ const ProductModal = ({ open, product, onClose, onSubmit, onDelete }) => {
     const [baseUserPrice, setBaseUserPrice] = useState("");
     const [coverPhoto, setCoverPhoto] = useState("");
     const [inStock, setInStock] = useState(true);
+    const [isBestSeller, setIsBestSeller] = useState(false);
     // ─── Colors ───────────────────────────────────────────────────────────────
     const [colors, setColors] = useState([]);
     const [expandedColorIndexes, setExpandedColorIndexes] = useState({ 0: true });
@@ -93,15 +94,21 @@ const ProductModal = ({ open, product, onClose, onSubmit, onDelete }) => {
                         const colorShipCost = c.shippingCost ?? c.priceBreakdown?.shippingCost ?? "";
                         const colorAddCost = c.additionalCost ?? c.priceBreakdown?.additionalCost ?? "";
                         const colorUserPrice = c.userPrice ?? c.sellingPrice ?? product.userPrice ?? product.price ?? "";
+                        const mPhotos = Array.isArray(c.modelPhotos) ? c.modelPhotos : [];
+                        const front = c.frontView || mPhotos[0] || "";
+                        const back = c.backView || (mPhotos.length > 1 && mPhotos[1] !== front ? mPhotos[1] : "");
+                        const remaining = mPhotos.filter(p => p && p !== front && p !== back);
+                        const m1 = c.modelPhoto1 || remaining[0] || mPhotos[2] || "";
+                        const m2 = c.modelPhoto2 || remaining[1] || mPhotos[3] || "";
                         return {
                             code: c.code || "#000000",
                             name: c.name || "",
                             isAvailable: c.isAvailable !== false,
                             isExisting: true,
-                            frontView: c.frontView || c.modelPhotos?.[0] || "",
-                            backView: c.backView || c.modelPhotos?.[1] || "",
-                            modelPhoto1: c.modelPhoto1 || c.modelPhotos?.[2] || "",
-                            modelPhoto2: c.modelPhoto2 || c.modelPhotos?.[3] || "",
+                            frontView: front,
+                            backView: back,
+                            modelPhoto1: m1,
+                            modelPhoto2: m2,
                             manufacturePrice: mPrice,
                             userPrice: colorUserPrice,
                             printType: specs[0]?.printType || pType,
@@ -136,6 +143,7 @@ const ProductModal = ({ open, product, onClose, onSubmit, onDelete }) => {
                 else {
                     setFormSizes(defaultSizes());
                 }
+                setIsBestSeller(Boolean(product.isBestSeller));
                 setSizeChart(product.sizeChart || "");
                 setDescription(product.description || "");
                 setDesignerNote(product.designerNote || "");
@@ -150,6 +158,7 @@ const ProductModal = ({ open, product, onClose, onSubmit, onDelete }) => {
                 setCategory(availableCategories[0] || "T-Shirts");
                 setCoverPhoto("");
                 setInStock(true);
+                setIsBestSeller(false);
                 setBaseUserPrice("");
                 setColors([defaultColor()]);
                 setFormSizes(defaultSizes());
@@ -483,6 +492,7 @@ const ProductModal = ({ open, product, onClose, onSubmit, onDelete }) => {
                 washCare,
                 shippingNote,
                 inStock,
+                isBestSeller,
                 priceBreakdown,
                 manufactureSpec
             });
@@ -595,6 +605,30 @@ const ProductModal = ({ open, product, onClose, onSubmit, onDelete }) => {
                                         </div>
                                         <p className="field-hint">
                                             {inStock ? ("Product is active and visible for new store purchases.") : ("Out of Stock: Existing customers with active orders can track their purchases without disruption, but new customers cannot buy this product.")}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                {/* Trending in H&S / Bestseller Toggle */}
+                                <div className="form-group product-form-full">
+                                    <div className="stock-toggle-box">
+                                        <div className="flex-center-between mb-8">
+                                            <div>
+                                                <span className="font-semibold text-sm block-title">Trending in H&S (Bestseller)</span>
+                                                <span className="text-xs text-muted">Feature this product in the homepage "Trending in H&S" section</span>
+                                            </div>
+                                            <button type="button" className={`stock-status-badge-btn ${isBestSeller ? "status-in-stock" : "status-out-of-stock"}`} onClick={() => setIsBestSeller(!isBestSeller)}>
+                                                {isBestSeller ? (<>
+                                                        <CheckCircle size={15}/>
+                                                        Trending / Bestseller
+                                                    </>) : (<>
+                                                        <Minus size={15}/>
+                                                        Standard Product
+                                                    </>)}
+                                            </button>
+                                        </div>
+                                        <p className="field-hint">
+                                            {isBestSeller ? "This product is marked as a bestseller and will be featured under 'Trending in H&S' on the homepage." : "Standard: Product will not be highlighted in the homepage Trending section."}
                                         </p>
                                     </div>
                                 </div>

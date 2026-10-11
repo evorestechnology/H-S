@@ -64,15 +64,8 @@ const AdminLogin = () => {
     };
     return (<div className="min-h-screen flex items-center justify-center bg-black text-white p-4">
             <div className="w-full max-w-md bg-neutral-900 border border-neutral-800 p-8 rounded-none shadow-2xl">
-                {/* Unified Role Switcher */}
+                {/* Portal Role Switcher */}
                 <div className="flex border-b border-neutral-800 mb-6 font-mono text-xs">
-                    <button
-                        type="button"
-                        onClick={() => navigate('/login')}
-                        className="flex-1 py-3 text-center uppercase tracking-wider font-bold text-neutral-500 hover:text-neutral-300 transition-colors"
-                    >
-                        Customer
-                    </button>
                     <button
                         type="button"
                         onClick={() => navigate('/login/admin')}

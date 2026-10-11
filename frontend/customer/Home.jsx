@@ -14,8 +14,25 @@ export default function Home() {
     fetchDrops();
   }, [fetchProducts, fetchDrops]);
 
-  // Strictly show products marked as best sellers
-  const displayBestSellers = products.filter(p => p.isBestSeller).slice(0, 4);
+  // Rank and sort Best Sellers:
+  // 1. Highest sales volume (totalSold)
+  // 2. Explicitly flagged Bestsellers (isBestSeller)
+  // 3. Products in stock
+  // 4. Recency (createdAt)
+  const sortedBestSellers = [...products].sort((a, b) => {
+    const soldA = a.totalSold || 0;
+    const soldB = b.totalSold || 0;
+    if (soldB !== soldA) return soldB - soldA;
+    if (b.isBestSeller && !a.isBestSeller) return 1;
+    if (a.isBestSeller && !b.isBestSeller) return -1;
+    const stockA = a.inStock !== false ? 1 : 0;
+    const stockB = b.inStock !== false ? 1 : 0;
+    if (stockB !== stockA) return stockB - stockA;
+    return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
+  });
+
+  const flaggedOrSold = sortedBestSellers.filter(p => p.isBestSeller || (p.totalSold && p.totalSold > 0));
+  const displayBestSellers = (flaggedOrSold.length > 0 ? flaggedOrSold : sortedBestSellers.filter(p => p.inStock !== false)).slice(0, 4);
 
   // Strictly show 'Live' or active drops
   const latestDrops = drops.filter(d => d.status?.toLowerCase() === 'live' || d.isActive).slice(0, 5);

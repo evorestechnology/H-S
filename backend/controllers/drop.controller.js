@@ -77,6 +77,12 @@ const fetchAndFormatDrops = async () => {
           inStock: true,
           sizes: true,
           colors: true,
+          sizeChart: true,
+          designerNote: true,
+          washCare: true,
+          shippingNote: true,
+          manufactureSpec: true,
+          priceBreakdown: true,
           dropId: true,
           createdAt: true,
           updatedAt: true
@@ -116,7 +122,14 @@ const fetchAndFormatDrops = async () => {
               manufacturePrice: c.manufacturePrice ?? null,
               frontView: c.frontView || c.image || null,
               backView: c.backView || null,
-              mockup: c.mockup || null
+              modelPhoto1: c.modelPhoto1 || (Array.isArray(c.modelPhotos) ? c.modelPhotos[2] : null) || null,
+              modelPhoto2: c.modelPhoto2 || (Array.isArray(c.modelPhotos) ? c.modelPhotos[3] : null) || null,
+              modelPhotos: c.modelPhotos || null,
+              mockup: c.mockup || null,
+              designFile: c.designFile || null,
+              printType: c.printType || null,
+              printPosition: c.printPosition || null,
+              printSpecs: c.printSpecs || null
             };
           })
         : p.colors;

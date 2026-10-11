@@ -44,6 +44,10 @@ const sanitizeColorForList = (color) => {
     printSpecs: color.printSpecs || null,
     frontView: color.frontView || color.image || null,
     backView: color.backView || null,
+    modelPhoto1: color.modelPhoto1 || (Array.isArray(color.modelPhotos) ? color.modelPhotos[2] : null) || null,
+    modelPhoto2: color.modelPhoto2 || (Array.isArray(color.modelPhotos) ? color.modelPhotos[3] : null) || null,
+    modelPhotos: color.modelPhotos || null,
+    designFile: color.designFile || null,
     mockup: color.mockup || null
   };
 };
@@ -102,6 +106,12 @@ export const getProducts = async (req, res) => {
         inStock: true,
         sizes: true,
         colors: true,
+        sizeChart: true,
+        designerNote: true,
+        washCare: true,
+        shippingNote: true,
+        manufactureSpec: true,
+        priceBreakdown: true,
         dropId: true,
         drop: { select: { title: true, dropName: true, status: true } },
         createdAt: true,
@@ -119,18 +129,56 @@ export const getProducts = async (req, res) => {
       isPaginated ? prisma.product.count({ where: filter }) : Promise.resolve(null)
     ]);
 
+    // Aggregate sales data per product to rank real Best Sellers
+    let salesMap = {};
+    try {
+      const salesAgg = await prisma.orderItem.groupBy({
+        by: ['productId'],
+        _sum: { quantity: true },
+        _count: { id: true }
+      });
+      for (const item of salesAgg) {
+        if (item.productId) {
+          salesMap[item.productId] = {
+            totalSold: item._sum?.quantity || 0,
+            orderCount: item._count?.id || 0
+          };
+        }
+      }
+    } catch (err) {
+      console.warn('Could not aggregate sales data for products:', err.message);
+    }
+
     // Format lightweight products list: sanitize colors and prune duplicate Base64 arrays
-    const formattedProducts = products.map(p => {
+    let formattedProducts = products.map(p => {
       const sanitizedColors = Array.isArray(p.colors)
         ? p.colors.map(sanitizeColorForList)
         : p.colors;
+      const sales = salesMap[p.id] || { totalSold: 0, orderCount: 0 };
 
       return {
         ...p,
+        totalSold: sales.totalSold,
+        orderCount: sales.orderCount,
         images: p.coverPhoto ? [p.coverPhoto] : [],
         colors: sanitizedColors
       };
     });
+
+    // If client requested bestsellers sorting or filtering
+    if (req.query.sort === 'bestsellers' || isBestSeller === 'true') {
+      formattedProducts.sort((a, b) => {
+        const soldA = a.totalSold || 0;
+        const soldB = b.totalSold || 0;
+        if (soldB !== soldA) return soldB - soldA;
+        if (b.isBestSeller && !a.isBestSeller) return 1;
+        if (a.isBestSeller && !b.isBestSeller) return -1;
+        const stockA = a.inStock !== false ? 1 : 0;
+        const stockB = b.inStock !== false ? 1 : 0;
+        if (stockB !== stockA) return stockB - stockA;
+        return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
+      });
+    }
 
     if (isPaginated) {
       return res.json({

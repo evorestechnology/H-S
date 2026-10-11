@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from "react";
 import "./ViewOrderModal.css";
 import { X, Package, ChevronDown, Layers, Download, IndianRupee, Sliders, Tag, Eye } from "lucide-react";
-import { downloadHardcodedNeckLogo, HARDCODED_NECK_LOGOS } from "../../../../shared/constants/neckLogos";
+import { downloadHardcodedNeckLogo, HARDCODED_NECK_LOGOS, isLightGarmentColor, NECK_LOGO_BLACK, NECK_LOGO_WHITE } from "../../../../shared/constants/neckLogos";
 const formatCancellationTimestamp = (timestamp) => {
     if (!timestamp)
         return "N/A";
@@ -71,14 +71,7 @@ const generateSvgDataUri = (type, itemName, colorName, sizeName, colorCode) => {
     else if (lowerColor.includes("orange")) {
         garmentColor = "#C2410C";
     }
-    const isLightBg = garmentColor.toLowerCase() === "#f8fafc" ||
-        garmentColor.toLowerCase() === "#ffffff" ||
-        garmentColor.toLowerCase() === "#d4b996" ||
-        lowerColor.includes("white") ||
-        lowerColor.includes("cream") ||
-        lowerColor.includes("light") ||
-        lowerColor.includes("beige") ||
-        lowerColor.includes("yellow");
+    const isLightBg = isLightGarmentColor(colorName, colorCode);
     const strokeColor = isLightBg ? "#334155" : "#475569";
     const textColor = isLightBg ? "#0F172A" : "#FFFFFF";
     const printAccent = isLightBg ? "#1D4ED8" : "#38BDF8";
@@ -120,7 +113,7 @@ const generateSvgDataUri = (type, itemName, colorName, sizeName, colorCode) => {
         `.trim();
     }
     else {
-        const logoFileName = isLightBg ? "neck logo black.png" : "neck logo white.png";
+        const logoFileName = isLightBg ? NECK_LOGO_BLACK.fileName : NECK_LOGO_WHITE.fileName;
         const fontColorLabel = isLightBg ? "Black Font" : "White Font";
         const fontHexColor = isLightBg ? "#000000" : "#FFFFFF";
         const labelBgColor = isLightBg ? "#F8FAFC" : "#1E293B";
@@ -153,15 +146,9 @@ const ProductItemCard = ({ order, itemObj, index, isExpanded, onToggle, handleDo
         `H&S ${itemObj.name} (Ref: MFG-${order.id}-${index + 1})`;
     const frontSvg = generateSvgDataUri("front", itemObj.name, itemObj.color, itemObj.size, details?.colorCode);
     const backSvg = generateSvgDataUri("back", itemObj.name, itemObj.color, itemObj.size, details?.colorCode);
-    const lowerColor = (itemObj.color || "").toLowerCase().trim();
-    const isLightGarment = lowerColor.includes("white") ||
-        lowerColor.includes("cream") ||
-        lowerColor.includes("light") ||
-        lowerColor.includes("yellow") ||
-        lowerColor.includes("beige") ||
-        lowerColor.includes("sand");
+    const isLightGarment = isLightGarmentColor(itemObj.color, details?.colorCode);
     const recommendedNeckLogo = isLightGarment ? "black" : "white";
-    const recommendedNeckLogoFileName = isLightGarment ? "neck logo black.png" : "neck logo white.png";
+    const recommendedNeckLogoFileName = isLightGarment ? NECK_LOGO_BLACK.fileName : NECK_LOGO_WHITE.fileName;
     const rawPrintType = details?.printType ||
         details?.printingDetails?.printType ||
         details?.printingDetails?.method;
@@ -446,9 +433,9 @@ const ProductItemCard = ({ order, itemObj, index, isExpanded, onToggle, handleDo
                         <div className="neck-logo-info">
                             <h4>Download Neck Logo Assets</h4>
                             <p>
-                                High-resolution brand assets for inner collar tag printing. &bull;{" "}
+                                Brand assets for inner collar tag printing. &bull;{" "}
                                 <span style={{ color: "#F59E0B", fontWeight: 700 }}>
-                                    Recommended for {itemObj.color} garment: {recommendedNeckLogo.toUpperCase()} LOGO ({recommendedNeckLogoFileName})
+                                    {isLightGarment ? "Light Garment" : "Dark Garment"} ({itemObj.color || "Standard"}): {recommendedNeckLogo.toUpperCase()} LOGO ({recommendedNeckLogoFileName})
                                 </span>
                             </p>
                         </div>

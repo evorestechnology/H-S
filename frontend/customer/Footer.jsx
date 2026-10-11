@@ -63,7 +63,7 @@ export default function Footer() {
               Designed for the fearless.
             </p>
             <div className="flex space-x-4">
-              <a href="https://instagram.com/your-page" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-background transition-colors" aria-label="Instagram">
+              <a href="https://www.instagram.com/h_and_s__official?psln=MWZobW05NGplaWVmbg==" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-background transition-colors" aria-label="Instagram">
                 <InstagramIcon className="w-5 h-5" />
               </a>
             </div>
@@ -151,7 +151,7 @@ export default function Footer() {
               Designed for the fearless.
             </p>
             <div className="flex space-x-4">
-              <a href="https://instagram.com/your-page" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-background transition-colors" aria-label="Instagram">
+              <a href="https://www.instagram.com/h_and_s__official?psln=MWZobW05NGplaWVmbg==" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-background transition-colors" aria-label="Instagram">
                 <InstagramIcon className="w-5 h-5" />
               </a>
             </div>

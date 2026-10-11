@@ -9,7 +9,6 @@ import { useWishlistStore } from './shared/store/useWishlistStore';
 import Navbar from './customer/Navbar';
 import Footer from './customer/Footer';
 import CartDrawer from './customer/CartDrawer';
-import NewsletterModal from './customer/NewsletterModal';
 
 // Customer Pages
 import Home from './customer/Home';
@@ -74,7 +73,6 @@ function AppContent() {
       <ScrollToTop />
       {!isPortalRoute && <Navbar />}
       {!isPortalRoute && <CartDrawer />}
-      {!isPortalRoute && <NewsletterModal />}
 
       <main className="flex-grow">
         <Suspense fallback={<RouteLoadingFallback />}>

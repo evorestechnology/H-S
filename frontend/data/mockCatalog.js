@@ -24,6 +24,7 @@ export const mockProducts = [
     coverPhoto: img1,
     isNew: true,
     isBestSeller: true,
+    totalSold: 142,
     inStock: true,
     dropId: 'drop-1',
     drop: { title: 'Summer Collection 24', status: 'Live' }
@@ -38,6 +39,7 @@ export const mockProducts = [
     coverPhoto: img2,
     isNew: false,
     isBestSeller: true,
+    totalSold: 98,
     inStock: true,
     dropId: 'drop-1',
     drop: { title: 'Summer Collection 24', status: 'Live' }
@@ -52,6 +54,7 @@ export const mockProducts = [
     coverPhoto: img3,
     isNew: true,
     isBestSeller: false,
+    totalSold: 32,
     inStock: true,
     dropId: 'drop-1',
     drop: { title: 'Summer Collection 24', status: 'Live' }
@@ -66,6 +69,7 @@ export const mockProducts = [
     coverPhoto: img4,
     isNew: false,
     isBestSeller: false,
+    totalSold: 10,
     inStock: false,
     dropId: 'drop-1',
     drop: { title: 'Summer Collection 24', status: 'Live' }

@@ -61,15 +61,18 @@ export const resolveColorAssets = (product, orderColor) => {
   }
 
   // Determine light/dark garment for neck tag & contrast
-  const isLight =
-    normalizedOrderColor.includes('white') ||
-    normalizedOrderColor.includes('cream') ||
-    normalizedOrderColor.includes('light') ||
-    normalizedOrderColor.includes('yellow') ||
-    normalizedOrderColor.includes('beige') ||
-    normalizedOrderColor.includes('sand');
+  const darkKeywords = ['black', 'charcoal', 'navy', 'dark', 'midnight', 'maroon', 'burgundy', 'forest', 'brown', 'chocolate', 'espresso', 'deep', 'pitch', 'slate'];
+  const lightKeywords = ['white', 'cream', 'ivory', 'beige', 'sand', 'light', 'yellow', 'lemon', 'khaki', 'pale', 'off-white', 'offwhite', 'tan', 'vanilla', 'milk', 'snow', 'ash', 'heather grey', 'light grey', 'light gray'];
+  
+  let isLight = false;
+  if (lightKeywords.some(k => normalizedOrderColor.includes(k))) {
+    isLight = true;
+  }
+  if (darkKeywords.some(k => normalizedOrderColor.includes(k))) {
+    isLight = false;
+  }
 
-  const neckLogoFileName = isLight ? 'neck logo black.png' : 'neck logo white.png';
+  const neckLogoFileName = isLight ? 'Black Neck Logo.jpeg' : 'White Neck Logo.jpeg';
 
   // Front View Image (prioritize color-specific front mockup, then model photo, then images)
   let frontImg = '';
@@ -481,7 +484,7 @@ export const formatOrderForUi = (order, isDetail = false) => {
         mfgProductName: itProduct.manufactureName || itProduct.name || it.name || 'MFG Athletic Product',
         frontViewUrl: itFront,
         backViewUrl: itBack,
-        neckLogoUrl: itColorAssets.isLight ? '/assests/neckband logo/neck logo black.png' : '/assests/neckband logo/neck logo white.png',
+        neckLogoUrl: itColorAssets.isLight ? '/Black Neck Logo.jpeg' : '/White Neck Logo.jpeg',
         designFile: resolvedItemDesignFile,
         printType: itColorAssets.printType,
         printPosition: itColorAssets.printPosition,
@@ -620,7 +623,7 @@ export const formatOrderForUi = (order, isDetail = false) => {
       mfgProductName: product.manufactureName || product.name || firstItem.name || 'MFG Athletic Item',
       frontViewUrl: frontImg,
       backViewUrl: backImg,
-      neckLogoUrl: colorAssets.isLight ? '/assests/neckband logo/neck logo black.png' : '/assests/neckband logo/neck logo white.png',
+      neckLogoUrl: colorAssets.isLight ? '/Black Neck Logo.jpeg' : '/White Neck Logo.jpeg',
       designFile: resolvedTopDesignFile,
       printType: colorAssets.printType,
       printPosition: colorAssets.printPosition,

@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import "./Catalog.css";
-import { getDrops, getCatalogSummary, createDrop, updateDrop, updateDropStatus, deleteDrop, createProduct, updateProduct, deleteProduct } from "./api";
+import { getDrops, getCatalogSummary, createDrop, updateDrop, updateDropStatus, deleteDrop, createProduct, updateProduct, deleteProduct, getProductById } from "./api";
 import { getPortalUser, isUserInRole } from "../../shared/services/authStorage";
 import CatalogHeader from "./components/CatalogHeader/CatalogHeader";
 import CatalogStats from "./components/CatalogStats/CatalogStats";
@@ -145,10 +145,20 @@ const Catalog = () => {
         setEditingProduct(null);
         setIsProductModalOpen(true);
     };
-    const openEditProductModal = (dropId, product) => {
+    const openEditProductModal = async (dropId, product) => {
         setActiveDropId(dropId);
         setEditingProduct(product);
         setIsProductModalOpen(true);
+        if (product?.id) {
+            try {
+                const fullProduct = await getProductById(product.id);
+                if (fullProduct) {
+                    setEditingProduct(fullProduct);
+                }
+            } catch (err) {
+                console.warn("Could not fetch full product details for editing:", err);
+            }
+        }
     };
     const handleSaveProduct = async (productData) => {
         if (!activeDropId)

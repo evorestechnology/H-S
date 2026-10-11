@@ -17,7 +17,6 @@ import toast from 'react-hot-toast';
 import { ChevronDown, Eye, EyeOff } from 'lucide-react';
 import { useRef } from 'react';
 import { COUNTRIES } from '../data/countries';
-import wallpaper from '../assets/H-S-Wallpaper.png';
 
 function TermsAccordion() {
   const [isOpen, setIsOpen] = useState(false);
@@ -183,38 +182,13 @@ export default function AuthPage() {
   return (
     <div className="min-h-screen flex bg-background pt-16 lg:pt-0">
       {/* Left side: Image (hidden on mobile) */}
-      <div className="hidden lg:block lg:w-1/2 relative">
-        <img src="/auth-side.png" alt="H&S Wallpaper" className="absolute inset-0 w-full h-full object-cover" />
+      <div className="hidden lg:block lg:w-1/2 relative bg-neutral-950 overflow-hidden">
+        <img src="/Black Neck Logo.jpeg" alt="H&S Black Neck Logo" className="absolute inset-0 w-full h-full object-cover" />
       </div>
 
       {/* Right side: Form */}
       <div className="w-full lg:w-1/2 flex items-center justify-center px-4 py-20 lg:py-32">
         <div className="max-w-md w-full">
-          {/* Unified Role Switcher */}
-          <div className="flex border-b border-border mb-8 font-mono text-xs">
-            <button
-              type="button"
-              onClick={() => navigate('/login')}
-              className="flex-1 py-3 text-center uppercase tracking-wider font-bold text-foreground border-b-2 border-foreground bg-muted/30"
-            >
-              Customer
-            </button>
-            <button
-              type="button"
-              onClick={() => navigate('/login/admin')}
-              className="flex-1 py-3 text-center uppercase tracking-wider font-bold text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Admin
-            </button>
-            <button
-              type="button"
-              onClick={() => navigate('/login/manufacturer')}
-              className="flex-1 py-3 text-center uppercase tracking-wider font-bold text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Manufacturer
-            </button>
-          </div>
-
           <div className="text-center mb-10">
         <h1 className="font-heading text-4xl font-bold uppercase tracking-tight mb-4">
           {isLogin ? 'Welcome Back' : 'Create Account'}

@@ -7,13 +7,19 @@ import { useCatalogStore } from '../shared/store/useCatalogStore';
 export default function CategoryPage() {
   const { categoryName } = useParams();
   
-  const [sortOption, setSortOption] = useState('newest');
+  const [sortOption, setSortOption] = useState(categoryName === 'best-sellers' ? 'best-sellers' : 'newest');
 
   const { products, isLoading, fetchProducts } = useCatalogStore();
 
   useEffect(() => {
     fetchProducts();
   }, [fetchProducts]);
+
+  useEffect(() => {
+    if (categoryName === 'best-sellers') {
+      setSortOption('best-sellers');
+    }
+  }, [categoryName]);
 
   // Filter and Sort Logic
   const filteredProducts = useMemo(() => {
@@ -27,11 +33,25 @@ export default function CategoryPage() {
     } else if (categoryName === 'new-arrivals') {
       result = result.filter(p => p.isNew);
     } else if (categoryName === 'best-sellers') {
-      result = result.filter(p => p.isBestSeller);
+      const flaggedOrSold = result.filter(p => p.isBestSeller || (p.totalSold && p.totalSold > 0));
+      result = flaggedOrSold.length > 0 ? flaggedOrSold : result.filter(p => p.inStock !== false);
     }
 
     // Sorting
     switch (sortOption) {
+      case 'best-sellers':
+        result.sort((a, b) => {
+          const soldA = a.totalSold || 0;
+          const soldB = b.totalSold || 0;
+          if (soldB !== soldA) return soldB - soldA;
+          if (b.isBestSeller && !a.isBestSeller) return 1;
+          if (a.isBestSeller && !b.isBestSeller) return -1;
+          const stockA = a.inStock !== false ? 1 : 0;
+          const stockB = b.inStock !== false ? 1 : 0;
+          if (stockB !== stockA) return stockB - stockA;
+          return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
+        });
+        break;
       case 'price-low':
         result.sort((a, b) => a.price - b.price);
         break;
@@ -67,7 +87,8 @@ export default function CategoryPage() {
               Sort By <ChevronDown className="w-4 h-4" />
             </button>
             <div className="absolute right-0 top-full mt-2 w-48 bg-background border border-border shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-20">
-              <button onClick={() => setSortOption('newest')} className={`w-full text-left px-4 py-3 text-xs uppercase tracking-widest hover:bg-muted ${sortOption === 'newest' ? 'font-bold' : ''}`}>Newest</button>
+              <button onClick={() => setSortOption('best-sellers')} className={`w-full text-left px-4 py-3 text-xs uppercase tracking-widest hover:bg-muted ${sortOption === 'best-sellers' ? 'font-bold' : ''}`}>Best Sellers</button>
+              <button onClick={() => setSortOption('newest')} className={`w-full text-left px-4 py-3 text-xs uppercase tracking-widest hover:bg-muted border-t border-border/50 ${sortOption === 'newest' ? 'font-bold' : ''}`}>Newest</button>
               <button onClick={() => setSortOption('price-low')} className={`w-full text-left px-4 py-3 text-xs uppercase tracking-widest hover:bg-muted border-t border-border/50 ${sortOption === 'price-low' ? 'font-bold' : ''}`}>Price: Low to High</button>
               <button onClick={() => setSortOption('price-high')} className={`w-full text-left px-4 py-3 text-xs uppercase tracking-widest hover:bg-muted border-t border-border/50 ${sortOption === 'price-high' ? 'font-bold' : ''}`}>Price: High to Low</button>
             </div>
