@@ -13,6 +13,7 @@
     "prisma:generate": "prisma generate --schema=backend/prisma/schema.prisma",
     "prisma:db-push": "prisma db push --schema=backend/prisma/schema.prisma",
     "prisma:seed": "node backend/prisma/seed.js",
+    "clear:orders": "node backend/scripts/clear-orders-and-wallet.js",
     "test": "node --test tests/**/*.test.js"
   },
   "dependencies": {

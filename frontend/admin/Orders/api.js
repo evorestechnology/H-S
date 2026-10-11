@@ -71,13 +71,21 @@ export const completeOrder = async (id, completedDate) => {
     return true;
 };
 // ==========================================
-// 5. CANCEL ORDER WITH REASON (PATCH /api/orders/:id/cancel)
+// 5. CANCEL ORDER WITH REASON & OPTIONAL REFUND (PATCH /api/orders/:id/cancel)
 // ==========================================
-export const cancelOrder = async (id, cancelReason) => {
+export const cancelOrder = async (id, cancelReason, refundData = {}) => {
     await apiClient.patch(`/orders/${id}/cancel`, {
-        cancelReason
+        cancelReason,
+        ...refundData
     });
     return true;
+};
+// ==========================================
+// 5.1 PROCESS / UPDATE ORDER REFUND (PATCH /api/orders/:id/refund)
+// ==========================================
+export const processOrderRefund = async (id, refundData) => {
+    const res = await apiClient.patch(`/orders/${id}/refund`, refundData);
+    return res.data || res.order || res;
 };
 // ==========================================
 // 6. REQUEST PRICE ADJUSTMENT (POST /api/orders/:id/price-adjustment)

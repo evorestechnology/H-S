@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import "./Orders.css";
-import { getOrders, createOrder, updateOrderToShipping, completeOrder, cancelOrder, respondToPriceAdjustment, respondToCancelRequest, updateMfgPaymentStatus } from "./api";
+import { getOrders, createOrder, updateOrderToShipping, completeOrder, cancelOrder, processOrderRefund, respondToPriceAdjustment, respondToCancelRequest, updateMfgPaymentStatus } from "./api";
 import OrdersHeader from "./components/OrdersHeader/OrdersHeader";
 import OrdersSearch from "./components/OrdersSearch/OrdersSearch";
 import OrdersTable from "./components/OrdersTable/OrdersTable";
@@ -9,6 +9,7 @@ import Pagination from "./components/Pagination/Pagination";
 import OrdersModal from "./components/OrdersModal/OrdersModal";
 import ShippingModal from "./components/ShippingModal/ShippingModal";
 import CancelReasonModal from "./components/CancelReasonModal/CancelReasonModal";
+import AdminRefundModal from "./components/AdminRefundModal/AdminRefundModal";
 import ViewOrderModal from "./components/ViewOrderModal/ViewOrderModal";
 import { ViewPriceAdjustmentModal } from "./components/PriceAdjustmentModal/ViewPriceAdjustmentModal";
 import { getPortalUser, isUserInRole } from "../../shared/services/authStorage";
@@ -30,6 +31,8 @@ const Orders = () => {
     // State for cancelling an order & viewing cancellation reason
     const [selectedOrderForCancel, setSelectedOrderForCancel] = useState(null);
     const [selectedOrderForViewReason, setSelectedOrderForViewReason] = useState(null);
+    // State for admin refund management
+    const [selectedOrderForRefund, setSelectedOrderForRefund] = useState(null);
     // State for viewing product artwork & manufacturing tech pack details
     const [selectedOrderForViewDetails, setSelectedOrderForViewDetails] = useState(null);
     // State for reviewing price adjustment request
@@ -301,9 +304,9 @@ const Orders = () => {
     const handleInitiateCancel = (order) => {
         setSelectedOrderForCancel(order);
     };
-    const handleConfirmCancelDirect = async (id, reason) => {
+    const handleConfirmCancelDirect = async (id, reason, refundData = {}) => {
         try {
-            await cancelOrder(id, reason);
+            await cancelOrder(id, reason, refundData);
             updateOrdersState((prev) => prev.map((order) => {
                 if (order.id === id) {
                     return {
@@ -311,7 +314,12 @@ const Orders = () => {
                         status: "Cancelled",
                         cancelReason: reason,
                         cancelledByRole: "ADMIN",
-                        cancelledAt: new Date().toISOString()
+                        cancelledAt: new Date().toISOString(),
+                        refundStatus: refundData.refundStatus || "Refunded",
+                        refundAmount: refundData.refundAmount,
+                        refundImage: refundData.refundImage,
+                        refundNote: refundData.refundNote,
+                        refundedAt: refundData.refundStatus === "Refunded" ? new Date().toISOString() : null
                     };
                 }
                 return order;
@@ -338,6 +346,42 @@ const Orders = () => {
             alert(`Error: ${err.message}`);
         }
         setSelectedOrderForCancel(null);
+    };
+    // Admin Process Refund Management
+    const handleProcessRefund = async (id, refundData) => {
+        try {
+            await processOrderRefund(id, refundData);
+            updateOrdersState((prev) => prev.map((order) => {
+                if (order.id === id) {
+                    return {
+                        ...order,
+                        refundStatus: refundData.refundStatus,
+                        refundAmount: refundData.refundAmount,
+                        refundImage: refundData.refundImage,
+                        refundNote: refundData.refundNote,
+                        refundedAt: refundData.refundStatus === "Refunded" ? new Date().toISOString() : order.refundedAt
+                    };
+                }
+                return order;
+            }));
+            await loadOrdersData();
+            try {
+                const channel = new BroadcastChannel("hs_orders_sync_channel");
+                channel.postMessage({ type: "ORDER_UPDATED", orderId: id, timestamp: Date.now() });
+                setTimeout(() => {
+                    try {
+                        channel.close();
+                    }
+                    catch (e) { }
+                }, 1000);
+            }
+            catch (e) { }
+            alert(`Refund details updated successfully for Order #${id}!`);
+        }
+        catch (err) {
+            console.error("Failed to process refund:", err);
+            alert(`Error updating refund: ${err.message}`);
+        }
     };
     // Price Adjustment Handlers (Accept / Reject)
     const handleAcceptPriceAdjustment = async (targetOrder) => {
@@ -465,7 +509,7 @@ const Orders = () => {
 
             {isLoading && orders.length === 0 ? (<div style={{ textAlign: "center", padding: "40px", color: "#888" }}>
                     Loading orders from server...
-                </div>) : (<OrdersTable orders={paginatedOrders} onMoveToShipping={handleOpenShippingModal} onUpdateTracking={(order) => setSelectedOrderForTrackingUpdate(order)} onMoveToCompleted={handleMoveToCompleted} onInitiateCancel={handleInitiateCancel} onAcceptCancelRequest={handleAcceptCancelRequest} onRejectCancelRequest={handleRejectCancelRequest} onViewCancelReason={(order) => setSelectedOrderForViewReason(order)} onViewOrderDetails={(order) => setSelectedOrderForViewDetails(order)} onViewPriceAdjRequest={(order) => setSelectedOrderForViewPriceAdj(order)} onMarkAsPaid={handleMarkAsPaid}/>)}
+                </div>) : (<OrdersTable orders={paginatedOrders} onMoveToShipping={handleOpenShippingModal} onUpdateTracking={(order) => setSelectedOrderForTrackingUpdate(order)} onMoveToCompleted={handleMoveToCompleted} onInitiateCancel={handleInitiateCancel} onManageRefund={(order) => setSelectedOrderForRefund(order)} onAcceptCancelRequest={handleAcceptCancelRequest} onRejectCancelRequest={handleRejectCancelRequest} onViewCancelReason={(order) => setSelectedOrderForViewReason(order)} onViewOrderDetails={(order) => setSelectedOrderForViewDetails(order)} onViewPriceAdjRequest={(order) => setSelectedOrderForViewPriceAdj(order)} onMarkAsPaid={handleMarkAsPaid}/>)}
 
             <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage}/>
 
@@ -485,7 +529,10 @@ const Orders = () => {
             {selectedOrderForCancel && (<CancelReasonModal open={!!selectedOrderForCancel} mode="create" order={selectedOrderForCancel} onClose={() => setSelectedOrderForCancel(null)} onConfirmCancel={handleConfirmCancelDirect}/>)}
 
             {/* View Cancellation Reason Modal */}
-            {selectedOrderForViewReason && (<CancelReasonModal open={!!selectedOrderForViewReason} mode="view" order={selectedOrderForViewReason} onClose={() => setSelectedOrderForViewReason(null)}/>)}
+            {selectedOrderForViewReason && (<CancelReasonModal open={!!selectedOrderForViewReason} mode="view" order={selectedOrderForViewReason} onClose={() => setSelectedOrderForViewReason(null)} onOpenRefundModal={(order) => setSelectedOrderForRefund(order)}/>)}
+
+            {/* Admin Refund Management Modal */}
+            {selectedOrderForRefund && (<AdminRefundModal open={!!selectedOrderForRefund} order={selectedOrderForRefund} onClose={() => setSelectedOrderForRefund(null)} onSubmit={handleProcessRefund}/>)}
 
             {/* View Full Product Tech Pack & Artwork Details Modal */}
             {selectedOrderForViewDetails && (<ViewOrderModal open={!!selectedOrderForViewDetails} order={selectedOrderForViewDetails} onClose={() => setSelectedOrderForViewDetails(null)}/>)}

@@ -182,8 +182,13 @@ export default function AuthPage() {
   return (
     <div className="min-h-screen flex bg-background pt-16 lg:pt-0">
       {/* Left side: Image (hidden on mobile) */}
-      <div className="hidden lg:block lg:w-1/2 relative bg-neutral-950 overflow-hidden">
-        <img src="/Black Neck Logo.jpeg" alt="H&S Black Neck Logo" className="absolute inset-0 w-full h-full object-cover" />
+      <div className="hidden lg:flex lg:w-1/2 sticky top-0 h-screen items-center justify-center bg-[#f7f7f7] border-r border-border p-8 xl:p-16 select-none overflow-hidden">
+        <img 
+          src="/auth-side-logo.jpeg" 
+          alt="H&S Black Neck Logo" 
+          onError={(e) => { e.currentTarget.src = '/Black Neck Logo.jpeg'; }}
+          className="w-full max-w-xl xl:max-w-2xl max-h-[80vh] object-contain select-none" 
+        />
       </div>
 
       {/* Right side: Form */}

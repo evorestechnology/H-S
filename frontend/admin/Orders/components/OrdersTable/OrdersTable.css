@@ -758,3 +758,34 @@
     color: #6B21A8;
     border: 1px solid #E9D5FF;
 }
+
+/* Admin Refund Button & Pills */
+.btn-admin-refund {
+    background: #ECFDF5;
+    color: #059669;
+    border: 1px solid #A7F3D0;
+}
+
+.btn-admin-refund:hover {
+    background: #059669;
+    color: #FFFFFF;
+    border-color: #059669;
+}
+
+.order-refund-tag-pill.pill-refunded {
+    background: #DCFCE7;
+    color: #15803D;
+    border: 1px solid #86EFAC;
+}
+
+.order-refund-tag-pill.pill-processing {
+    background: #FEF3C7;
+    color: #B45309;
+    border: 1px solid #FCD34D;
+}
+
+.order-refund-tag-pill.pill-pending {
+    background: #FEE2E2;
+    color: #B91C1C;
+    border: 1px solid #FCA5A5;
+}

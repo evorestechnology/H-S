@@ -1,5 +1,5 @@
 import "./WalletTable.css";
-import { CheckCircle2, Clock, Sliders, IndianRupee, Sparkles, XCircle } from "lucide-react";
+import { CheckCircle2, Clock, Sliders, IndianRupee, Sparkles, XCircle, Download, Receipt } from "lucide-react";
 const WalletTable = ({ transactions, onMarkAsPaid, onToggleAdjustment }) => {
     return (<div className="wallet-table-card">
             <div className="table-card-header">
@@ -38,36 +38,60 @@ const WalletTable = ({ transactions, onMarkAsPaid, onToggleAdjustment }) => {
                                 </td>
                             </tr>) : (transactions.map((txn) => {
             const isPaid = txn.paymentStatus === "Paid";
-            return (<tr key={txn.id} className={isPaid ? "row-paid" : "row-unpaid"}>
+            const isRefund = Boolean(txn.isRefund);
+            return (<tr key={txn.id} className={isRefund ? "row-refund" : (isPaid ? "row-paid" : "row-unpaid")}>
                                         {/* 1. Order ID */}
                                         <td className="col-order-id">
                                             <div className="order-id-wrapper">
-                                                <span className="order-id-badge">#{txn.orderId}</span>
-                                                <span className="tx-id-sub">{txn.id}</span>
+                                                <span className={`order-id-badge ${isRefund ? "order-id-refund" : ""}`}>
+                                                    #{txn.orderId}
+                                                </span>
+                                                <span className="tx-id-sub" style={isRefund ? { color: "#DC2626", fontWeight: 700 } : {}}>
+                                                    {txn.id} {isRefund && "(Refund)"}
+                                                </span>
                                             </div>
                                         </td>
 
                                         {/* Gross Sale Value */}
                                         <td className="col-gross">
-                                            <span className="amount-val">₹{txn.grossSaleValue.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
+                                            {isRefund ? (
+                                                <span className="amount-val text-muted-dash" style={{ color: "#94A3B8" }}>—</span>
+                                            ) : (
+                                                <span className="amount-val">₹{txn.grossSaleValue.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
+                                            )}
                                         </td>
 
                                         {/* GST Collected */}
                                         <td className="col-gst">
-                                            <span className="amount-val gst-val">₹{(txn.gstCollected ?? txn.gstAmount ?? 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
+                                            {isRefund ? (
+                                                <span className="amount-val text-muted-dash" style={{ color: "#94A3B8" }}>—</span>
+                                            ) : (
+                                                <span className="amount-val gst-val">₹{(txn.gstCollected ?? txn.gstAmount ?? 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
+                                            )}
                                         </td>
 
                                         {/* 2. Manufacturer Payment */}
                                         <td className="col-mfg-payment">
-                                            <div className="mfg-payment-info">
-                                                <span className="amount-val mfg-val">₹{txn.manufacturerPayment.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
-                                                <span className="mfg-name">{txn.manufacturerName}</span>
-                                            </div>
+                                            {isRefund ? (
+                                                <div className="mfg-payment-info">
+                                                    <span className="amount-val text-muted-dash" style={{ color: "#94A3B8" }}>—</span>
+                                                    <span className="mfg-name" style={{ color: "#DC2626", fontWeight: 600 }}>Refund Excluded</span>
+                                                </div>
+                                            ) : (
+                                                <div className="mfg-payment-info">
+                                                    <span className="amount-val mfg-val">₹{txn.manufacturerPayment.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
+                                                    <span className="mfg-name">{txn.manufacturerName}</span>
+                                                </div>
+                                            )}
                                         </td>
 
                                         {/* 3. Adjusted / Not Adjusted */}
                                         <td className="col-adjusted">
-                                            {(() => {
+                                            {isRefund ? (
+                                                <span className="badge-adj-none" style={{ background: "#FEE2E2", color: "#B91C1C", border: "1px solid #FECACA" }}>
+                                                    Refund
+                                                </span>
+                                            ) : (() => {
                     const status = txn.adjustmentStatus || (txn.isAdjusted ? "Approved" : "None");
                     if (status === "Approved" || (txn.isAdjusted && status !== "Rejected" && status !== "Pending Approval")) {
                         return (<div className="adj-badge-container">
@@ -99,7 +123,12 @@ const WalletTable = ({ transactions, onMarkAsPaid, onToggleAdjustment }) => {
 
                                         {/* 4. Payment Status [P / NP] */}
                                         <td className="col-status">
-                                            {isPaid ? (<span className="status-badge-paid" title="Paid (Settled)">
+                                            {isRefund ? (
+                                                <span className={txn.refundStatus === "Refunded" ? "status-badge-paid" : "status-badge-unpaid"} style={txn.refundStatus === "Refunded" ? { background: "#DCFCE7", color: "#15803D" } : { background: "#FEF3C7", color: "#B45309" }}>
+                                                    {txn.refundStatus === "Refunded" ? <CheckCircle2 size={13}/> : <Clock size={13}/>}
+                                                    {txn.refundStatus || "Refunded"}
+                                                </span>
+                                            ) : isPaid ? (<span className="status-badge-paid" title="Paid (Settled)">
                                                     <CheckCircle2 size={13}/> Paid [P]
                                                 </span>) : (<span className="status-badge-unpaid" title="Not Paid (Pending)">
                                                     <Clock size={13}/> Not Paid [NP]
@@ -115,22 +144,52 @@ const WalletTable = ({ transactions, onMarkAsPaid, onToggleAdjustment }) => {
 
                                         {/* Our Earnings */}
                                         <td className="col-our-earnings">
-                                            <span className="earnings-tag">
-                                                +₹{txn.ourEarnings.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
-                                            </span>
+                                            {isRefund ? (
+                                                <span className="earnings-tag" style={{ background: "#FEE2E2", color: "#B91C1C", border: "1px solid #FECACA" }}>
+                                                    -₹{(txn.refundAmount || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                                                </span>
+                                            ) : (
+                                                <span className="earnings-tag">
+                                                    +₹{txn.ourEarnings.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                                                </span>
+                                            )}
                                         </td>
 
                                         {/* Actions */}
                                         <td className="col-actions text-right">
-                                            <div className="action-buttons">
-                                                {!isPaid && (<button className="btn-action-pay" onClick={() => onMarkAsPaid(txn.id)} title="Mark Payout as Paid to Manufacturer">
-                                                        <IndianRupee size={13}/> Mark Paid
-                                                    </button>)}
+                                            {isRefund ? (
+                                                <div className="action-buttons">
+                                                    {txn.refundImage ? (
+                                                        <button
+                                                            className="btn-action-pay"
+                                                            style={{ background: "#ECFDF5", color: "#059669", border: "1px solid #A7F3D0" }}
+                                                            onClick={() => {
+                                                                const link = document.createElement("a");
+                                                                link.href = txn.refundImage;
+                                                                link.download = `Refund-Receipt-Order-${txn.orderId}.png`;
+                                                                document.body.appendChild(link);
+                                                                link.click();
+                                                                document.body.removeChild(link);
+                                                            }}
+                                                            title="Download Refund Proof Receipt"
+                                                        >
+                                                            <Download size={13}/> Receipt
+                                                        </button>
+                                                    ) : (
+                                                        <span className="text-none" style={{ color: "#94A3B8", fontSize: "11px" }}>No Receipt</span>
+                                                    )}
+                                                </div>
+                                            ) : (
+                                                <div className="action-buttons">
+                                                    {!isPaid && (<button className="btn-action-pay" onClick={() => onMarkAsPaid(txn.id)} title="Mark Payout as Paid to Manufacturer">
+                                                            <IndianRupee size={13}/> Mark Paid
+                                                        </button>)}
 
-                                                <button className={`btn-action-toggle-adj ${txn.isAdjusted ? "active-adj" : ""}`} onClick={() => onToggleAdjustment(txn.id)} title={txn.isAdjusted ? "Remove Price Adjustment" : "Apply Price Adjustment Bonus"}>
-                                                    <Sliders size={13}/> {txn.isAdjusted ? "Edit Adj" : "Add Adj"}
-                                                </button>
-                                            </div>
+                                                    <button className={`btn-action-toggle-adj ${txn.isAdjusted ? "active-adj" : ""}`} onClick={() => onToggleAdjustment(txn.id)} title={txn.isAdjusted ? "Remove Price Adjustment" : "Apply Price Adjustment Bonus"}>
+                                                        <Sliders size={13}/> {txn.isAdjusted ? "Edit Adj" : "Add Adj"}
+                                                    </button>
+                                                </div>
+                                            )}
                                         </td>
                                     </tr>);
         }))}

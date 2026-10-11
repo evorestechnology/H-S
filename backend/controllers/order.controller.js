@@ -250,13 +250,13 @@ export const completeOrder = async (req, res) => {
   }
 };
 
-// @desc    Cancel order directly with reason
+// @desc    Cancel order directly with reason (and optional admin refund details)
 // @route   PATCH /api/orders/:id/cancel
 // @access  Private (Admin / Manufacturer / User owner)
 export const cancelOrder = async (req, res) => {
   try {
     const { id } = req.params;
-    const { cancelReason } = req.body;
+    const { cancelReason, refundStatus, refundAmount, refundImage, refundNote } = req.body;
     const userRole = (req.user?.role || '').toUpperCase();
 
     if (!id) {
@@ -297,10 +297,17 @@ export const cancelOrder = async (req, res) => {
       });
     }
 
+    const refundData = (userRole === 'ADMIN' || userRole === 'ADMINISTRATOR') ? {
+      refundStatus,
+      refundAmount,
+      refundImage,
+      refundNote
+    } : {};
+
     const updated = await orderService.cancelOrder(id, cancelReason, {
       role: userRole || 'ADMIN',
       id: req.user?.id || null
-    });
+    }, refundData);
 
     return res.status(200).json({
       success: true,
@@ -313,6 +320,55 @@ export const cancelOrder = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: error.message || 'Failed to cancel order',
+      data: null,
+      errors: [error.message]
+    });
+  }
+};
+
+// @desc    Process or update order refund (status, amount, receipt image)
+// @route   PATCH /api/orders/:id/refund
+// @access  Private (Admin / Administrator)
+export const processOrderRefund = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { refundStatus, refundAmount, refundImage, refundNote } = req.body;
+    const userRole = (req.user?.role || '').toUpperCase();
+
+    if (userRole !== 'ADMIN' && userRole !== 'ADMINISTRATOR') {
+      return res.status(403).json({
+        success: false,
+        message: 'Forbidden: Only administrators can process refunds',
+        data: null
+      });
+    }
+
+    if (!id) {
+      return res.status(400).json({
+        success: false,
+        message: 'Order ID is required',
+        data: null
+      });
+    }
+
+    const updated = await orderService.processRefund(id, {
+      refundStatus,
+      refundAmount,
+      refundImage,
+      refundNote
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: 'Refund updated successfully',
+      data: updated,
+      order: updated
+    });
+  } catch (error) {
+    console.error('Error processing refund:', error.message);
+    return res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to process refund',
       data: null,
       errors: [error.message]
     });

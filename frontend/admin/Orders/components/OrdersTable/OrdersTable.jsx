@@ -1,8 +1,8 @@
 import { useState } from "react";
 import "./OrdersTable.css";
-import { ExternalLink, CheckCircle2, XCircle, Eye, Truck, Clock, CreditCard, Tag, Copy, Check, MapPin } from "lucide-react";
+import { ExternalLink, CheckCircle2, XCircle, Eye, Truck, Clock, CreditCard, Tag, Copy, Check, MapPin, Receipt } from "lucide-react";
 import ShippingAddressModal, { copyToClipboard } from "../ShippingAddressModal/ShippingAddressModal";
-const OrdersTable = ({ orders, onMoveToShipping, onUpdateTracking, onMoveToCompleted, onInitiateCancel, onAcceptCancelRequest, onRejectCancelRequest, onViewCancelReason, onViewOrderDetails, onViewPriceAdjRequest, onMarkAsPaid }) => {
+const OrdersTable = ({ orders, onMoveToShipping, onUpdateTracking, onMoveToCompleted, onInitiateCancel, onManageRefund, onAcceptCancelRequest, onRejectCancelRequest, onViewCancelReason, onViewOrderDetails, onViewPriceAdjRequest, onMarkAsPaid }) => {
     const [selectedAddressOrder, setSelectedAddressOrder] = useState(null);
     const [copiedOrderId, setCopiedOrderId] = useState(null);
     const handleQuickCopy = async (address, orderId) => {
@@ -174,6 +174,14 @@ const OrdersTable = ({ orders, onMoveToShipping, onUpdateTracking, onMoveToCompl
                                         {(item.status === "Completed" || item.status === "Delivered") && (<span className="completed-date-subtext" style={{ fontSize: "11px", color: "#059669", fontWeight: 600 }}>
                                                 Delivered: {item.completedDate || item.orderedDate}
                                             </span>)}
+                                        {item.status === "Cancelled" && (
+                                            <span className={`order-refund-tag-pill ${
+                                                (item.refundStatus === "Refunded") ? "pill-refunded" :
+                                                (item.refundStatus === "Processing") ? "pill-processing" : "pill-pending"
+                                            }`} style={{ fontSize: "10px", fontWeight: 700, padding: "2px 7px", borderRadius: "4px", display: "inline-block", marginTop: "2px" }}>
+                                                Refund: {item.refundStatus || "Refund Pending"}
+                                            </span>
+                                        )}
                                     </div>
                                 </td>
 
@@ -254,9 +262,24 @@ const OrdersTable = ({ orders, onMoveToShipping, onUpdateTracking, onMoveToCompl
                                                 <CheckCircle2 size={14}/> Delivered
                                             </span>)}
 
-                                        {item.status === "Cancelled" && (<span className="status-cancelled-text">
-                                                <XCircle size={14}/> Cancelled
-                                            </span>)}
+                                        {item.status === "Cancelled" && (
+                                            <div style={{ display: "flex", flexDirection: "column", gap: "6px", alignItems: "stretch" }}>
+                                                <button
+                                                    type="button"
+                                                    className="action-btn-status btn-admin-refund"
+                                                    title="Manage / process Admin refund for this cancelled order"
+                                                    onClick={() => onManageRefund && onManageRefund(item)}
+                                                >
+                                                    <Receipt size={13}/>
+                                                    <span>Admin Refund</span>
+                                                </button>
+                                                {item.refundImage && (
+                                                    <span style={{ fontSize: "10px", color: "#059669", fontWeight: 700, textAlign: "center" }}>
+                                                        ✓ Receipt Attached
+                                                    </span>
+                                                )}
+                                            </div>
+                                        )}
                                     </div>
                                 </td>
                             </tr>);

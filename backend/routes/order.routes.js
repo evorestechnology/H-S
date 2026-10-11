@@ -6,6 +6,7 @@ import {
   shipOrder,
   completeOrder,
   cancelOrder,
+  processOrderRefund,
   requestPriceAdjustment,
   respondToPriceAdjustment,
   requestOrderCancellation,
@@ -28,6 +29,7 @@ router.get('/myorders', getMyOrders);
 router.put('/:id/ship', shipOrder);
 router.patch('/:id/complete', completeOrder);
 router.patch('/:id/cancel', cancelOrder);
+router.patch('/:id/refund', processOrderRefund);
 
 // Price adjustment routes (Manufacturer requests, Admin responds)
 router.post('/:id/price-adjustment', requestPriceAdjustment);

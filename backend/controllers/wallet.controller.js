@@ -287,11 +287,25 @@ export const getAdminWalletMetrics = async (req, res) => {
       }
     });
 
+    const refundedOrders = await prisma.order.findMany({
+      where: {
+        status: 'CANCELED'
+      },
+      select: {
+        id: true,
+        refundStatus: true,
+        refundAmount: true,
+        totalPrice: true
+      }
+    });
+
     let grossRevenue = 0;
     let manufactureEarnings = 0;
     let paidToManufacture = 0;
     let pendingPayoutToManufacture = 0;
     let totalGstAmount = 0;
+    let totalRefundedAmount = 0;
+    let pendingRefundAmount = 0;
 
     orders.forEach(order => {
       const sale = Number(order.totalPrice) || 0;
@@ -313,13 +327,28 @@ export const getAdminWalletMetrics = async (req, res) => {
       }
     });
 
-    const ourEarnings = Number((grossRevenue - manufactureEarnings).toFixed(2));
+    refundedOrders.forEach(order => {
+      const refAmt = (typeof order.refundAmount === 'number' && order.refundAmount > 0)
+        ? order.refundAmount
+        : (Number(order.totalPrice) || 0);
+      const st = order.refundStatus || 'Refund Pending';
+      if (st === 'Refunded') {
+        totalRefundedAmount += refAmt;
+      } else {
+        pendingRefundAmount += refAmt;
+      }
+    });
+
+    const ourEarnings = Number((grossRevenue - manufactureEarnings - totalRefundedAmount).toFixed(2));
 
     const metricsData = {
       grossRevenue: Number(grossRevenue.toFixed(2)),
       manufactureEarnings: Number(manufactureEarnings.toFixed(2)),
       paidToManufacture: Number(paidToManufacture.toFixed(2)),
       pendingPayoutToManufacture: Number(pendingPayoutToManufacture.toFixed(2)),
+      totalRefundedAmount: Number(totalRefundedAmount.toFixed(2)),
+      totalRefunded: Number(totalRefundedAmount.toFixed(2)),
+      pendingRefundAmount: Number(pendingRefundAmount.toFixed(2)),
       ourEarnings,
       totalGstAmount: Number(totalGstAmount.toFixed(2)),
       totalGst: Number(totalGstAmount.toFixed(2))
@@ -357,13 +386,37 @@ export const getAdminWalletTransactions = async (req, res) => {
         priceAdjustmentReason: true,
         mfgPaymentStatus: true,
         mfgPaidDate: true,
+        createdAt: true,
         user: { select: { fullName: true, email: true } },
         manufacturer: { select: { companyName: true, fullName: true } }
       },
       orderBy: { createdAt: 'desc' }
     });
 
-    const transactions = orders.map(order => {
+    const cancelledOrders = await prisma.order.findMany({
+      where: {
+        status: 'CANCELED'
+      },
+      select: {
+        id: true,
+        totalPrice: true,
+        mfgPayment: true,
+        taxPrice: true,
+        refundStatus: true,
+        refundAmount: true,
+        refundImage: true,
+        refundNote: true,
+        refundedAt: true,
+        cancelledAt: true,
+        cancelReason: true,
+        createdAt: true,
+        user: { select: { fullName: true, email: true } },
+        manufacturer: { select: { companyName: true, fullName: true } }
+      },
+      orderBy: { updatedAt: 'desc' }
+    });
+
+    const regularTransactions = orders.map(order => {
       const grossSale = Number(order.totalPrice) || 0;
       const baseMfg = Number(order.mfgPayment) || 0;
       const adj = (order.priceAdjustmentStatus === 'Approved' && order.priceAdjustmentAmount)
@@ -377,6 +430,7 @@ export const getAdminWalletTransactions = async (req, res) => {
       return {
         id: `TXN-${order.id.slice(0, 8).toUpperCase()}`,
         orderId: order.id,
+        createdAt: order.createdAt,
         customerName: order.user?.fullName || order.user?.email || 'Customer',
         manufacturerName: order.manufacturer?.companyName || order.manufacturer?.fullName || 'Unassigned',
         grossSaleValue: grossSale,
@@ -384,6 +438,7 @@ export const getAdminWalletTransactions = async (req, res) => {
         gstAmount: Number(gstVal.toFixed(2)),
         gstCollected: Number(gstVal.toFixed(2)),
         isAdjusted,
+        isRefund: false,
         adjustmentStatus: adjStatus,
         priceAdjustmentStatus: adjStatus,
         adjustmentAmount: order.priceAdjustmentAmount || 0,
@@ -395,7 +450,45 @@ export const getAdminWalletTransactions = async (req, res) => {
       };
     });
 
-    res.json(transactions);
+    const refundTransactions = cancelledOrders.map(order => {
+      const refAmt = (typeof order.refundAmount === 'number' && order.refundAmount > 0)
+        ? order.refundAmount
+        : (Number(order.totalPrice) || 0);
+      const refStatus = order.refundStatus || 'Refund Pending';
+      const isRefunded = refStatus === 'Refunded';
+
+      return {
+        id: `REF-${order.id.slice(0, 8).toUpperCase()}`,
+        orderId: order.id,
+        createdAt: order.refundedAt || order.cancelledAt || order.createdAt,
+        customerName: order.user?.fullName || order.user?.email || 'Customer',
+        manufacturerName: order.manufacturer?.companyName || order.manufacturer?.fullName || 'Unassigned',
+        grossSaleValue: 0,
+        manufacturerPayment: 0,
+        gstAmount: 0,
+        gstCollected: 0,
+        isAdjusted: false,
+        isRefund: true,
+        refundStatus: refStatus,
+        refundAmount: refAmt,
+        refundImage: order.refundImage || null,
+        refundNote: order.refundNote || null,
+        adjustmentStatus: 'None',
+        priceAdjustmentStatus: 'None',
+        adjustmentAmount: 0,
+        paymentStatus: isRefunded ? 'Paid' : (refStatus === 'Processing' ? 'Processing' : 'Pending'),
+        paidDate: order.refundedAt ? new Date(order.refundedAt).toISOString().split('T')[0] : null,
+        ourEarnings: isRefunded ? -refAmt : 0,
+        notes: `Refund for Cancelled Order: ${order.cancelReason || 'Order Cancelled'}`
+      };
+    });
+
+    // Merge and sort newest first
+    const allTransactions = [...regularTransactions, ...refundTransactions].sort((a, b) => {
+      return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
+    });
+
+    res.json(allTransactions);
   } catch (error) {
     console.error('Error fetching admin wallet transactions:', error.message);
     res.status(500).json({ success: false, message: 'Failed to fetch admin wallet transactions' });

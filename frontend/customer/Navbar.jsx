@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useAuthStore } from '../shared/store/useAuthStore';
 import { useCatalogStore } from '../shared/store/useCatalogStore';
 import { useWishlistStore } from '../shared/store/useWishlistStore';
-import logoImg from '../assets/logo.png';
+import blackLogoImg from '../assets/logo-black.png';
 
 export default function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -140,9 +140,9 @@ export default function Navbar() {
           <div className="absolute left-1/2 -translate-x-1/2 flex-shrink-0 flex items-center justify-center">
             <Link to="/" className="flex items-center justify-center" onClick={() => window.scrollTo(0,0)}>
               <img 
-                src={logoImg} 
+                src={blackLogoImg} 
                 alt="H&S - Hi & Shi" 
-                className={`w-auto object-contain transition-all duration-300 hover:opacity-85 ${isScrolled ? 'h-9 md:h-10' : 'h-10 md:h-12'}`}
+                className={`w-auto object-contain transition-all duration-300 hover:opacity-85 ${isScrolled ? 'h-7 md:h-8' : 'h-8 md:h-9'}`}
               />
             </Link>
           </div>
@@ -256,6 +256,11 @@ export default function Navbar() {
             transition={{ type: 'tween', duration: 0.3 }}
             className="fixed inset-0 bg-white z-[60] flex flex-col pt-24 px-8 overflow-y-auto"
           >
+            <div className="absolute top-6 left-8">
+              <Link to="/" onClick={() => setIsMobileMenuOpen(false)}>
+                <img src={blackLogoImg} alt="H&S" className="h-7 w-auto object-contain" />
+              </Link>
+            </div>
             <button 
               onClick={() => setIsMobileMenuOpen(false)}
               className="absolute top-6 right-6 p-2 hover:bg-muted rounded-full transition-colors"

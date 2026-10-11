@@ -213,6 +213,13 @@ model Order {
   priceAdjustmentReason String?
   priceAdjustmentStatus String?
 
+  // Refund Management
+  refundStatus String?   @default("None")
+  refundAmount Float?
+  refundImage  String?
+  refundNote   String?
+  refundedAt   DateTime?
+
   completedDate String?
 
   createdAt DateTime @default(now())

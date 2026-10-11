@@ -1,5 +1,5 @@
 import "./WalletStats.css";
-import { TrendingUp, Factory, CheckCircle2, Clock, Sparkles, Receipt } from "lucide-react";
+import { TrendingUp, Factory, CheckCircle2, Clock, Sparkles, Receipt, RotateCcw } from "lucide-react";
 const WalletStats = ({ metrics }) => {
     if (!metrics)
         return null;
@@ -65,7 +65,19 @@ const WalletStats = ({ metrics }) => {
                 </div>
             </div>
 
-            {/* 6. Our Earnings */}
+            {/* 6. Total Refunded Amount */}
+            <div className="wallet-stat-card card-total-refunded">
+                <div className="stat-info">
+                    <span className="stat-label">TOTAL REFUNDED</span>
+                    <h2 className="stat-value text-rose">₹{(metrics.totalRefundedAmount ?? metrics.totalRefunded ?? 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</h2>
+                    <span className="stat-subtext">Settled Customer Refunds</span>
+                </div>
+                <div className="stat-icon-wrapper icon-refund">
+                    <RotateCcw size={24}/>
+                </div>
+            </div>
+
+            {/* 7. Our Earnings */}
             <div className="wallet-stat-card card-our-earnings highlight-card">
                 <div className="stat-info">
                     <span className="stat-label">OUR EARNINGS</span>

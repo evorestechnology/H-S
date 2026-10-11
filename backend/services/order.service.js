@@ -609,6 +609,11 @@ export const formatOrderForUi = (order, isDetail = false) => {
     cancelledByRole: order.cancelledByRole || (order.status === 'CANCELED' ? 'ADMIN' : null),
     cancelledByUserId: order.cancelledByUserId || null,
     cancelledAt: order.cancelledAt ? new Date(order.cancelledAt).toISOString() : null,
+    refundStatus: order.refundStatus || (order.status === 'CANCELED' ? 'Refund Pending' : 'None'),
+    refundAmount: typeof order.refundAmount === 'number' ? order.refundAmount : (order.status === 'CANCELED' ? (order.totalPrice || 0) : 0),
+    refundImage: order.refundImage || null,
+    refundNote: order.refundNote || '',
+    refundedAt: order.refundedAt ? new Date(order.refundedAt).toISOString() : null,
     priceAdjustmentStatus: order.priceAdjustmentStatus || 'None',
     priceAdjustmentAmount: order.priceAdjustmentAmount || 0,
     priceAdjustmentReason: order.priceAdjustmentReason || '',
@@ -1314,7 +1319,7 @@ export const completeOrder = async (id, completedDate) => {
 /**
  * Cancels order directly with reason, audit trail, and replenishes inventory.
  */
-export const cancelOrder = async (id, cancelReason, actor = { role: 'ADMIN', id: null }) => {
+export const cancelOrder = async (id, cancelReason, actor = { role: 'ADMIN', id: null }, refundData = {}) => {
   return await prisma.$transaction(async (tx) => {
     const existing = await tx.order.findUnique({
       where: { id },
@@ -1331,6 +1336,14 @@ export const cancelOrder = async (id, cancelReason, actor = { role: 'ADMIN', id:
       ? cancelReason.trim()
       : (existing.cancelReason || null);
 
+    const initialRefundStatus = refundData.refundStatus || (existing.refundStatus && existing.refundStatus !== 'None' ? existing.refundStatus : 'Refund Pending');
+    const initialRefundAmount = typeof refundData.refundAmount === 'number'
+      ? refundData.refundAmount
+      : (Number(refundData.refundAmount) || existing.refundAmount || existing.totalPrice || 0);
+    const initialRefundImage = refundData.refundImage !== undefined ? refundData.refundImage : (existing.refundImage || null);
+    const initialRefundNote = refundData.refundNote !== undefined ? refundData.refundNote : (existing.refundNote || null);
+    const initialRefundedAt = initialRefundStatus === 'Refunded' ? new Date() : (existing.refundedAt || null);
+
     if (existing.status === 'CANCELED') {
       let updated;
       try {
@@ -1341,7 +1354,12 @@ export const cancelOrder = async (id, cancelReason, actor = { role: 'ADMIN', id:
             cancelledByRole: existing.cancelledByRole || cancelledByRole,
             cancelledByUserId: existing.cancelledByUserId || actor?.id || null,
             cancelledAt: existing.cancelledAt || new Date(),
-            cancelRequested: false
+            cancelRequested: false,
+            refundStatus: initialRefundStatus,
+            refundAmount: initialRefundAmount,
+            refundImage: initialRefundImage,
+            refundNote: initialRefundNote,
+            refundedAt: initialRefundedAt
           },
           include: {
             items: { include: { product: true } },
@@ -1355,7 +1373,9 @@ export const cancelOrder = async (id, cancelReason, actor = { role: 'ADMIN', id:
           where: { id },
           data: {
             cancelReason: finalReason,
-            cancelRequested: false
+            cancelRequested: false,
+            refundStatus: initialRefundStatus,
+            refundAmount: initialRefundAmount
           },
           include: {
             items: { include: { product: true } },
@@ -1408,7 +1428,12 @@ export const cancelOrder = async (id, cancelReason, actor = { role: 'ADMIN', id:
           cancelledByRole,
           cancelledByUserId: actor?.id || null,
           cancelledAt: new Date(),
-          cancelRequested: false
+          cancelRequested: false,
+          refundStatus: initialRefundStatus,
+          refundAmount: initialRefundAmount,
+          refundImage: initialRefundImage,
+          refundNote: initialRefundNote,
+          refundedAt: initialRefundedAt
         },
         include: {
           items: { include: { product: true } },
@@ -1423,7 +1448,9 @@ export const cancelOrder = async (id, cancelReason, actor = { role: 'ADMIN', id:
         data: {
           status: 'CANCELED',
           cancelReason: finalReason,
-          cancelRequested: false
+          cancelRequested: false,
+          refundStatus: initialRefundStatus,
+          refundAmount: initialRefundAmount
         },
         include: {
           items: { include: { product: true } },
@@ -1435,6 +1462,46 @@ export const cancelOrder = async (id, cancelReason, actor = { role: 'ADMIN', id:
 
     return formatOrderForUi(updated);
   }, { maxWait: 10000, timeout: 20000 });
+};
+
+/**
+ * Process or update order refund details (Admin only)
+ */
+export const processRefund = async (id, refundData = {}) => {
+  const existing = await prisma.order.findUnique({
+    where: { id },
+    include: { items: true }
+  });
+  if (!existing) {
+    throw new Error('Order not found');
+  }
+
+  const { refundStatus = 'Refunded', refundAmount, refundImage, refundNote } = refundData;
+  const finalAmount = typeof refundAmount === 'number'
+    ? refundAmount
+    : (refundAmount !== undefined ? (Number(refundAmount) || 0) : (existing.refundAmount || existing.totalPrice || 0));
+  
+  const refundedAt = refundStatus === 'Refunded'
+    ? (existing.refundedAt || new Date())
+    : (refundStatus === 'Refund Pending' ? null : existing.refundedAt);
+
+  const updated = await prisma.order.update({
+    where: { id },
+    data: {
+      refundStatus: refundStatus || 'Refunded',
+      refundAmount: finalAmount,
+      ...(refundImage !== undefined ? { refundImage } : {}),
+      ...(refundNote !== undefined ? { refundNote } : {}),
+      refundedAt
+    },
+    include: {
+      items: { include: { product: true } },
+      user: true,
+      manufacturer: true
+    }
+  });
+
+  return formatOrderForUi(updated);
 };
 
 /**

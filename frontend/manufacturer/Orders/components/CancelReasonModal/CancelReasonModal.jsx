@@ -109,6 +109,22 @@ const CancelReasonModal = ({ open, mode, order, onClose, onConfirmCancel }) => {
                                     </span>
                                 </div>
                             </div>
+
+                            <div style={{ marginTop: "12px", padding: "10px 12px", background: "#f8fafc", borderRadius: "8px", border: "1px solid #e2e8f0", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                                <span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", color: "#475569" }}>
+                                    Customer Refund Status:
+                                </span>
+                                <span style={{
+                                    fontSize: "11px",
+                                    fontWeight: 700,
+                                    padding: "3px 8px",
+                                    borderRadius: "4px",
+                                    background: order.refundStatus === "Refunded" ? "#dcfce7" : "#fef3c7",
+                                    color: order.refundStatus === "Refunded" ? "#166534" : "#92400e"
+                                }}>
+                                    {order.refundStatus || "Refund Pending"}
+                                </span>
+                            </div>
                         </div>) : (<div className="reason-form-group">
                             <label className="form-label">SELECT CANCELLATION REASON</label>
                             <select className="reason-select" value={selectedPreset} onChange={(e) => setSelectedPreset(e.target.value)}>
@@ -121,6 +137,10 @@ const CancelReasonModal = ({ open, mode, order, onClose, onConfirmCancel }) => {
                                     <label className="form-label">ENTER DETAILED REASON</label>
                                     <textarea className="reason-textarea" rows={3} placeholder="Type the specific reason for cancelling this order..." value={customReason} onChange={(e) => setCustomReason(e.target.value)}/>
                                 </div>)}
+
+                            <div style={{ padding: "10px 12px", background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: "8px", fontSize: "12px", color: "#1e40af", marginTop: "8px", lineHeight: "1.4" }}>
+                                <strong>Admin Refund Notice:</strong> Cancelling this order will release manufacturing claims and project a customer refund to the Master Admin with status <em>Refund Pending</em>.
+                            </div>
                         </div>)}
                 </div>
 
