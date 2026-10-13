@@ -19,6 +19,7 @@ import walletRoutes from './routes/wallet.routes.js';
 import dashboardRoutes from './routes/dashboard.routes.js';
 import couponRoutes from './routes/coupon.routes.js';
 import settingsRoutes from './routes/settings.routes.js';
+import manufacturerAdjustmentRoutes from './routes/manufacturer-adjustment.routes.js';
 import cashfreeRoutes from './routes/cashfree.routes.js';
 import { initCustomTables } from './services/dbInit.service.js';
 import { prisma } from './lib/prisma.js';
@@ -88,6 +89,7 @@ app.use('/api/wallet', walletRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/coupons', couponRoutes);
 app.use('/api/settings', settingsRoutes);
+app.use('/api/manufacturer-adjustments', manufacturerAdjustmentRoutes);
 
 // Initialize PostgreSQL custom tables in background
 initCustomTables();

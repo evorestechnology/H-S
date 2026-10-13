@@ -45,6 +45,7 @@ model User {
   // Manufacturer relationships
   manufacturerOrders   Order[]   @relation("ManufacturerAssignedOrders")
   manufacturerProducts Product[] @relation("ManufacturerProducts")
+  manufacturerAdjustments ManufacturerAdjustment[] @relation("ManufacturerAdjustments")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -254,6 +255,25 @@ model OrderItem {
   @@index([productId])
 }
 
+model ManufacturerAdjustment {
+  id             String   @id @default(uuid())
+  manufacturerId String
+  manufacturer   User     @relation("ManufacturerAdjustments", fields: [manufacturerId], references: [id], onDelete: Cascade)
+  amount         Float
+  reason         String
+  status         String   @default("PENDING")
+  paymentStatus  String   @default("UNPAID")
+  paidAt         DateTime?
+  reviewedAt     DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([manufacturerId])
+  @@index([status])
+  @@index([paymentStatus])
+  @@index([createdAt])
+}
+
 enum paymentStatus{
    NOT_SUCCESSFULL
    PENDING
@@ -292,4 +312,3 @@ model Setting {
   value     Json
   updatedAt DateTime @default(now()) @updatedAt
 }
-

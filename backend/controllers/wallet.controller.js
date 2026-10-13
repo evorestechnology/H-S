@@ -98,7 +98,8 @@ export const getMfgWalletMetrics = async (req, res) => {
       });
     }
 
-    const orders = await prisma.order.findMany({
+    const [orders, adjustments] = await Promise.all([
+      prisma.order.findMany({
       where: {
         AND: whereConditions
       },
@@ -123,7 +124,14 @@ export const getMfgWalletMetrics = async (req, res) => {
           }
         }
       }
-    });
+      }),
+      prisma.manufacturerAdjustment.findMany({
+        where: {
+          ...(userRole === 'MANUFACTURER' ? { manufacturerId: req.user.id } : {}),
+          status: 'APPROVED'
+        }
+      })
+    ]);
 
     let lifetimeEarnings = 0;
     let approvedAdjustmentsTotal = 0;
@@ -143,6 +151,12 @@ export const getMfgWalletMetrics = async (req, res) => {
       } else {
         pendingPayouts += payment;
       }
+    });
+    adjustments.forEach(adjustment => {
+      lifetimeEarnings += Number(adjustment.amount) || 0;
+      approvedAdjustmentsTotal += Number(adjustment.amount) || 0;
+      if (adjustment.paymentStatus === 'PAID') paidPayouts += Number(adjustment.amount) || 0;
+      else pendingPayouts += Number(adjustment.amount) || 0;
     });
 
     const metricsData = {
@@ -195,7 +209,8 @@ export const getMfgWalletEarnings = async (req, res) => {
       });
     }
 
-    const orders = await prisma.order.findMany({
+    const [orders, adjustments] = await Promise.all([
+      prisma.order.findMany({
       where: {
         AND: whereConditions
       },
@@ -221,7 +236,15 @@ export const getMfgWalletEarnings = async (req, res) => {
         }
       },
       orderBy: { createdAt: 'desc' }
-    });
+      }),
+      prisma.manufacturerAdjustment.findMany({
+        where: {
+          ...(userRole === 'MANUFACTURER' ? { manufacturerId: req.user.id } : {}),
+          status: { in: ['PENDING', 'APPROVED', 'REJECTED'] }
+        },
+        orderBy: { createdAt: 'desc' }
+      })
+    ]);
 
     const earnings = orders.map((order, idx) => {
       const firstItem = order.items?.[0] || {};
@@ -255,7 +278,27 @@ export const getMfgWalletEarnings = async (req, res) => {
       };
     });
 
-    res.json(earnings);
+    const adjustmentEarnings = adjustments.map((adjustment, idx) => ({
+      id: `ADJ-${adjustment.id.slice(0, 8).toUpperCase()}`,
+      orderId: 'Other adjustment',
+      orderedDate: adjustment.createdAt
+        ? new Date(adjustment.createdAt).toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' })
+        : new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' }),
+      itemName: 'Other manufacturer adjustment',
+      size: '-',
+      color: '-',
+      manufacturerPayment: adjustment.status === 'APPROVED' ? Number(adjustment.amount) : 0,
+      isAdjusted: true,
+      isOtherAdjustment: true,
+      adjustmentStatus: adjustment.status,
+      priceAdjustmentStatus: adjustment.status,
+      adjustmentAmount: Number(adjustment.amount),
+      adjustmentReason: adjustment.reason,
+      paymentStatus: adjustment.paymentStatus === 'PAID' ? 'Paid' : 'Not Paid',
+      paidDate: adjustment.paidAt || null
+    }));
+
+    res.json([...earnings, ...adjustmentEarnings]);
   } catch (error) {
     console.error('Error fetching mfg earnings:', error.message);
     res.status(500).json({ success: false, message: 'Failed to fetch earning records' });
@@ -271,7 +314,8 @@ export const getMfgWalletEarnings = async (req, res) => {
 // @access  Private/Admin
 export const getAdminWalletMetrics = async (req, res) => {
   try {
-    const orders = await prisma.order.findMany({
+    const [orders, adjustments] = await Promise.all([
+      prisma.order.findMany({
       where: {
         status: { not: 'CANCELED' },
         cancelRequested: false
@@ -285,7 +329,12 @@ export const getAdminWalletMetrics = async (req, res) => {
         priceAdjustmentStatus: true,
         priceAdjustmentAmount: true
       }
-    });
+      }),
+      prisma.manufacturerAdjustment.findMany({
+        where: { status: 'APPROVED' },
+        select: { amount: true, paymentStatus: true }
+      })
+    ]);
 
     const refundedOrders = await prisma.order.findMany({
       where: {
@@ -325,6 +374,12 @@ export const getAdminWalletMetrics = async (req, res) => {
       } else {
         pendingPayoutToManufacture += mfgPay;
       }
+    });
+    adjustments.forEach(adjustment => {
+      const amount = Number(adjustment.amount) || 0;
+      manufactureEarnings += amount;
+      if (adjustment.paymentStatus === 'PAID') paidToManufacture += amount;
+      else pendingPayoutToManufacture += amount;
     });
 
     refundedOrders.forEach(order => {
@@ -371,7 +426,8 @@ export const getAdminWalletMetrics = async (req, res) => {
 // @access  Private/Admin
 export const getAdminWalletTransactions = async (req, res) => {
   try {
-    const orders = await prisma.order.findMany({
+    const [orders, adjustments] = await Promise.all([
+      prisma.order.findMany({
       where: {
         status: { not: 'CANCELED' },
         cancelRequested: false
@@ -391,7 +447,12 @@ export const getAdminWalletTransactions = async (req, res) => {
         manufacturer: { select: { companyName: true, fullName: true } }
       },
       orderBy: { createdAt: 'desc' }
-    });
+      }),
+      prisma.manufacturerAdjustment.findMany({
+        include: { manufacturer: { select: { companyName: true, fullName: true, email: true } } },
+        orderBy: { createdAt: 'desc' }
+      })
+    ]);
 
     const cancelledOrders = await prisma.order.findMany({
       where: {
@@ -483,8 +544,31 @@ export const getAdminWalletTransactions = async (req, res) => {
       };
     });
 
+    const adjustmentTransactions = adjustments.map(adjustment => ({
+      id: `ADJ-${adjustment.id.slice(0, 8).toUpperCase()}`,
+      orderId: 'Other adjustment',
+      createdAt: adjustment.createdAt,
+      customerName: 'Manufacturer adjustment',
+      manufacturerName: adjustment.manufacturer?.companyName || adjustment.manufacturer?.fullName || adjustment.manufacturer?.email || 'Manufacturer',
+      grossSaleValue: 0,
+      manufacturerPayment: adjustment.status === 'APPROVED' ? Number(adjustment.amount) : 0,
+      gstAmount: 0,
+      gstCollected: 0,
+      isAdjusted: true,
+      isOtherAdjustment: true,
+      isRefund: false,
+      adjustmentStatus: adjustment.status,
+      priceAdjustmentStatus: adjustment.status,
+      adjustmentAmount: Number(adjustment.amount),
+      adjustmentReason: adjustment.reason,
+      paymentStatus: adjustment.paymentStatus === 'PAID' ? 'Paid' : 'Not Paid',
+      paidDate: adjustment.paidAt || null,
+      ourEarnings: adjustment.status === 'APPROVED' ? -Number(adjustment.amount) : 0,
+      notes: adjustment.status === 'PENDING' ? 'Awaiting administrator approval' : `Other adjustment: ${adjustment.reason}`
+    }));
+
     // Merge and sort newest first
-    const allTransactions = [...regularTransactions, ...refundTransactions].sort((a, b) => {
+    const allTransactions = [...regularTransactions, ...refundTransactions, ...adjustmentTransactions].sort((a, b) => {
       return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
     });
 

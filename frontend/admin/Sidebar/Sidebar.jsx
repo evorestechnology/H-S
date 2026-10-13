@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { NavLink, useNavigate, useLocation } from "react-router-dom";
-import { LayoutDashboard, ShoppingBag, ShoppingCart, Wallet, Users, Ticket, Settings, Menu, X, LogOut } from "lucide-react";
+import { LayoutDashboard, ShoppingBag, ShoppingCart, Wallet, Users, Ticket, Settings, Menu, X, LogOut, BadgeIndianRupee } from "lucide-react";
 import { clearPortalSession } from "../../shared/services/authStorage";
 import brandLogoWhite from "../../assets/logo.png";
 import "./Sidebar.css";
@@ -35,6 +35,11 @@ const Sidebar = ({ mobileOpen = false, onClose }) => {
             icon: <Wallet size={20}/>
         },
         {
+            title: "Adjustments",
+            path: "/master/adjustments",
+            icon: <BadgeIndianRupee size={20}/>
+        },
+        {
             title: "Users",
             path: "/master/users",
             icon: <Users size={20}/>
@@ -65,6 +70,11 @@ const Sidebar = ({ mobileOpen = false, onClose }) => {
             title: "Settlements",
             path: "/manufacturer/settlements",
             icon: <Wallet size={20}/>
+        },
+        {
+            title: "Other adjustments",
+            path: "/manufacturer/adjustments",
+            icon: <BadgeIndianRupee size={20}/>
         }
     ];
     const menuItems = isManufacturerRoute ? manufacturerMenuItems : adminMenuItems;

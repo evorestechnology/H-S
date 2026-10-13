@@ -39,9 +39,11 @@ const AdminWallet = lazy(() => import('./admin/Wallet/Wallet'));
 const AdminUsers = lazy(() => import('./admin/Users/Users'));
 const AdminCoupons = lazy(() => import('./admin/Coupons/Coupons'));
 const AdminSettings = lazy(() => import('./admin/Settings/Settings'));
+const AdminAdjustments = lazy(() => import('./admin/Adjustments/Adjustments'));
 
 const ManufacturerOrders = lazy(() => import('./manufacturer/Orders/Orders'));
 const ManufacturerWallet = lazy(() => import('./manufacturer/Wallet/Wallet'));
+const ManufacturerAdjustmentPage = lazy(() => import('./shared/components/ManufacturerAdjustmentPage'));
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -118,6 +120,7 @@ function AppContent() {
                 <Route path="orders" element={<AdminOrders />} />
                 <Route path="orders/:orderId" element={<AdminOrders />} />
                 <Route path="wallet" element={<AdminWallet />} />
+                <Route path="adjustments" element={<AdminAdjustments />} />
                 <Route path="users" element={<AdminUsers />} />
                 <Route path="coupons" element={<AdminCoupons />} />
                 <Route path="settings" element={<AdminSettings />} />
@@ -137,6 +140,7 @@ function AppContent() {
                 <Route path="orders" element={<ManufacturerOrders />} />
                 <Route path="orders/:orderId" element={<ManufacturerOrders />} />
                 <Route path="settlements" element={<ManufacturerWallet />} />
+                <Route path="adjustments" element={<ManufacturerAdjustmentPage />} />
                 <Route path="profile" element={<AccountProfile />} />
               </Route>
             </Route>

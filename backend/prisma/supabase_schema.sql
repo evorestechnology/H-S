@@ -191,6 +191,22 @@ CREATE TABLE "OrderItem" (
     CONSTRAINT "OrderItem_pkey" PRIMARY KEY ("id")
 );
 
+-- Table: ManufacturerAdjustment
+CREATE TABLE "ManufacturerAdjustment" (
+    "id" TEXT NOT NULL,
+    "manufacturerId" TEXT NOT NULL,
+    "amount" DOUBLE PRECISION NOT NULL,
+    "reason" TEXT NOT NULL,
+    "status" TEXT NOT NULL DEFAULT 'PENDING',
+    "paymentStatus" TEXT NOT NULL DEFAULT 'UNPAID',
+    "paidAt" TIMESTAMP(3),
+    "reviewedAt" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "ManufacturerAdjustment_pkey" PRIMARY KEY ("id")
+);
+
 -- Table: Coupon
 CREATE TABLE "Coupon" (
     "id" TEXT NOT NULL,
@@ -247,6 +263,10 @@ CREATE INDEX "Order_status_idx" ON "Order"("status");
 CREATE INDEX "Order_createdAt_idx" ON "Order"("createdAt");
 CREATE INDEX "OrderItem_orderId_idx" ON "OrderItem"("orderId");
 CREATE INDEX "OrderItem_productId_idx" ON "OrderItem"("productId");
+CREATE INDEX "ManufacturerAdjustment_manufacturerId_idx" ON "ManufacturerAdjustment"("manufacturerId");
+CREATE INDEX "ManufacturerAdjustment_status_idx" ON "ManufacturerAdjustment"("status");
+CREATE INDEX "ManufacturerAdjustment_paymentStatus_idx" ON "ManufacturerAdjustment"("paymentStatus");
+CREATE INDEX "ManufacturerAdjustment_createdAt_idx" ON "ManufacturerAdjustment"("createdAt");
 CREATE UNIQUE INDEX "Category_name_key" ON "Category"("name");
 CREATE UNIQUE INDEX "Coupon_code_key" ON "Coupon"("code");
 CREATE INDEX "_UserWishlist_B_index" ON "_UserWishlist"("B");
@@ -265,5 +285,6 @@ ALTER TABLE "Order" ADD CONSTRAINT "Order_userId_fkey" FOREIGN KEY ("userId") RE
 ALTER TABLE "Order" ADD CONSTRAINT "Order_manufacturerId_fkey" FOREIGN KEY ("manufacturerId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 ALTER TABLE "OrderItem" ADD CONSTRAINT "OrderItem_orderId_fkey" FOREIGN KEY ("orderId") REFERENCES "Order"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 ALTER TABLE "OrderItem" ADD CONSTRAINT "OrderItem_productId_fkey" FOREIGN KEY ("productId") REFERENCES "Product"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "ManufacturerAdjustment" ADD CONSTRAINT "ManufacturerAdjustment_manufacturerId_fkey" FOREIGN KEY ("manufacturerId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 ALTER TABLE "_UserWishlist" ADD CONSTRAINT "_UserWishlist_A_fkey" FOREIGN KEY ("A") REFERENCES "Product"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 ALTER TABLE "_UserWishlist" ADD CONSTRAINT "_UserWishlist_B_fkey" FOREIGN KEY ("B") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;

@@ -92,8 +92,8 @@ const WalletTable = ({ transactions, onMarkAsPaid, onToggleAdjustment }) => {
                                                     Refund
                                                 </span>
                                             ) : (() => {
-                    const status = txn.adjustmentStatus || (txn.isAdjusted ? "Approved" : "None");
-                    if (status === "Approved" || (txn.isAdjusted && status !== "Rejected" && status !== "Pending Approval")) {
+                    const status = String(txn.adjustmentStatus || (txn.isAdjusted ? "Approved" : "None")).toUpperCase();
+                    if (status === "APPROVED") {
                         return (<div className="adj-badge-container">
                                                             <span className="badge-adj-adjusted" title="Price adjustment approved">
                                                                 <Sliders size={12}/> Adjusted
@@ -101,14 +101,14 @@ const WalletTable = ({ transactions, onMarkAsPaid, onToggleAdjustment }) => {
                                                             {txn.adjustmentAmount > 0 && (<span className="adj-amount-tag">+₹{txn.adjustmentAmount.toFixed(2)}</span>)}
                                                         </div>);
                     }
-                    if (status === "Rejected") {
+                    if (status === "REJECTED") {
                         return (<div className="adj-badge-container">
                                                             <span className="badge-adj-rejected" title="Price adjustment request was rejected">
                                                                 <XCircle size={12}/> Rejected
                                                             </span>
                                                         </div>);
                     }
-                    if (status === "Pending Approval") {
+                    if (status === "PENDING" || status === "PENDING APPROVAL") {
                         return (<div className="adj-badge-container">
                                                             <span className="badge-adj-pending" title="Price adjustment request is awaiting approval">
                                                                 <Clock size={12}/> Pending (+₹{txn.adjustmentAmount.toFixed(2)})
@@ -149,8 +149,8 @@ const WalletTable = ({ transactions, onMarkAsPaid, onToggleAdjustment }) => {
                                                     -₹{(txn.refundAmount || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                                                 </span>
                                             ) : (
-                                                <span className="earnings-tag">
-                                                    +₹{txn.ourEarnings.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                                                <span className="earnings-tag" style={txn.isOtherAdjustment ? { color: "#B91C1C" } : {}}>
+                                                    {txn.ourEarnings < 0 ? "-" : "+"}₹{Math.abs(txn.ourEarnings).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                                                 </span>
                                             )}
                                         </td>
@@ -181,13 +181,13 @@ const WalletTable = ({ transactions, onMarkAsPaid, onToggleAdjustment }) => {
                                                 </div>
                                             ) : (
                                                 <div className="action-buttons">
-                                                    {!isPaid && (<button className="btn-action-pay" onClick={() => onMarkAsPaid(txn.id)} title="Mark Payout as Paid to Manufacturer">
+                                                    {!isPaid && !txn.isOtherAdjustment && (<button className="btn-action-pay" onClick={() => onMarkAsPaid(txn.id)} title="Mark Payout as Paid to Manufacturer">
                                                             <IndianRupee size={13}/> Mark Paid
                                                         </button>)}
 
-                                                    <button className={`btn-action-toggle-adj ${txn.isAdjusted ? "active-adj" : ""}`} onClick={() => onToggleAdjustment(txn.id)} title={txn.isAdjusted ? "Remove Price Adjustment" : "Apply Price Adjustment Bonus"}>
+                                                    {!txn.isOtherAdjustment && (<button className={`btn-action-toggle-adj ${txn.isAdjusted ? "active-adj" : ""}`} onClick={() => onToggleAdjustment(txn.id)} title={txn.isAdjusted ? "Remove Price Adjustment" : "Apply Price Adjustment Bonus"}>
                                                         <Sliders size={13}/> {txn.isAdjusted ? "Edit Adj" : "Add Adj"}
-                                                    </button>
+                                                    </button>)}
                                                 </div>
                                             )}
                                         </td>

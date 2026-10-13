@@ -20,7 +20,7 @@ export const getDashboardStats = async (req, res) => {
     const period = req.query.period || '7d';
 
     // Fetch independent dashboard datasets concurrently to eliminate roundtrip latency
-    const [orders, users, totalUsersCount, drops, products] = await Promise.all([
+    const [orders, users, totalUsersCount, drops, products, manufacturerAdjustments] = await Promise.all([
       // 1. Fetch Orders with strictly needed fields (exclude heavy images, specs, priceBreakdowns)
       prisma.order.findMany({
         select: {
@@ -110,6 +110,11 @@ export const getDashboardStats = async (req, res) => {
           updatedAt: true
         },
         orderBy: { stock: 'asc' }
+      }),
+      prisma.manufacturerAdjustment.findMany({
+        where: { status: 'APPROVED' },
+        select: { id: true, amount: true, createdAt: true, reason: true, paymentStatus: true, manufacturer: { select: { fullName: true, companyName: true } } },
+        orderBy: { createdAt: 'desc' }
       })
     ]);
 
@@ -147,6 +152,7 @@ export const getDashboardStats = async (req, res) => {
     let walletBalance = 0;
     let thisMonthWallet = 0;
     let lastMonthWallet = 0;
+    let approvedManufacturerAdjustments = 0;
 
     let thisMonthOrdersCount = 0;
     let lastMonthOrdersCount = 0;
@@ -223,6 +229,18 @@ export const getDashboardStats = async (req, res) => {
       }
     });
 
+    manufacturerAdjustments.forEach(adjustment => {
+      const amount = Number(adjustment.amount) || 0;
+      const adjustmentDate = adjustment.createdAt ? new Date(adjustment.createdAt) : null;
+      approvedManufacturerAdjustments += amount;
+      walletBalance -= amount;
+      if (adjustmentDate >= thisMonthStart) {
+        thisMonthWallet -= amount;
+      } else if (adjustmentDate >= lastMonthStart && adjustmentDate <= lastMonthEnd) {
+        lastMonthWallet -= amount;
+      }
+    });
+
     // Users growth calculation
     const thisMonthUsers = users.filter(u => u.createdAt && new Date(u.createdAt) >= thisMonthStart).length;
     const lastMonthUsers = users.filter(u => u.createdAt && new Date(u.createdAt) >= lastMonthStart && new Date(u.createdAt) <= lastMonthEnd).length;
@@ -247,7 +265,8 @@ export const getDashboardStats = async (req, res) => {
       productsSold,
       productsSoldGrowth: calcGrowth(thisMonthSold, lastMonthSold),
       walletBalance: Number(walletBalance.toFixed(2)),
-      walletBalanceGrowth: calcGrowth(thisMonthWallet, lastMonthWallet)
+      walletBalanceGrowth: calcGrowth(thisMonthWallet, lastMonthWallet),
+      manufacturerAdjustmentPayouts: Number(approvedManufacturerAdjustments.toFixed(2))
     };
 
     // --- Dynamic Chart Analytics (Based on requested period: 7d, 30d, 90d, 1y) ---
