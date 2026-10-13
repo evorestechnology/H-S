@@ -97,10 +97,10 @@ export default function ProductCard({ product }) {
 
       {/* Details */}
       <div className="flex flex-col">
-        <h3 className="font-bold text-sm uppercase tracking-tight mb-1 group-hover:underline underline-offset-4">
+        <h3 className="font-bold text-xs sm:text-sm uppercase tracking-tight mb-1 group-hover:underline underline-offset-4 line-clamp-1">
           {product.name}
         </h3>
-        <p className="text-muted-foreground text-sm">₹{product.price.toFixed(2)}</p>
+        <p className="text-muted-foreground text-xs sm:text-sm font-semibold">₹{product.price.toFixed(2)}</p>
       </div>
     </Link>
   );

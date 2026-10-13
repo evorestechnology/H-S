@@ -1,7 +1,9 @@
-import { Outlet } from "react-router-dom";
-import { Suspense } from "react";
+import { Outlet, useLocation } from "react-router-dom";
+import { Suspense, useState } from "react";
+import { Menu } from "lucide-react";
 import Sidebar from "../Sidebar/Sidebar";
 import Footer from "../Footer/Footer";
+import brandLogoWhite from "../../assets/logo.png";
 import "./DashboardLayout.css";
 const RouteLoadingFallback = () => (<div style={{
         display: "flex",
@@ -25,9 +27,35 @@ const RouteLoadingFallback = () => (<div style={{
         <span style={{ fontSize: "0.875rem", fontWeight: 500 }}>Loading view...</span>
     </div>);
 const DashboardLayout = () => {
-    return (<div className="dashboard-layout">
-            <Sidebar />
+    const [mobileOpen, setMobileOpen] = useState(false);
+    const location = useLocation();
+    const isManufacturerRoute = location.pathname.startsWith("/manufacturer");
+
+    return (
+        <div className="dashboard-layout">
+            <Sidebar mobileOpen={mobileOpen} onClose={() => setMobileOpen(false)} />
             <div className="dashboard-content">
+                {/* Mobile Topbar */}
+                <div className="dashboard-mobile-topbar">
+                    <button 
+                        type="button" 
+                        onClick={() => setMobileOpen(true)} 
+                        className="mobile-menu-trigger" 
+                        aria-label="Open portal navigation"
+                    >
+                        <Menu size={22} />
+                    </button>
+                    <div className="mobile-brand-title">
+                        <img 
+                            src={brandLogoWhite} 
+                            alt="H&S Brand Logo" 
+                            className="mobile-brand-img"
+                            onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                        />
+                        <span>{isManufacturerRoute ? "Manufacturer" : "Admin"}</span>
+                    </div>
+                </div>
+
                 <main className="dashboard-main">
                     <Suspense fallback={<RouteLoadingFallback />}>
                         <Outlet />
@@ -35,6 +63,7 @@ const DashboardLayout = () => {
                 </main>
                 <Footer />
             </div>
-        </div>);
+        </div>
+    );
 };
 export default DashboardLayout;

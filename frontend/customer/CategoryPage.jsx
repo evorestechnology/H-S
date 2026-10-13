@@ -73,11 +73,11 @@ export default function CategoryPage() {
     : 'All Products';
 
   return (
-    <div className="pt-24 pb-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 min-h-screen">
+    <div className="pt-20 sm:pt-24 md:pt-28 pb-16 sm:pb-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 min-h-[100dvh]">
       
       {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between items-center mb-12 border-b border-border pb-6">
-        <h1 className="font-heading text-4xl font-bold uppercase tracking-tight mb-4 md:mb-0">
+      <div className="flex flex-col md:flex-row justify-between items-center mb-8 sm:mb-12 border-b border-border pb-6">
+        <h1 className="font-heading text-2xl sm:text-4xl font-bold uppercase tracking-tight mb-4 md:mb-0">
           {categoryTitle}
         </h1>
         

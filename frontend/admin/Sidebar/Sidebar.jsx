@@ -4,7 +4,7 @@ import { LayoutDashboard, ShoppingBag, ShoppingCart, Wallet, Users, Ticket, Sett
 import { clearPortalSession } from "../../shared/services/authStorage";
 import brandLogoWhite from "../../assets/logo.png";
 import "./Sidebar.css";
-const Sidebar = () => {
+const Sidebar = ({ mobileOpen = false, onClose }) => {
     const navigate = useNavigate();
     const location = useLocation();
     const [collapsed, setCollapsed] = useState(false);
@@ -68,33 +68,65 @@ const Sidebar = () => {
         }
     ];
     const menuItems = isManufacturerRoute ? manufacturerMenuItems : adminMenuItems;
-    return (<aside className={collapsed ? "sidebar collapsed" : "sidebar"}>
-            <div className="sidebar-header">
-                <div className="logo flex items-center gap-2">
-                    <img src={brandLogoWhite} alt="H&S Brand Logo" className="sidebar-brand-img h-8 object-contain" onError={(e) => {
-            e.currentTarget.style.display = 'none';
-        }}/>
-                    <span className="font-bold text-white tracking-widest uppercase text-sm">H&S Portal</span>
+
+    const sidebarClasses = [
+        "sidebar",
+        collapsed ? "collapsed" : "",
+        mobileOpen ? "mobile-open" : ""
+    ].filter(Boolean).join(" ");
+
+    return (
+        <>
+            {mobileOpen && (
+                <div className="sidebar-backdrop" onClick={onClose} />
+            )}
+            <aside className={sidebarClasses}>
+                <div className="sidebar-header">
+                    <div className="logo flex items-center gap-2">
+                        <img src={brandLogoWhite} alt="H&S Brand Logo" className="sidebar-brand-img h-8 object-contain" onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                        }}/>
+                        <span className="font-bold text-white tracking-widest uppercase text-sm">H&S Portal</span>
+                    </div>
+
+                    <div className="flex items-center gap-1">
+                        <button className="toggle-btn hidden md:flex" onClick={() => setCollapsed(!collapsed)} aria-label="Toggle Sidebar">
+                            {collapsed ? <Menu size={20}/> : <X size={20}/>}
+                        </button>
+                        <button className="toggle-btn flex md:hidden" onClick={onClose} aria-label="Close Menu">
+                            <X size={20}/>
+                        </button>
+                    </div>
                 </div>
 
-                <button className="toggle-btn" onClick={() => setCollapsed(!collapsed)}>
-                    {collapsed ? <Menu size={20}/> : <X size={20}/>}
-                </button>
-            </div>
+                <nav className="sidebar-menu">
+                    {menuItems.map((item) => (
+                        <NavLink 
+                            key={item.path} 
+                            to={item.path} 
+                            end={item.path === "/master" || item.path === "/manufacturer"} 
+                            className={({ isActive }) => isActive ? "menu-item active" : "menu-item"}
+                            onClick={() => {
+                                if (onClose) onClose();
+                            }}
+                        >
+                            {item.icon}
+                            {!collapsed && <span>{item.title}</span>}
+                        </NavLink>
+                    ))}
+                </nav>
 
-            <nav className="sidebar-menu">
-                {menuItems.map((item) => (<NavLink key={item.path} to={item.path} end={item.path === "/master" || item.path === "/manufacturer"} className={({ isActive }) => isActive ? "menu-item active" : "menu-item"}>
-                        {item.icon}
-                        {!collapsed && <span>{item.title}</span>}
-                    </NavLink>))}
-            </nav>
-
-            <div className="sidebar-footer">
-                <button className="logout-btn" onClick={handleLogout}>
-                    <LogOut size={20}/>
-                    {!collapsed && <span>Logout</span>}
-                </button>
-            </div>
-        </aside>);
+                <div className="sidebar-footer">
+                    <button className="logout-btn" onClick={() => {
+                        if (onClose) onClose();
+                        handleLogout();
+                    }}>
+                        <LogOut size={20}/>
+                        {!collapsed && <span>Logout</span>}
+                    </button>
+                </div>
+            </aside>
+        </>
+    );
 };
 export default Sidebar;

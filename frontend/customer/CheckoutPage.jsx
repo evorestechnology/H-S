@@ -365,16 +365,16 @@ export default function CheckoutPage() {
   }
 
   return (
-    <div className="pt-24 pb-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 min-h-screen">
-      <h1 className="font-heading text-4xl font-bold uppercase tracking-tight mb-12 border-b border-border pb-6">Secure Checkout</h1>
+    <div className="pt-20 sm:pt-24 md:pt-28 pb-16 sm:pb-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 min-h-[100dvh]">
+      <h1 className="font-heading text-3xl sm:text-4xl font-bold uppercase tracking-tight mb-8 sm:mb-12 border-b border-border pb-6">Secure Checkout</h1>
       
-      <div className="flex flex-col lg:flex-row gap-12">
+      <div className="flex flex-col lg:flex-row gap-8 lg:gap-12">
         
         {/* Left Side: Order Summary */}
         <div className="w-full lg:w-1/2">
-          <h2 className="font-heading text-2xl font-bold uppercase tracking-widest mb-6">Order Summary</h2>
+          <h2 className="font-heading text-xl sm:text-2xl font-bold uppercase tracking-widest mb-6">Order Summary</h2>
           
-          <div className="space-y-6 mb-8 lg:max-h-[820px] max-h-none sm:max-h-[60vh] overflow-y-auto pr-4">
+          <div className="space-y-6 mb-8 max-h-[45vh] lg:max-h-[75vh] overflow-y-auto pr-2 sm:pr-4">
             {cartItems.map(item => (
               <div key={`${item.id}-${item.size}`} className="flex gap-6 border-b border-border pb-6">
                 <Link to={`/product/${item.id}`} className="w-24 h-32 bg-muted relative flex-shrink-0 hover:opacity-80 transition-opacity">
@@ -425,7 +425,7 @@ export default function CheckoutPage() {
         </div>
 
         {/* Right Side: Form & Payment */}
-        <div className="w-full lg:w-1/2 bg-muted/20 p-8 border border-border rounded-sm h-fit">
+        <div className="w-full lg:w-1/2 bg-muted/20 p-4 sm:p-8 border border-border rounded-sm h-fit">
           <form onSubmit={handleSubmit} className="space-y-10">
             
             {/* Delivery Address Section */}
@@ -811,7 +811,7 @@ export default function CheckoutPage() {
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.95, opacity: 0, y: 15 }}
               transition={{ duration: 0.2 }}
-              className="bg-white border border-border p-6 sm:p-8 max-w-lg w-full shadow-2xl relative"
+              className="bg-white border border-border p-6 sm:p-8 max-w-lg w-[95vw] sm:w-full max-h-[90dvh] overflow-y-auto shadow-2xl relative"
             >
               <button 
                 onClick={() => setShowCancellationModal(false)}
@@ -871,7 +871,7 @@ export default function CheckoutPage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-white"
+            className="fixed inset-0 w-full h-[100dvh] z-50 flex items-center justify-center bg-white"
           >
             <motion.div 
               initial={{ scale: 0.8, opacity: 0 }}

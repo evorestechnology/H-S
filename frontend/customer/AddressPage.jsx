@@ -76,16 +76,16 @@ export default function AddressPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="min-h-[100dvh] flex items-center justify-center bg-background">
         <div className="w-8 h-8 border-4 border-foreground border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
   }
 
   return (
-    <div className="pt-32 pb-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 min-h-screen">
-      <div className="flex justify-between items-end mb-12 border-b border-border pb-6">
-        <h1 className="font-heading text-4xl font-bold uppercase tracking-tight">My Addresses</h1>
+    <div className="pt-20 sm:pt-24 md:pt-28 pb-16 sm:pb-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 min-h-[100dvh]">
+      <div className="flex justify-between items-end mb-8 sm:mb-12 border-b border-border pb-6">
+        <h1 className="font-heading text-2xl sm:text-4xl font-bold uppercase tracking-tight">My Addresses</h1>
         {!isAdding && (
           <button 
             onClick={() => setIsAdding(true)} 
@@ -98,10 +98,10 @@ export default function AddressPage() {
       
       <div className="max-w-4xl mx-auto">
         {isAdding && (
-          <form onSubmit={handleAddOrEdit} className="border border-border p-6 mb-12 bg-muted/10">
+          <form onSubmit={handleAddOrEdit} className="border border-border p-4 sm:p-6 mb-12 bg-muted/10">
             <h2 className="font-heading text-lg font-bold uppercase tracking-widest mb-6">{editingId ? 'Edit Address' : 'Add New Address'}</h2>
-            <div className="grid grid-cols-2 gap-4">
-              <input required type="text" placeholder="Street Address" value={newAddress.street} onChange={e => setNewAddress({...newAddress, street: e.target.value})} className="col-span-2 p-3 border border-border focus:outline-none focus:border-foreground" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <input required type="text" placeholder="Street Address" value={newAddress.street} onChange={e => setNewAddress({...newAddress, street: e.target.value})} className="sm:col-span-2 p-3 border border-border focus:outline-none focus:border-foreground" />
               <input required type="text" placeholder="City" value={newAddress.city} onChange={e => setNewAddress({...newAddress, city: e.target.value})} className="p-3 border border-border focus:outline-none focus:border-foreground" />
               <input required type="text" placeholder="State/Province" value={newAddress.state} onChange={e => setNewAddress({...newAddress, state: e.target.value})} className="p-3 border border-border focus:outline-none focus:border-foreground" />
               <input required type="text" placeholder="ZIP/Postal Code" value={newAddress.zipCode} onChange={e => setNewAddress({...newAddress, zipCode: e.target.value})} className="p-3 border border-border focus:outline-none focus:border-foreground" />

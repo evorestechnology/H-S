@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Mail, ChevronDown, Check, X } from 'lucide-react';
 import toast from 'react-hot-toast';
+import blackLogoImg from '../assets/logo-black.png';
 
 const InstagramIcon = ({ className }) => (
   <svg 
@@ -57,7 +58,7 @@ export default function Footer() {
         <div className="block md:hidden space-y-6 mb-8">
           {/* Brand Info */}
           <div>
-            <h3 className="font-heading text-2xl font-bold mb-3 tracking-tighter">H&S</h3>
+            <img src={blackLogoImg} alt="H&S" className="h-8 w-auto object-contain mb-3 brightness-0 invert" />
             <p className="text-muted-foreground text-xs leading-relaxed mb-4">
               UNISEX STREETWEAR COLLECTIVE PREMIERE INDIAN STREET FASHION STUDIO.<br />
               Designed for the fearless.
@@ -145,7 +146,7 @@ export default function Footer() {
         <div className="hidden md:grid grid-cols-4 gap-12 mb-12">
           
           <div className="col-span-1">
-            <h3 className="font-heading text-2xl font-bold mb-4 tracking-tighter">H&S</h3>
+            <img src={blackLogoImg} alt="H&S" className="h-9 w-auto object-contain mb-4 brightness-0 invert" />
             <p className="text-muted-foreground text-sm mb-6 max-w-xs">
               UNISEX STREETWEAR COLLECTIVE PREMIERE INDIAN STREET FASHION STUDIO.<br />
               Designed for the fearless.
@@ -206,14 +207,14 @@ export default function Footer() {
 
         {/* Copyright */}
         <div className="pt-8 border-t border-muted-foreground/20 md:border-transparent flex justify-center items-center text-xs text-muted-foreground text-center">
-          <p>&copy; 2026 H&S COLLECTIVE. ALL RIGHTS RESERVED.</p>
+          <p>2026 &copy; All Rights Reserved by ASAT &nbsp;||&nbsp; EvoRES Technology LLP 🌐</p>
         </div>
       </div>
 
       {/* Subscription Success Modal Popup */}
       {showPopup && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white text-black border border-neutral-200 p-8 max-w-md w-full shadow-2xl relative text-center">
+        <div className="fixed inset-0 w-full h-[100dvh] z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white text-black border border-neutral-200 p-6 sm:p-8 max-w-md w-[95vw] sm:w-full max-h-[90dvh] overflow-y-auto shadow-2xl relative text-center">
             <button 
               type="button"
               onClick={() => setShowPopup(false)}

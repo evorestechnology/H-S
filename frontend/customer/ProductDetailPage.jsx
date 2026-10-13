@@ -134,7 +134,7 @@ export default function ProductDetailPage() {
   }
 
   return (
-    <div className="pt-24 pb-20 max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 min-h-screen">
+    <div className="pt-20 sm:pt-24 md:pt-28 pb-16 sm:pb-20 max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 min-h-[100dvh]">
       
       {/* Breadcrumbs */}
       <nav className="flex text-xs uppercase tracking-widest text-muted-foreground mb-8">
@@ -179,7 +179,7 @@ export default function ProductDetailPage() {
               <div 
                 key={idx} 
                 onClick={() => { setLightboxIndex(idx); setIsLightboxOpen(true); }}
-                className={`aspect-[3/4] w-[85vw] sm:w-[60vw] lg:w-full flex-shrink-0 snap-center bg-muted overflow-hidden rounded-2xl relative cursor-zoom-in group ${idx === 0 ? 'lg:hidden' : ''}`}
+                className={`aspect-[3/4] w-[82vw] sm:w-[50vw] lg:w-full flex-shrink-0 snap-center bg-muted overflow-hidden rounded-2xl relative cursor-zoom-in group ${idx === 0 ? 'lg:hidden' : ''}`}
                 title="Click to view full image in high resolution"
               >
                 <img src={img} alt={`${product.name} ${idx + 1}`} className={`w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 ${!product.inStock ? 'opacity-70 grayscale' : ''}`} />
@@ -412,7 +412,7 @@ export default function ProductDetailPage() {
           >
             <motion.div 
               initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-background max-w-2xl w-full p-6 lg:p-10 relative overflow-hidden"
+              className="bg-background max-w-2xl w-full max-h-[90dvh] overflow-y-auto p-6 lg:p-10 relative rounded-xl"
               onClick={e => e.stopPropagation()}
             >
               <button 

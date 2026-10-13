@@ -53,13 +53,11 @@ export default function Home() {
   ];
 
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="flex flex-col min-h-[100dvh] w-full max-w-full overflow-x-hidden">
       <HeroBanner />
 
-      
-
       {/* Latest Drops Section */}
-      <section className="py-20 bg-muted">
+      <section className="py-12 sm:py-20 bg-muted">
         <div className="max-w-9xl mx-auto px-4 sm:px-6 lg:px-8 w-full ">
           <div className="flex justify-between items-end mb-10 ">
             <h2 className="font-heading text-3xl md:text-4xl font-black uppercase tracking-tighter">Latest Drops</h2>
@@ -88,7 +86,7 @@ export default function Home() {
       </section>
 
       {/* Best Sellers Grid */}
-      <section className="py-24 max-w-9xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+      <section className="py-14 sm:py-20 lg:py-24 max-w-9xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
         <div className="flex flex-col items-center mb-16">
           <h2 className="font-heading text-3xl md:text-4xl font-black uppercase tracking-tighter mb-4">Trending in H&S</h2>
           <div className="w-16 h-1 bg-black"></div>

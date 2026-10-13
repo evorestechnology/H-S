@@ -227,19 +227,32 @@
 }
 
 .sidebar.collapsed .logout-btn {
-
     justify-content: center;
+}
 
+/* Backdrop */
+.sidebar-backdrop {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100vh;
+    height: 100dvh;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(2px);
+    z-index: 999;
 }
 
 /* Mobile */
-
 @media(max-width:768px) {
-
     .sidebar {
-
         transform: translateX(-100%);
-
+        height: 100vh;
+        height: 100dvh;
+        z-index: 1000;
+        box-shadow: 4px 0 24px rgba(0, 0, 0, 0.35);
     }
 
+    .sidebar.mobile-open {
+        transform: translateX(0);
+    }
 }

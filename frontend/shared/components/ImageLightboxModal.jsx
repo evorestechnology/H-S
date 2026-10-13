@@ -39,7 +39,7 @@ export default function ImageLightboxModal({ isOpen, onClose, images = [], curre
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         onClick={onClose}
-        className="fixed inset-0 z-[9999] bg-black/92 backdrop-blur-md flex flex-col items-center justify-between p-4 sm:p-6 select-none"
+        className="fixed inset-0 w-full h-[100dvh] z-[9999] bg-black/92 backdrop-blur-md flex flex-col items-center justify-between p-4 sm:p-6 select-none"
       >
         {/* Top Header Controls */}
         <div className="w-full max-w-7xl flex items-center justify-between z-10 text-white/90 pt-2">

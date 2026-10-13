@@ -71,14 +71,14 @@ export default function TrackingDetailPage() {
   const isRefunded = refundStatus === 'Refunded';
 
   return (
-    <div className="pt-32 pb-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 min-h-screen">
+    <div className="pt-20 sm:pt-24 md:pt-28 pb-16 sm:pb-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 min-h-[100dvh]">
       {/* Optional image preview modal */}
       {previewImage && (
         <div 
-          className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4 backdrop-blur-sm"
+          className="fixed inset-0 w-full h-[100dvh] z-50 bg-black/80 flex items-center justify-center p-4 backdrop-blur-sm"
           onClick={() => setPreviewImage(null)}
         >
-          <div className="bg-white max-w-2xl w-full p-6 rounded-lg shadow-2xl relative" onClick={e => e.stopPropagation()}>
+          <div className="bg-white max-w-2xl w-[95vw] sm:w-full p-4 sm:p-6 rounded-lg shadow-2xl relative max-h-[90dvh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             <div className="flex justify-between items-center mb-4 pb-3 border-b">
               <span className="font-bold text-xs uppercase tracking-widest flex items-center gap-2">
                 <FileText className="w-4 h-4 text-emerald-600" /> Refund Receipt Proof
@@ -91,8 +91,8 @@ export default function TrackingDetailPage() {
                 ✕ Close
               </button>
             </div>
-            <div className="max-h-[70vh] overflow-auto flex items-center justify-center bg-neutral-100 p-2 rounded">
-              <img src={previewImage} alt="Refund Receipt Proof" className="max-h-[65vh] w-auto object-contain rounded" />
+            <div className="max-h-[60vh] overflow-auto flex items-center justify-center bg-neutral-100 p-2 rounded">
+              <img src={previewImage} alt="Refund Receipt Proof" className="max-h-[55vh] max-w-full object-contain rounded" />
             </div>
             <div className="mt-5 flex justify-end gap-3">
               <a 
@@ -273,7 +273,7 @@ export default function TrackingDetailPage() {
             <div className="bg-white border border-border shadow-sm p-8 sm:p-10">
 
               {/* Horizontal Timeline */}
-              <div className="relative mb-16 px-2 sm:px-8">
+              <div className="relative mb-12 sm:mb-16 px-1 sm:px-8">
                 {(() => {
                   const status = (order.status || '').toUpperCase();
                   const isDelivered = status === 'DELIVERED';
@@ -286,9 +286,9 @@ export default function TrackingDetailPage() {
                   return (
                     <>
                       {/* Background dotted line */}
-                      <div className="absolute top-4 left-10 right-10 h-0.5 border-t-2 border-dashed border-border z-0"></div>
+                      <div className="absolute top-4 left-6 sm:left-10 right-6 sm:right-10 h-0.5 border-t-2 border-dashed border-border z-0"></div>
                       {/* Active solid line */}
-                      <div className="absolute top-4 left-10 h-1 bg-black transition-all duration-1000 z-0" style={{ width: isDelivered ? '100%' : (isShipping ? '50%' : '0%'), marginTop: '-1px' }}></div>
+                      <div className="absolute top-4 left-6 sm:left-10 h-1 bg-black transition-all duration-1000 z-0" style={{ width: isDelivered ? 'calc(100% - 3rem)' : (isShipping ? 'calc(50% - 1.5rem)' : '0%'), marginTop: '-1px' }}></div>
                       <div className="flex justify-between relative z-10">
                         <div className="flex flex-col items-center">
                           <div className="w-8 h-8 rounded-full border-4 border-black bg-black text-white flex items-center justify-center shadow-[0_0_10px_rgba(0,0,0,0.2)]">

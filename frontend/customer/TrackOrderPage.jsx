@@ -41,16 +41,16 @@ export default function TrackOrderPage() {
   }, []);
 
   return (
-    <div className="pt-32 pb-20 max-w-5xl mx-auto px-4 min-h-screen">
-      <h1 className="font-heading text-4xl uppercase font-bold mb-12 text-center border-b border-border pb-6">Order History</h1>
+    <div className="pt-20 sm:pt-24 md:pt-28 pb-16 sm:pb-20 max-w-5xl mx-auto px-4 sm:px-6 min-h-[100dvh]">
+      <h1 className="font-heading text-2xl sm:text-4xl uppercase font-bold mb-8 sm:mb-12 text-center border-b border-border pb-6">Order History</h1>
       
       {/* Optional image preview modal */}
       {previewImage && (
         <div 
-          className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4 backdrop-blur-sm"
+          className="fixed inset-0 w-full h-[100dvh] z-50 bg-black/80 flex items-center justify-center p-4 backdrop-blur-sm"
           onClick={() => setPreviewImage(null)}
         >
-          <div className="bg-white max-w-xl w-full p-4 rounded-lg shadow-2xl relative" onClick={e => e.stopPropagation()}>
+          <div className="bg-white max-w-xl w-[95vw] sm:w-full p-4 rounded-lg shadow-2xl relative max-h-[90dvh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             <div className="flex justify-between items-center mb-3 pb-2 border-b">
               <span className="font-bold text-xs uppercase tracking-widest flex items-center gap-2">
                 <FileText className="w-4 h-4 text-emerald-600" /> Refund Receipt Proof

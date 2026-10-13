@@ -2,7 +2,7 @@ import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
 import { prisma } from '../lib/prisma.js';
-import { sendPasswordResetEmail } from '../utils/email.js';
+import { sendPasswordResetEmail, sendOtpEmail } from '../utils/email.js';
 
 const generateToken = (userId, res) => {
   const token = jwt.sign({ userId }, process.env.JWT_SECRET, {
@@ -180,6 +180,11 @@ export const checkAuth = async (req, res) => {
   }
 };
 
+/**
+ * forgotPassword — sends a 6-digit OTP to the user's email.
+ * The OTP is stored (hashed) in resetPasswordToken, and the raw token
+ * is prefixed with "OTP:" so verifyOtp can distinguish it from a link token.
+ */
 export const forgotPassword = async (req, res) => {
   try {
     const email = String(req.body?.email || '').trim().toLowerCase();
@@ -190,38 +195,99 @@ export const forgotPassword = async (req, res) => {
 
     const user = await prisma.user.findUnique({ where: { email } });
 
+    // Always return 200 to prevent email enumeration
     if (!user) {
       return res.status(200).json({
         success: true,
-        message: 'If an account exists for this email, a password reset link has been sent.'
+        message: 'If an account exists for this email, an OTP has been sent.'
       });
     }
 
-    const token = crypto.randomBytes(32).toString('hex');
-    const expiry = new Date(Date.now() + 60 * 60 * 1000);
+    // Generate a 6-digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
+    // Store OTP with prefix so we can distinguish it from a link-based token
     await prisma.user.update({
       where: { id: user.id },
       data: {
-        resetPasswordToken: token,
+        resetPasswordToken: `OTP:${otp}`,
         resetPasswordExpiry: expiry,
       }
     });
 
-    const appUrl = process.env.APP_URL || 'http://localhost:5173';
-    const resetLink = `${appUrl}/reset-password/${token}`;
-
-    await sendPasswordResetEmail(user.email, user.fullName || 'Customer', resetLink);
+    // Send OTP email
+    await sendOtpEmail(user.email, user.fullName || 'Customer', otp);
 
     return res.status(200).json({
       success: true,
-      message: 'If an account exists for this email, a password reset link has been sent.'
+      message: 'OTP sent to your email address. It is valid for 10 minutes.'
     });
   } catch (error) {
     console.error('Error in forgotPassword controller:', error.message);
     return res.status(500).json({
       success: false,
-      message: 'Unable to process the password reset request right now.'
+      message: 'Unable to process the request right now. Please try again.'
+    });
+  }
+};
+
+/**
+ * verifyOtp — verifies the 6-digit OTP and, on success,
+ * generates a short-lived reset token for the password-reset step.
+ */
+export const verifyOtp = async (req, res) => {
+  try {
+    const email = String(req.body?.email || '').trim().toLowerCase();
+    const otp = String(req.body?.otp || '').trim();
+
+    if (!email || !otp) {
+      return res.status(400).json({ success: false, message: 'Email and OTP are required.' });
+    }
+
+    const user = await prisma.user.findUnique({ where: { email } });
+
+    if (!user || !user.resetPasswordToken || !user.resetPasswordExpiry) {
+      return res.status(400).json({ success: false, message: 'OTP expired or not found. Please request a new one.' });
+    }
+
+    // Check expiry
+    if (new Date() > new Date(user.resetPasswordExpiry)) {
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { resetPasswordToken: null, resetPasswordExpiry: null }
+      });
+      return res.status(400).json({ success: false, message: 'OTP has expired. Please request a new one.' });
+    }
+
+    // Verify OTP (must be prefixed with "OTP:")
+    const storedToken = user.resetPasswordToken;
+    if (!storedToken.startsWith('OTP:') || storedToken.slice(4) !== otp) {
+      return res.status(400).json({ success: false, message: 'Invalid OTP. Please check and try again.' });
+    }
+
+    // OTP verified — generate a new short-lived reset token (link-style)
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const resetExpiry = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        resetPasswordToken: resetToken,
+        resetPasswordExpiry: resetExpiry,
+      }
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: 'OTP verified successfully.',
+      resetToken
+    });
+  } catch (error) {
+    console.error('Error in verifyOtp controller:', error.message);
+    return res.status(500).json({
+      success: false,
+      message: 'Unable to verify OTP right now. Please try again.'
     });
   }
 };
@@ -250,7 +316,7 @@ export const resetPassword = async (req, res) => {
     if (!user) {
       return res.status(400).json({
         success: false,
-        message: 'This reset link is invalid or has expired.'
+        message: 'This reset session is invalid or has expired. Please start over.'
       });
     }
 

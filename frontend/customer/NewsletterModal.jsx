@@ -35,12 +35,12 @@ export default function NewsletterModal() {
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs">
+        <div className="fixed inset-0 w-full h-[100dvh] z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs">
           <motion.div
             initial={{ opacity: 0, scale: 0.95, y: 10 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 10 }}
-            className="relative w-full max-w-md p-8 bg-black border border-neutral-800 rounded-none shadow-2xl text-white overflow-hidden"
+            className="relative w-full max-w-md max-h-[90dvh] overflow-y-auto p-6 sm:p-8 bg-black border border-neutral-800 rounded-none shadow-2xl text-white"
           >
             {/* Top decorative gradient border */}
             <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-red-600 via-neutral-200 to-red-600" />
