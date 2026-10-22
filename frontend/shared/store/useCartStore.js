@@ -2,6 +2,10 @@ import { create } from 'zustand';
 import { axiosInstance } from '../lib/axios';
 
 const USE_MOCK_DATA = import.meta.env.VITE_USE_MOCK_DATA === 'true';
+const quantityUpdateQueues = new Map();
+
+const isSameCartItem = (item, productId, size, color) =>
+  item.id === productId && item.size === size && (!color || item.color === color);
 
 // Helper to format backend cart into frontend state
 const formatCartItems = (cartData) => {
@@ -11,7 +15,9 @@ const formatCartItems = (cartData) => {
     itemId: item.id, // The unique cartItem ID
     name: item.product.name,
     price: item.product.price,
-    images: item.product.images || [],
+    images: item.product.images?.length
+      ? item.product.images
+      : (item.product.coverPhoto ? [item.product.coverPhoto] : []),
     size: item.size,
     color: item.color || 'Default',
     quantity: item.quantity,
@@ -45,9 +51,15 @@ export const useCartStore = create((set, get) => ({
     set({ isCartOpen: true });
     if (USE_MOCK_DATA) {
       set((state) => {
-        const existingItem = state.cartItems.find(item => item.id === product.id && item.size === size);
+        const existingItem = state.cartItems.find(item => isSameCartItem(item, product.id, size, color));
         if (existingItem) {
-          return { cartItems: state.cartItems.map(item => item.id === product.id && item.size === size ? { ...item, quantity: item.quantity + quantity } : item) };
+          return {
+            cartItems: state.cartItems.map(item =>
+              isSameCartItem(item, product.id, size, color)
+                ? { ...item, quantity: item.quantity + quantity }
+                : item
+            )
+          };
         }
         return { cartItems: [...state.cartItems, { ...product, size, color, quantity }] };
       });
@@ -68,12 +80,12 @@ export const useCartStore = create((set, get) => ({
   },
 
   // 3. Remove from Cart
-  removeFromCart: async (productId, size) => {
-    const itemToRemove = get().cartItems.find(item => item.id === productId && item.size === size);
+  removeFromCart: async (productId, size, color) => {
+    const itemToRemove = get().cartItems.find(item => isSameCartItem(item, productId, size, color));
     
     if (USE_MOCK_DATA || !itemToRemove?.itemId) {
       set((state) => ({
-        cartItems: state.cartItems.filter(item => !(item.id === productId && item.size === size))
+        cartItems: state.cartItems.filter(item => !isSameCartItem(item, productId, size, color))
       }));
       return;
     }
@@ -81,7 +93,7 @@ export const useCartStore = create((set, get) => ({
     try {
       // Optimistic update
       set((state) => ({
-        cartItems: state.cartItems.filter(item => !(item.id === productId && item.size === size))
+        cartItems: state.cartItems.filter(item => !isSameCartItem(item, productId, size, color))
       }));
       const res = await axiosInstance.delete(`/cart/${itemToRemove.itemId}`);
       set({ cartItems: formatCartItems(res.data) });
@@ -92,31 +104,48 @@ export const useCartStore = create((set, get) => ({
   },
 
   // 4. Update Quantity
-  updateQuantity: async (productId, size, newQuantity) => {
-    const itemToUpdate = get().cartItems.find(item => item.id === productId && item.size === size);
+  updateQuantity: async (productId, size, newQuantity, color) => {
+    const itemToUpdate = get().cartItems.find(item => isSameCartItem(item, productId, size, color));
+    const normalizedQuantity = Math.max(1, Math.floor(Number(newQuantity) || 1));
 
     if (USE_MOCK_DATA || !itemToUpdate?.itemId) {
       set((state) => ({
         cartItems: state.cartItems.map(item =>
-          item.id === productId && item.size === size ? { ...item, quantity: Math.max(1, newQuantity) } : item
+          isSameCartItem(item, productId, size, color)
+            ? { ...item, quantity: normalizedQuantity }
+            : item
         )
       }));
       return;
     }
 
-    try {
-      // Optimistic update
-      set((state) => ({
-        cartItems: state.cartItems.map(item =>
-          item.id === productId && item.size === size ? { ...item, quantity: Math.max(1, newQuantity) } : item
-        )
-      }));
-      const res = await axiosInstance.put(`/cart/${itemToUpdate.itemId}`, { quantity: newQuantity });
-      set({ cartItems: formatCartItems(res.data) });
-    } catch (error) {
-      console.error('Error updating quantity:', error);
-      get().fetchCart(); // Revert on failure
-    }
+    set((state) => ({
+      cartItems: state.cartItems.map(item =>
+        isSameCartItem(item, productId, size, color)
+          ? { ...item, quantity: normalizedQuantity }
+          : item
+      )
+    }));
+
+    const itemKey = itemToUpdate.itemId;
+    const previousRequest = quantityUpdateQueues.get(itemKey) || Promise.resolve();
+    const request = previousRequest
+      .catch(() => {})
+      .then(async () => {
+        const res = await axiosInstance.put(`/cart/${itemKey}`, { quantity: normalizedQuantity });
+        set({ cartItems: formatCartItems(res.data) });
+      })
+      .catch(async (error) => {
+        console.error('Error updating quantity:', error);
+        await get().fetchCart();
+      })
+      .finally(() => {
+        if (quantityUpdateQueues.get(itemKey) === request) {
+          quantityUpdateQueues.delete(itemKey);
+        }
+      });
+    quantityUpdateQueues.set(itemKey, request);
+    await request;
   },
   
   // 5. Clear Cart (After Checkout)

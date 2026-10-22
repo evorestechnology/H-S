@@ -395,7 +395,7 @@ export default function CheckoutPage() {
                     <div className="flex items-center border border-border">
                       <button 
                         type="button"
-                        onClick={() => updateQuantity(item.id, item.size, item.quantity - 1)}
+                        onClick={() => updateQuantity(item.id, item.size, item.quantity - 1, item.color)}
                         className="p-2 hover:bg-muted transition-colors"
                       >
                         <Minus className="w-3 h-3" />
@@ -403,7 +403,7 @@ export default function CheckoutPage() {
                       <span className="w-8 text-center text-xs font-bold">{item.quantity}</span>
                       <button 
                         type="button"
-                        onClick={() => updateQuantity(item.id, item.size, item.quantity + 1)}
+                        onClick={() => updateQuantity(item.id, item.size, item.quantity + 1, item.color)}
                         className="p-2 hover:bg-muted transition-colors"
                       >
                         <Plus className="w-3 h-3" />
@@ -411,7 +411,7 @@ export default function CheckoutPage() {
                     </div>
                     <button 
                       type="button"
-                      onClick={() => removeFromCart(item.id, item.size)}
+                      onClick={() => removeFromCart(item.id, item.size, item.color)}
                       className="text-xs font-bold uppercase tracking-widest text-red-500 hover:text-red-600 flex items-center gap-1 transition-colors"
                     >
                       <Trash2 className="w-3 h-3" /> Remove
@@ -663,7 +663,14 @@ export default function CheckoutPage() {
                   <span className="text-muted-foreground uppercase tracking-widest">Subtotal</span>
                   <span className="font-bold">₹{subtotal.toFixed(2)}</span>
                 </div>
-
+                                {appliedCoupon && (
+                  <div className="flex justify-between text-green-600 font-bold">
+                    <span className="uppercase tracking-widest flex items-center gap-1">
+                      Discount ({appliedCoupon.code})
+                    </span>
+                    <span>-₹{discountAmount.toFixed(2)}</span>
+                  </div>
+                )}
                 <div className="flex justify-between relative items-center">
                   <div className="flex items-center gap-2" ref={gstInfoRef}>
                     <span className="text-muted-foreground uppercase tracking-widest">GST</span>
@@ -698,14 +705,7 @@ export default function CheckoutPage() {
                   <span className="font-bold">{shipping === 0 ? 'Free' : `₹${shipping.toFixed(2)}`}</span>
                 </div>
 
-                {appliedCoupon && (
-                  <div className="flex justify-between text-green-600 font-bold">
-                    <span className="uppercase tracking-widest flex items-center gap-1">
-                      Discount ({appliedCoupon.code})
-                    </span>
-                    <span>-₹{discountAmount.toFixed(2)}</span>
-                  </div>
-                )}
+
               </div>
               <div className="flex justify-between border-t border-black pt-4">
                 <span className="font-bold uppercase tracking-widest text-lg">Total</span>
@@ -762,7 +762,7 @@ export default function CheckoutPage() {
                 </label>
 
                 {/* Cash on Delivery Option */}
-                <label className={`block border p-5 cursor-pointer transition-all ${paymentMethod === 'COD' ? 'border-black bg-white shadow-sm ring-1 ring-black' : 'border-border bg-white hover:border-black/50'}`}>
+                {/* <label className={`block border p-5 cursor-pointer transition-all ${paymentMethod === 'COD' ? 'border-black bg-white shadow-sm ring-1 ring-black' : 'border-border bg-white hover:border-black/50'}`}>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <input 
@@ -779,7 +779,7 @@ export default function CheckoutPage() {
                       </div>
                     </div>
                   </div>
-                </label>
+                </label> */}
               </div>
             </section>
 

@@ -387,17 +387,19 @@ const Orders = () => {
     const handleAcceptPriceAdjustment = async (targetOrder) => {
         const adjustment = targetOrder.priceAdjustmentAmount || 0;
         try {
-            await respondToPriceAdjustment(targetOrder.id, "approve");
-            updateOrdersState((prev) => prev.map((order) => {
-                if (order.id === targetOrder.id) {
-                    return {
-                        ...order,
-                        priceAdjustmentStatus: "Approved",
-                        mfgPayment: Number((order.mfgPayment + adjustment).toFixed(2))
-                    };
-                }
-                return order;
-            }));
+            const res = await respondToPriceAdjustment(targetOrder.id, "approve");
+            const updatedOrder = res?.order || res?.data;
+            if (updatedOrder) {
+                updateOrdersState((prev) => prev.map((order) => {
+                    if (order.id === targetOrder.id) {
+                        return {
+                            ...order,
+                            ...updatedOrder
+                        };
+                    }
+                    return order;
+                }));
+            }
             await loadOrdersData();
             try {
                 const channel = new BroadcastChannel("hs_orders_sync_channel");
@@ -414,16 +416,19 @@ const Orders = () => {
     };
     const handleRejectPriceAdjustment = async (targetOrder) => {
         try {
-            await respondToPriceAdjustment(targetOrder.id, "reject");
-            updateOrdersState((prev) => prev.map((order) => {
-                if (order.id === targetOrder.id) {
-                    return {
-                        ...order,
-                        priceAdjustmentStatus: "Rejected"
-                    };
-                }
-                return order;
-            }));
+            const res = await respondToPriceAdjustment(targetOrder.id, "reject");
+            const updatedOrder = res?.order || res?.data;
+            if (updatedOrder) {
+                updateOrdersState((prev) => prev.map((order) => {
+                    if (order.id === targetOrder.id) {
+                        return {
+                            ...order,
+                            ...updatedOrder
+                        };
+                    }
+                    return order;
+                }));
+            }
             await loadOrdersData();
             try {
                 const channel = new BroadcastChannel("hs_orders_sync_channel");

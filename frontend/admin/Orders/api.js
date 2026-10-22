@@ -101,8 +101,8 @@ export const requestPriceAdjustment = async (id, amount, reason) => {
 // 7. RESPOND TO PRICE ADJUSTMENT (PATCH /api/orders/:id/price-adjustment)
 // ==========================================
 export const respondToPriceAdjustment = async (id, action) => {
-    await apiClient.patch(`/orders/${id}/price-adjustment`, { action });
-    return true;
+    const res = await apiClient.patch(`/orders/${id}/price-adjustment`, { action });
+    return res.data || res;
 };
 // ==========================================
 // 8. REQUEST ORDER CANCELLATION (POST /api/orders/:id/cancel-request)

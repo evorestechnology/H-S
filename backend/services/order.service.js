@@ -1529,16 +1529,49 @@ export const requestPriceAdjustment = async (id, priceAdjustmentAmount, priceAdj
  * Responds to a price adjustment request (approve or reject).
  */
 export const handlePriceAdjustmentResponse = async (id, action) => {
-  const order = await prisma.order.findUnique({ where: { id } });
+  const order = await prisma.order.findUnique({
+    where: { id },
+    include: {
+      items: { include: { product: true } }
+    }
+  });
   if (!order) {
     throw new Error('Order not found');
   }
 
   const isApproved = action === 'approve';
-  const adjustment = order.priceAdjustmentAmount || 0;
+  const adjustment = Number(order.priceAdjustmentAmount) || 0;
+
+  // Compute authoritative base manufacturing cost from items
+  let baseMfg = 0;
+  if (Array.isArray(order.items) && order.items.length > 0) {
+    baseMfg = order.items.reduce((sum, it) => {
+      const itColorAssets = resolveColorAssets(it.product || {}, it.color);
+      const matched = itColorAssets.matchedColor;
+      const colorMfgPrice = (matched && typeof matched.manufacturePrice === 'number' && matched.manufacturePrice > 0)
+        ? matched.manufacturePrice
+        : null;
+      const colorBreakdownTotal = (matched && (typeof matched.baseCost === 'number' || typeof matched.printingCost === 'number'))
+        ? ((Number(matched.baseCost) || 0) + (Number(matched.printingCost) || 0) + (Number(matched.shippingCost) || 0) + (Number(matched.additionalCost) || 0))
+        : 0;
+      const targetColorMfg = colorMfgPrice || (colorBreakdownTotal > 0 ? colorBreakdownTotal : null);
+      const unitMfg = targetColorMfg
+        || ((typeof it.product?.manufacturePrice === 'number' && it.product.manufacturePrice > 0)
+          ? it.product.manufacturePrice
+          : 0);
+      return sum + (unitMfg * (it.quantity || 1));
+    }, 0);
+  }
+
+  if (baseMfg <= 0) {
+    baseMfg = order.priceAdjustmentStatus === 'Approved'
+      ? Math.max(0, (order.mfgPayment || 0) - adjustment)
+      : (order.mfgPayment || 0);
+  }
+
   const newMfgPayment = isApproved
-    ? Number((order.mfgPayment + adjustment).toFixed(2))
-    : order.mfgPayment;
+    ? Number((baseMfg + adjustment).toFixed(2))
+    : Number(baseMfg.toFixed(2));
 
   const updated = await prisma.order.update({
     where: { id },

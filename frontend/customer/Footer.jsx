@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Mail, ChevronDown, Check, X } from 'lucide-react';
+import { Mail, ChevronDown, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import blackLogoImg from '../assets/logo-black.png';
 
@@ -23,6 +23,24 @@ const InstagramIcon = ({ className }) => (
   </svg>
 );
 
+const YoutubeIcon = ({ className }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+  >
+    <path d="M2.5 7.5a2 2 0 0 1 1.4-1.9C6.3 5 9 5 12 5s5.7 0 8.1.6a2 2 0 0 1 1.4 1.9c.2 1.5.3 3 .3 4.5s-.1 3-.3 4.5a2 2 0 0 1-1.4 1.9C17.7 19 15 19 12 19s-5.7 0-8.1-.6a2 2 0 0 1-1.4-1.9c-.2-1.5-.3-3-.3-4.5s.1-3 .3-4.5Z" />
+    <path d="m10 9 5 3-5 3V9Z" />
+  </svg>
+);
+
 export default function Footer() {
   const [openMobileSection, setOpenMobileSection] = useState(null);
   const [email, setEmail] = useState('');
@@ -36,7 +54,7 @@ export default function Footer() {
     e.preventDefault();
     if (!email.trim()) return;
     setShowPopup(true);
-    toast.success('Thank You For Joining the H&S Exclusive Club, Stay Tuned for the Updates');
+    toast.success('Thank You For Being the member of H&S Family');
     setEmail('');
   };
 
@@ -58,7 +76,9 @@ export default function Footer() {
         <div className="block md:hidden space-y-6 mb-8">
           {/* Brand Info */}
           <div>
-            <img src={blackLogoImg} alt="H&S" className="h-8 w-auto object-contain mb-3 brightness-0 invert" />
+            <Link to="/" className="inline-block" onClick={() => window.scrollTo(0, 0)}>
+              <img src={blackLogoImg} alt="H&S - Hi & Shi" className="h-8 w-auto object-contain mb-3 brightness-0 invert hover:opacity-85 transition-opacity" />
+            </Link>
             <p className="text-muted-foreground text-xs leading-relaxed mb-4">
               UNISEX STREETWEAR COLLECTIVE PREMIERE INDIAN STREET FASHION STUDIO.<br />
               Designed for the fearless.
@@ -66,6 +86,9 @@ export default function Footer() {
             <div className="flex space-x-4">
               <a href="https://www.instagram.com/h_and_s__official?psln=MWZobW05NGplaWVmbg==" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-background transition-colors" aria-label="Instagram">
                 <InstagramIcon className="w-5 h-5" />
+              </a>
+              <a href="https://www.youtube.com/" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-background transition-colors" aria-label="YouTube">
+                <YoutubeIcon className="w-5 h-5" />
               </a>
             </div>
           </div>
@@ -146,7 +169,9 @@ export default function Footer() {
         <div className="hidden md:grid grid-cols-4 gap-12 mb-12">
           
           <div className="col-span-1">
-            <img src={blackLogoImg} alt="H&S" className="h-9 w-auto object-contain mb-4 brightness-0 invert" />
+            <Link to="/" className="inline-block" onClick={() => window.scrollTo(0, 0)}>
+              <img src={blackLogoImg} alt="H&S - Hi & Shi" className="h-9 w-auto object-contain mb-4 brightness-0 invert hover:opacity-85 transition-opacity" />
+            </Link>
             <p className="text-muted-foreground text-sm mb-6 max-w-xs">
               UNISEX STREETWEAR COLLECTIVE PREMIERE INDIAN STREET FASHION STUDIO.<br />
               Designed for the fearless.
@@ -154,6 +179,9 @@ export default function Footer() {
             <div className="flex space-x-4">
               <a href="https://www.instagram.com/h_and_s__official?psln=MWZobW05NGplaWVmbg==" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-background transition-colors" aria-label="Instagram">
                 <InstagramIcon className="w-5 h-5" />
+              </a>
+              <a href="https://www.youtube.com/" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-background transition-colors" aria-label="YouTube">
+                <YoutubeIcon className="w-5 h-5" />
               </a>
             </div>
           </div>
@@ -207,7 +235,18 @@ export default function Footer() {
 
         {/* Copyright */}
         <div className="pt-8 border-t border-muted-foreground/20 md:border-transparent flex justify-center items-center text-xs text-muted-foreground text-center">
-          <p>2026 &copy; All Rights Reserved by ASAT &nbsp;||&nbsp; EvoRES Technology LLP 🌐</p>
+          <p>
+            2026 &copy; All Rights Reserved by ASAT &nbsp;||&nbsp;{' '}
+            <a 
+              href="https://evorestechnology.com/" 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="hover:text-background transition-colors inline-flex items-center gap-1"
+              aria-label="EvoRES Technology website"
+            >
+              EvoRES Technology LLP <span>🌐</span>
+            </a>
+          </p>
         </div>
       </div>
 
@@ -224,20 +263,22 @@ export default function Footer() {
               <X className="w-5 h-5" />
             </button>
             <div className="w-14 h-14 bg-black text-white rounded-full flex items-center justify-center mx-auto mb-5 shadow-md">
-              <Check className="w-7 h-7" />
+              <span className="text-2xl" role="img" aria-label="Congratulations">🎉</span>
             </div>
             <h3 className="font-heading text-xl font-bold uppercase tracking-tight mb-3">
-              H&S Exclusive Club
+              H&S Family
             </h3>
             <p className="text-xs sm:text-sm text-neutral-600 mb-6 font-medium leading-relaxed uppercase tracking-wider">
-              Thank You For Joining the H&S Exclusive Club, Stay Tuned for the Updates
+              Thank You For Being the member of H&S Family
+              <br />
+              We Will Update You On The Trends
             </p>
             <button
               type="button"
               onClick={() => setShowPopup(false)}
               className="w-full py-3.5 bg-black text-white font-bold text-xs uppercase tracking-widest hover:bg-neutral-800 transition-colors"
             >
-              Continue
+              Close
             </button>
           </div>
         </div>

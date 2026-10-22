@@ -358,11 +358,7 @@ export const getAdminWalletMetrics = async (req, res) => {
 
     orders.forEach(order => {
       const sale = Number(order.totalPrice) || 0;
-      const baseMfg = Number(order.mfgPayment) || 0;
-      const adj = (order.priceAdjustmentStatus === 'Approved' && order.priceAdjustmentAmount)
-        ? Number(order.priceAdjustmentAmount)
-        : 0;
-      const mfgPay = baseMfg + adj;
+      const mfgPay = Number(order.mfgPayment) || 0;
       const gst = Number(order.taxPrice) || 0;
 
       grossRevenue += sale;
@@ -479,11 +475,7 @@ export const getAdminWalletTransactions = async (req, res) => {
 
     const regularTransactions = orders.map(order => {
       const grossSale = Number(order.totalPrice) || 0;
-      const baseMfg = Number(order.mfgPayment) || 0;
-      const adj = (order.priceAdjustmentStatus === 'Approved' && order.priceAdjustmentAmount)
-        ? Number(order.priceAdjustmentAmount)
-        : 0;
-      const mfgPay = baseMfg + adj;
+      const mfgPay = Number(order.mfgPayment) || 0;
       const gstVal = Number(order.taxPrice) || 0;
       const adjStatus = order.priceAdjustmentStatus || 'None';
       const isAdjusted = Boolean(adjStatus === 'Approved' && order.priceAdjustmentAmount && order.priceAdjustmentAmount > 0);

@@ -85,7 +85,7 @@ export default function CartDrawer() {
                               if (!isWishlisted) {
                                 toggleWishlist(item);
                               }
-                              removeFromCart(item.id, item.size);
+                              removeFromCart(item.id, item.size, item.color);
                             }}
                             className="text-muted-foreground hover:text-black transition-colors"
                             title="Move to Wishlist"
@@ -93,7 +93,7 @@ export default function CartDrawer() {
                             <Heart className={`w-4 h-4 ${wishlistItems.some(w => w.id === item.id) ? 'fill-black text-black' : ''}`} />
                           </button>
                           <button 
-                            onClick={() => removeFromCart(item.id, item.size)}
+                            onClick={() => removeFromCart(item.id, item.size, item.color)}
                             className="text-muted-foreground hover:text-red-500 transition-colors"
                             title="Remove item"
                           >
@@ -105,14 +105,14 @@ export default function CartDrawer() {
                       <div className="mt-auto flex items-center justify-between">
                         <div className="flex items-center border border-border">
                           <button 
-                            onClick={() => updateQuantity(item.id, item.size, item.quantity - 1)}
+                            onClick={() => updateQuantity(item.id, item.size, item.quantity - 1, item.color)}
                             className="p-2 hover:bg-muted transition-colors"
                           >
                             <Minus className="w-3 h-3" />
                           </button>
                           <span className="w-8 text-center text-sm font-medium">{item.quantity}</span>
                           <button 
-                            onClick={() => updateQuantity(item.id, item.size, item.quantity + 1)}
+                            onClick={() => updateQuantity(item.id, item.size, item.quantity + 1, item.color)}
                             className="p-2 hover:bg-muted transition-colors"
                           >
                             <Plus className="w-3 h-3" />
