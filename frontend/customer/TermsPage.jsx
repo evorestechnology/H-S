@@ -1,20 +1,63 @@
-import { useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ShieldCheck, Truck, RotateCcw, AlertTriangle, Sparkles, HelpCircle, Lock, Award, CreditCard, Info } from 'lucide-react';
+import { ShieldCheck, Truck, RotateCcw, AlertTriangle, Sparkles, HelpCircle, Lock, Award, CreditCard, Info, ChevronDown } from 'lucide-react';
+
+const sections = [
+  { id: 'brand', label: 'I. Brand & Fulfilment', href: '#brand' },
+  { id: 'shipping', label: 'II. Shipping Policy', href: '#shipping' },
+  { id: 'returns', label: 'III. Return, Exchange & Refund', href: '#returns' },
+  { id: 'cancellation', label: 'IV. Cancellation Policy', href: '#cancellation' },
+  { id: 'appearance', label: 'V. Product Appearance', href: '#appearance' },
+  { id: 'complaints', label: 'VI. Complaints & Disputes', href: '#complaints' },
+  { id: 'privacy', label: 'VII. Privacy Policy', href: '#privacy' },
+  { id: 'ip', label: 'VIII. Intellectual Property', href: '#ip' },
+  { id: 'payment', label: 'IX. Payment Policy', href: '#payment' },
+];
 
 export default function TermsPage() {
+  const [activeSection, setActiveSection] = useState('brand');
+
   useEffect(() => {
     window.scrollTo(0, 0);
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries.find((entry) => entry.isIntersecting);
+        if (visible) {
+          setActiveSection(visible.target.id);
+        }
+      },
+      {
+        rootMargin: '-20% 0px -60% 0px',
+        threshold: 0,
+      }
+    );
+
+    sections.forEach(({ id }) => {
+      const el = document.getElementById(id);
+      if (el) observer.observe(el);
+    });
+
+    return () => observer.disconnect();
   }, []);
+
+  const handleSectionChange = (e) => {
+    const targetId = e.target.value;
+    setActiveSection(targetId);
+    const el = document.getElementById(targetId);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
 
   return (
     <div className="pt-20 sm:pt-24 md:pt-28 pb-16 sm:pb-24 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 min-h-[100dvh]">
       {/* Header */}
-      <div className="text-center mb-14 border-b border-border pb-8">
+      <div className="text-center mb-8 sm:mb-14 border-b border-border pb-6 sm:pb-8">
         <span className="text-[10px] font-bold uppercase tracking-[0.3em] text-muted-foreground block mb-2">
           Legal & Customer Policies
         </span>
-        <h1 className="font-heading text-4xl sm:text-5xl uppercase font-black tracking-tight mb-4 text-foreground">
+        <h1 className="font-heading text-3xl sm:text-5xl uppercase font-black tracking-tight mb-4 text-foreground">
           Terms & Conditions
         </h1>
         <p className="text-xs uppercase tracking-widest text-muted-foreground font-semibold">
@@ -22,23 +65,44 @@ export default function TermsPage() {
         </p>
       </div>
 
-      {/* Quick Navigation Pills */}
-      <div className="flex flex-wrap gap-2 mb-12 justify-center">
-        {[
-          { label: 'Brand & Fulfilment', href: '#brand' },
-          { label: 'Shipping Policy', href: '#shipping' },
-          { label: 'Return, Exchange & Refund', href: '#returns' },
-          { label: 'Cancellation Policy', href: '#cancellation' },
-          { label: 'Product Appearance', href: '#appearance' },
-          { label: 'Complaints & Disputes', href: '#complaints' },
-          { label: 'Privacy Policy', href: '#privacy' },
-          { label: 'Intellectual Property', href: '#ip' },
-          { label: 'Payment Policy', href: '#payment' },
-        ].map((item) => (
+      {/* Mobile Navigation Dropdown */}
+      <div className="sm:hidden mb-8 sticky top-16 z-30 bg-background/95 backdrop-blur-md py-3 border-b border-border">
+        <label htmlFor="terms-dropdown" className="block text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1.5">
+          Jump to Section
+        </label>
+        <div className="relative">
+          <select
+            id="terms-dropdown"
+            value={activeSection}
+            onChange={handleSectionChange}
+            className="w-full appearance-none bg-background border border-border px-4 py-3 text-xs font-bold uppercase tracking-wider pr-10 focus:outline-none focus:border-foreground"
+          >
+            {sections.map((item) => (
+              <option key={item.id} value={item.id}>
+                {item.label}
+              </option>
+            ))}
+          </select>
+          <ChevronDown className="w-4 h-4 text-muted-foreground absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+        </div>
+      </div>
+
+      {/* Desktop Quick Navigation Pills */}
+      <div className="hidden sm:flex flex-wrap gap-2 mb-12 justify-center">
+        {sections.map((item) => (
           <a
             key={item.href}
             href={item.href}
-            className="px-3 py-1.5 border border-border text-[10px] font-bold uppercase tracking-wider hover:bg-black hover:text-white transition-colors"
+            onClick={(e) => {
+              e.preventDefault();
+              setActiveSection(item.id);
+              document.getElementById(item.id)?.scrollIntoView({ behavior: 'smooth' });
+            }}
+            className={`px-3 py-1.5 border text-[10px] font-bold uppercase tracking-wider transition-colors ${
+              activeSection === item.id
+                ? 'bg-black text-white border-black'
+                : 'border-border hover:bg-black hover:text-white'
+            }`}
           >
             {item.label}
           </a>
@@ -48,7 +112,7 @@ export default function TermsPage() {
       <div className="space-y-14 text-sm leading-relaxed text-muted-foreground">
 
         {/* Section I */}
-        <section id="brand" className="scroll-mt-32">
+        <section id="brand" className="scroll-mt-36 sm:scroll-mt-32">
           <div className="flex items-center gap-3 mb-6 pb-2 border-b border-border">
             <ShieldCheck className="w-5 h-5 text-black" />
             <h2 className="font-heading text-xl sm:text-2xl font-bold uppercase tracking-wide text-foreground">
@@ -107,7 +171,7 @@ export default function TermsPage() {
         </section>
 
         {/* Section II */}
-        <section id="shipping" className="scroll-mt-32">
+        <section id="shipping" className="scroll-mt-36 sm:scroll-mt-32">
           <div className="flex items-center gap-3 mb-6 pb-2 border-b border-border">
             <Truck className="w-5 h-5 text-black" />
             <h2 className="font-heading text-xl sm:text-2xl font-bold uppercase tracking-wide text-foreground">
@@ -180,7 +244,7 @@ export default function TermsPage() {
         </section>
 
         {/* Section III */}
-        <section id="returns" className="scroll-mt-32">
+        <section id="returns" className="scroll-mt-36 sm:scroll-mt-32">
           <div className="flex items-center gap-3 mb-6 pb-2 border-b border-border">
             <RotateCcw className="w-5 h-5 text-black" />
             <h2 className="font-heading text-xl sm:text-2xl font-bold uppercase tracking-wide text-foreground">
@@ -271,7 +335,7 @@ export default function TermsPage() {
         </section>
 
         {/* Section IV */}
-        <section id="cancellation" className="scroll-mt-32">
+        <section id="cancellation" className="scroll-mt-36 sm:scroll-mt-32">
           <div className="flex items-center gap-3 mb-6 pb-2 border-b border-border">
             <AlertTriangle className="w-5 h-5 text-black" />
             <h2 className="font-heading text-xl sm:text-2xl font-bold uppercase tracking-wide text-foreground">
@@ -303,7 +367,7 @@ export default function TermsPage() {
         </section>
 
         {/* Section V */}
-        <section id="appearance" className="scroll-mt-32">
+        <section id="appearance" className="scroll-mt-36 sm:scroll-mt-32">
           <div className="flex items-center gap-3 mb-6 pb-2 border-b border-border">
             <Sparkles className="w-5 h-5 text-black" />
             <h2 className="font-heading text-xl sm:text-2xl font-bold uppercase tracking-wide text-foreground">
@@ -366,7 +430,7 @@ export default function TermsPage() {
         </section>
 
         {/* Section VI */}
-        <section id="complaints" className="scroll-mt-32">
+        <section id="complaints" className="scroll-mt-36 sm:scroll-mt-32">
           <div className="flex items-center gap-3 mb-6 pb-2 border-b border-border">
             <HelpCircle className="w-5 h-5 text-black" />
             <h2 className="font-heading text-xl sm:text-2xl font-bold uppercase tracking-wide text-foreground">
@@ -418,7 +482,7 @@ export default function TermsPage() {
         </section>
 
         {/* Section VII */}
-        <section id="privacy" className="scroll-mt-32">
+        <section id="privacy" className="scroll-mt-36 sm:scroll-mt-32">
           <div className="flex items-center gap-3 mb-6 pb-2 border-b border-border">
             <Lock className="w-5 h-5 text-black" />
             <h2 className="font-heading text-xl sm:text-2xl font-bold uppercase tracking-wide text-foreground">
@@ -452,7 +516,7 @@ export default function TermsPage() {
         </section>
 
         {/* Section VIII */}
-        <section id="ip" className="scroll-mt-32">
+        <section id="ip" className="scroll-mt-36 sm:scroll-mt-32">
           <div className="flex items-center gap-3 mb-6 pb-2 border-b border-border">
             <Award className="w-5 h-5 text-black" />
             <h2 className="font-heading text-xl sm:text-2xl font-bold uppercase tracking-wide text-foreground">
@@ -480,7 +544,7 @@ export default function TermsPage() {
         </section>
 
         {/* Section IX */}
-        <section id="payment" className="scroll-mt-32">
+        <section id="payment" className="scroll-mt-36 sm:scroll-mt-32">
           <div className="flex items-center gap-3 mb-6 pb-2 border-b border-border">
             <CreditCard className="w-5 h-5 text-black" />
             <h2 className="font-heading text-xl sm:text-2xl font-bold uppercase tracking-wide text-foreground">

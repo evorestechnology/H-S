@@ -244,7 +244,7 @@ export default function Navbar() {
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.95, y: 10 }}
                     transition={{ duration: 0.2 }}
-                    className="absolute top-full right-0 mt-4 w-[320px] sm:w-[380px] bg-white border border-border shadow-2xl z-50"
+                    className="absolute top-full right-0 mt-4 w-[min(380px,calc(100vw-2rem))] bg-white border border-border shadow-2xl z-50"
                   >
                     <form onSubmit={handleSearchSubmit} className="flex items-center border-b border-border">
                       <Search className="w-4 h-4 ml-4 text-muted-foreground flex-shrink-0" />

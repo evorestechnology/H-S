@@ -250,7 +250,7 @@ export default function ProductDetailPage() {
                 <Ruler className="w-3 h-3" /> Size Guide
               </button>
             </div>
-            <div className="grid grid-cols-4 gap-3">
+            <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 sm:gap-3">
               {(product.sizes || []).map(sizeObj => {
                 const sizeStr = typeof sizeObj === 'string' ? sizeObj : sizeObj?.size || 'N/A';
                 const isAvailable = typeof sizeObj === 'object' && sizeObj.hasOwnProperty('isAvailable') ? sizeObj.isAvailable : true;
@@ -260,7 +260,7 @@ export default function ProductDetailPage() {
                     key={sizeStr}
                     onClick={() => setSelectedSize(sizeStr)}
                     disabled={!isAvailable}
-                    className={`py-3 border text-sm font-bold uppercase transition-colors ${
+                    className={`py-2.5 sm:py-3 border text-xs sm:text-sm font-bold uppercase transition-colors ${
                       selectedSize === sizeStr 
                         ? 'bg-foreground text-background border-foreground' 
                         : 'bg-background text-foreground border-border hover:border-foreground'
@@ -273,17 +273,17 @@ export default function ProductDetailPage() {
             </div>
           </div>
 
-          <div className="flex gap-4 mb-10">
-            <div className="w-24 border border-border flex items-center justify-between px-4">
-              <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="text-lg">-</button>
-              <span className="font-bold text-sm">{quantity}</span>
-              <button onClick={() => setQuantity(quantity + 1)} className="text-lg">+</button>
+          <div className="flex gap-2 sm:gap-4 mb-10">
+            <div className="w-20 sm:w-24 border border-border flex items-center justify-between px-2 sm:px-4">
+              <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="text-base sm:text-lg p-1">-</button>
+              <span className="font-bold text-xs sm:text-sm">{quantity}</span>
+              <button onClick={() => setQuantity(quantity + 1)} className="text-base sm:text-lg p-1">+</button>
             </div>
             
             <button 
               onClick={handleAddToCart}
               disabled={!product.inStock}
-              className={`flex-1 py-4 font-bold uppercase text-sm tracking-widest flex items-center justify-center gap-2 transition-all duration-300 ${
+              className={`flex-1 py-3 sm:py-4 px-3 sm:px-6 font-bold uppercase text-xs sm:text-sm tracking-widest flex items-center justify-center gap-1.5 sm:gap-2 transition-all duration-300 ${
                 !product.inStock 
                   ? 'bg-muted text-muted-foreground border-muted cursor-not-allowed'
                   : isAdded 
@@ -291,7 +291,7 @@ export default function ProductDetailPage() {
                     : 'bg-foreground text-background border-foreground hover:bg-white hover:text-black hover:border-black border-2'
               }`}
             >
-              <ShoppingBag className="w-5 h-5" />
+              <ShoppingBag className="w-4 h-4 sm:w-5 sm:h-5" />
               {!product.inStock ? 'Sold Out' : isAdded ? 'Added to Cart' : 'Add to Cart'}
             </button>
 
@@ -303,14 +303,14 @@ export default function ProductDetailPage() {
                 }
                 toggleWishlist(product);
               }}
-              className={`w-14 flex items-center justify-center border-2 transition-colors ${
+              className={`w-11 sm:w-14 flex items-center justify-center border-2 transition-colors flex-shrink-0 ${
                 isWishlisted
                   ? 'border-foreground bg-foreground text-background'
                   : 'border-border bg-background text-foreground hover:border-foreground'
               }`}
               title={isWishlisted ? "Remove from Wishlist" : "Add to Wishlist"}
             >
-              <Heart className={`w-5 h-5 ${isWishlisted ? 'fill-current' : ''}`} />
+              <Heart className={`w-4 h-4 sm:w-5 sm:h-5 ${isWishlisted ? 'fill-current' : ''}`} />
             </button>
           </div>
 
@@ -393,7 +393,7 @@ export default function ProductDetailPage() {
                         <img src={p.coverPhoto || (p.images && p.images[0]) || 'https://via.placeholder.com/400'} alt={p.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
                       </div>
                       <h3 className="font-bold text-sm uppercase tracking-tight group-hover:underline">{p.name}</h3>
-                      <p className="text-muted-foreground text-sm">${p.price.toFixed(2)}</p>
+                      <p className="text-muted-foreground text-sm">₹{p.price.toFixed(2)}</p>
                     </Link>
                   </div>
                 ))}

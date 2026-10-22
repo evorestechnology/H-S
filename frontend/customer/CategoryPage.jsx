@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { ChevronDown } from 'lucide-react';
 import ProductCard from './ProductCard';
@@ -8,6 +8,8 @@ export default function CategoryPage() {
   const { categoryName } = useParams();
   
   const [sortOption, setSortOption] = useState(categoryName === 'best-sellers' ? 'best-sellers' : 'newest');
+  const [isSortOpen, setIsSortOpen] = useState(false);
+  const sortRef = useRef(null);
 
   const { products, isLoading, fetchProducts } = useCatalogStore();
 
@@ -20,6 +22,16 @@ export default function CategoryPage() {
       setSortOption('best-sellers');
     }
   }, [categoryName]);
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (sortRef.current && !sortRef.current.contains(event.target)) {
+        setIsSortOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // Filter and Sort Logic
   const filteredProducts = useMemo(() => {
@@ -82,15 +94,20 @@ export default function CategoryPage() {
         </h1>
         
         <div className="flex items-center gap-6 text-sm">
-          <div className="relative group">
-            <button className="flex items-center gap-2 font-bold uppercase tracking-widest hover:text-muted-foreground transition-colors">
-              Sort By <ChevronDown className="w-4 h-4" />
+          <div className="relative group" ref={sortRef}>
+            <button 
+              onClick={() => setIsSortOpen(prev => !prev)}
+              className="flex items-center gap-2 font-bold uppercase tracking-widest hover:text-muted-foreground transition-colors"
+            >
+              Sort By <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isSortOpen ? 'rotate-180' : ''}`} />
             </button>
-            <div className="absolute right-0 top-full mt-2 w-48 bg-background border border-border shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-20">
-              <button onClick={() => setSortOption('best-sellers')} className={`w-full text-left px-4 py-3 text-xs uppercase tracking-widest hover:bg-muted ${sortOption === 'best-sellers' ? 'font-bold' : ''}`}>Best Sellers</button>
-              <button onClick={() => setSortOption('newest')} className={`w-full text-left px-4 py-3 text-xs uppercase tracking-widest hover:bg-muted border-t border-border/50 ${sortOption === 'newest' ? 'font-bold' : ''}`}>Newest</button>
-              <button onClick={() => setSortOption('price-low')} className={`w-full text-left px-4 py-3 text-xs uppercase tracking-widest hover:bg-muted border-t border-border/50 ${sortOption === 'price-low' ? 'font-bold' : ''}`}>Price: Low to High</button>
-              <button onClick={() => setSortOption('price-high')} className={`w-full text-left px-4 py-3 text-xs uppercase tracking-widest hover:bg-muted border-t border-border/50 ${sortOption === 'price-high' ? 'font-bold' : ''}`}>Price: High to Low</button>
+            <div className={`absolute right-0 top-full mt-2 w-48 bg-background border border-border shadow-xl z-20 transition-all ${
+              isSortOpen ? 'opacity-100 visible' : 'opacity-0 invisible group-hover:opacity-100 group-hover:visible'
+            }`}>
+              <button onClick={() => { setSortOption('best-sellers'); setIsSortOpen(false); }} className={`w-full text-left px-4 py-3 text-xs uppercase tracking-widest hover:bg-muted ${sortOption === 'best-sellers' ? 'font-bold' : ''}`}>Best Sellers</button>
+              <button onClick={() => { setSortOption('newest'); setIsSortOpen(false); }} className={`w-full text-left px-4 py-3 text-xs uppercase tracking-widest hover:bg-muted border-t border-border/50 ${sortOption === 'newest' ? 'font-bold' : ''}`}>Newest</button>
+              <button onClick={() => { setSortOption('price-low'); setIsSortOpen(false); }} className={`w-full text-left px-4 py-3 text-xs uppercase tracking-widest hover:bg-muted border-t border-border/50 ${sortOption === 'price-low' ? 'font-bold' : ''}`}>Price: Low to High</button>
+              <button onClick={() => { setSortOption('price-high'); setIsSortOpen(false); }} className={`w-full text-left px-4 py-3 text-xs uppercase tracking-widest hover:bg-muted border-t border-border/50 ${sortOption === 'price-high' ? 'font-bold' : ''}`}>Price: High to Low</button>
             </div>
           </div>
         </div>

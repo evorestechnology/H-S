@@ -136,13 +136,13 @@ export default function TrackOrderPage() {
               </div>
               
               {/* Right Side: Order ID & Actions */}
-              <div className="flex items-center gap-6 w-full md:w-auto justify-between md:justify-end border-t border-border/50 md:border-0 pt-4 md:pt-0">
-                <div className="text-sm">
+              <div className="flex items-center gap-4 sm:gap-6 w-full md:w-auto justify-between md:justify-end border-t border-border/50 md:border-0 pt-4 md:pt-0">
+                <div className="text-sm min-w-0">
                   <p className="text-muted-foreground uppercase text-[10px] tracking-widest font-bold mb-1">Order #</p>
-                  <p className="font-bold uppercase tracking-widest">{order.id}</p>
+                  <p className="font-bold uppercase tracking-widest text-xs sm:text-sm break-all">{order.id}</p>
                 </div>
                 <div className="h-10 w-px bg-border hidden md:block"></div>
-                <Link to={`/track/${order.id}`} className="text-[10px] font-bold uppercase tracking-widest border border-black px-4 py-2 hover:bg-black hover:text-white transition-colors whitespace-nowrap">
+                <Link to={`/track/${order.id}`} className="text-[10px] font-bold uppercase tracking-widest border border-black px-4 py-2 hover:bg-black hover:text-white transition-colors whitespace-nowrap flex-shrink-0">
                   Track Order
                 </Link>
               </div>

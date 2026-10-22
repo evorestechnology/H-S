@@ -113,11 +113,12 @@ export default function TrackingDetailPage() {
         </Link>
       </div>
 
-      <div className="flex justify-between items-end mb-8 border-b border-border pb-6">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end mb-8 border-b border-border pb-6 gap-2">
         <div>
-          <h1 className="font-heading text-3xl uppercase font-bold tracking-tight">Order Tracking</h1>
+          <h1 className="font-heading text-2xl sm:text-3xl uppercase font-bold tracking-tight">Order Tracking</h1>
+          <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground sm:hidden mt-1 break-all">Order #{order.id}</p>
           {isCancelled && (
-            <div className="mt-2 flex items-center gap-2">
+            <div className="mt-2 flex flex-wrap items-center gap-2">
               <span className="px-2.5 py-1 bg-red-100 text-red-800 text-[10px] font-black uppercase tracking-widest rounded-sm">
                 ORDER CANCELLED
               </span>
