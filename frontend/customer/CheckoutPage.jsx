@@ -19,7 +19,7 @@ import { axiosInstance } from '../shared/lib/axios';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function CheckoutPage() {
-  const { cartItems, clearCart, updateQuantity, removeFromCart } = useCartStore();
+  const { cartItems, clearCart, updateQuantity, incrementQuantity, decrementQuantity, removeFromCart } = useCartStore();
   const navigate = useNavigate();
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState('CASHFREE');
@@ -395,16 +395,19 @@ export default function CheckoutPage() {
                     <div className="flex items-center border border-border">
                       <button 
                         type="button"
-                        onClick={() => updateQuantity(item.id, item.size, item.quantity - 1, item.color)}
-                        className="p-2 hover:bg-muted transition-colors"
+                        onClick={() => decrementQuantity(item.id, item.size, item.color)}
+                        disabled={item.quantity <= 1}
+                        className="p-2 hover:bg-muted transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                        aria-label="Decrease quantity"
                       >
                         <Minus className="w-3 h-3" />
                       </button>
-                      <span className="w-8 text-center text-xs font-bold">{item.quantity}</span>
+                      <span className="w-8 text-center text-xs font-bold select-none">{item.quantity}</span>
                       <button 
                         type="button"
-                        onClick={() => updateQuantity(item.id, item.size, item.quantity + 1, item.color)}
+                        onClick={() => incrementQuantity(item.id, item.size, item.color)}
                         className="p-2 hover:bg-muted transition-colors"
+                        aria-label="Increase quantity"
                       >
                         <Plus className="w-3 h-3" />
                       </button>

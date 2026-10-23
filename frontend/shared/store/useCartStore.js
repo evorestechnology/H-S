@@ -2,26 +2,40 @@ import { create } from 'zustand';
 import { axiosInstance } from '../lib/axios';
 
 const USE_MOCK_DATA = import.meta.env.VITE_USE_MOCK_DATA === 'true';
-const quantityUpdateQueues = new Map();
+const pendingDebounceTimers = new Map();
+const pendingTargetQuantities = new Map();
 
-const isSameCartItem = (item, productId, size, color) =>
-  item.id === productId && item.size === size && (!color || item.color === color);
+const syncQuantityToBackend = (itemId, get, set) => {
+  if (pendingDebounceTimers.has(itemId)) {
+    clearTimeout(pendingDebounceTimers.get(itemId));
+  }
 
-// Helper to format backend cart into frontend state
-const formatCartItems = (cartData) => {
-  if (!cartData || !cartData.items) return [];
-  return cartData.items.map(item => ({
-    id: item.productId, // Map productId back to id for UI
-    itemId: item.id, // The unique cartItem ID
-    name: item.product.name,
-    price: item.product.price,
-    images: item.product.images?.length
-      ? item.product.images
-      : (item.product.coverPhoto ? [item.product.coverPhoto] : []),
-    size: item.size,
-    color: item.color || 'Default',
-    quantity: item.quantity,
-  }));
+  const timer = setTimeout(async () => {
+    pendingDebounceTimers.delete(itemId);
+    const targetQty = pendingTargetQuantities.get(itemId);
+    if (targetQty == null) return;
+
+    try {
+      const res = await axiosInstance.put(`/cart/${itemId}`, { quantity: targetQty });
+      // Only overwrite local cart if user hasn't made another change in the meantime
+      if (!pendingTargetQuantities.has(itemId)) {
+        set({ cartItems: formatCartItems(res.data) });
+      } else {
+        syncQuantityToBackend(itemId, get, set);
+      }
+    } catch (error) {
+      console.error('Error updating quantity:', error);
+      if (!pendingTargetQuantities.has(itemId)) {
+        await get().fetchCart();
+      }
+    } finally {
+      if (!pendingDebounceTimers.has(itemId)) {
+        pendingTargetQuantities.delete(itemId);
+      }
+    }
+  }, 250);
+
+  pendingDebounceTimers.set(itemId, timer);
 };
 
 export const useCartStore = create((set, get) => ({
@@ -82,6 +96,11 @@ export const useCartStore = create((set, get) => ({
   // 3. Remove from Cart
   removeFromCart: async (productId, size, color) => {
     const itemToRemove = get().cartItems.find(item => isSameCartItem(item, productId, size, color));
+    if (itemToRemove?.itemId && pendingDebounceTimers.has(itemToRemove.itemId)) {
+      clearTimeout(pendingDebounceTimers.get(itemToRemove.itemId));
+      pendingDebounceTimers.delete(itemToRemove.itemId);
+      pendingTargetQuantities.delete(itemToRemove.itemId);
+    }
     
     if (USE_MOCK_DATA || !itemToRemove?.itemId) {
       set((state) => ({
@@ -103,22 +122,13 @@ export const useCartStore = create((set, get) => ({
     }
   },
 
-  // 4. Update Quantity
-  updateQuantity: async (productId, size, newQuantity, color) => {
+  // 4. Update Quantity (direct value)
+  updateQuantity: (productId, size, newQuantity, color) => {
     const itemToUpdate = get().cartItems.find(item => isSameCartItem(item, productId, size, color));
+    if (!itemToUpdate) return;
     const normalizedQuantity = Math.max(1, Math.floor(Number(newQuantity) || 1));
 
-    if (USE_MOCK_DATA || !itemToUpdate?.itemId) {
-      set((state) => ({
-        cartItems: state.cartItems.map(item =>
-          isSameCartItem(item, productId, size, color)
-            ? { ...item, quantity: normalizedQuantity }
-            : item
-        )
-      }));
-      return;
-    }
-
+    // Instant local state update
     set((state) => ({
       cartItems: state.cartItems.map(item =>
         isSameCartItem(item, productId, size, color)
@@ -127,29 +137,34 @@ export const useCartStore = create((set, get) => ({
       )
     }));
 
-    const itemKey = itemToUpdate.itemId;
-    const previousRequest = quantityUpdateQueues.get(itemKey) || Promise.resolve();
-    const request = previousRequest
-      .catch(() => {})
-      .then(async () => {
-        const res = await axiosInstance.put(`/cart/${itemKey}`, { quantity: normalizedQuantity });
-        set({ cartItems: formatCartItems(res.data) });
-      })
-      .catch(async (error) => {
-        console.error('Error updating quantity:', error);
-        await get().fetchCart();
-      })
-      .finally(() => {
-        if (quantityUpdateQueues.get(itemKey) === request) {
-          quantityUpdateQueues.delete(itemKey);
-        }
-      });
-    quantityUpdateQueues.set(itemKey, request);
-    await request;
+    if (USE_MOCK_DATA || !itemToUpdate.itemId) return;
+
+    pendingTargetQuantities.set(itemToUpdate.itemId, normalizedQuantity);
+    syncQuantityToBackend(itemToUpdate.itemId, get, set);
+  },
+
+  // Fast increment that always reads latest store value
+  incrementQuantity: (productId, size, color) => {
+    const itemToUpdate = get().cartItems.find(item => isSameCartItem(item, productId, size, color));
+    if (!itemToUpdate) return;
+    const nextQty = (Number(itemToUpdate.quantity) || 1) + 1;
+    get().updateQuantity(productId, size, nextQty, color);
+  },
+
+  // Fast decrement that always reads latest store value
+  decrementQuantity: (productId, size, color) => {
+    const itemToUpdate = get().cartItems.find(item => isSameCartItem(item, productId, size, color));
+    if (!itemToUpdate || itemToUpdate.quantity <= 1) return;
+    const nextQty = Number(itemToUpdate.quantity) - 1;
+    get().updateQuantity(productId, size, nextQty, color);
   },
   
   // 5. Clear Cart (After Checkout)
   clearCart: async () => {
+    pendingDebounceTimers.forEach(t => clearTimeout(t));
+    pendingDebounceTimers.clear();
+    pendingTargetQuantities.clear();
+
     if (USE_MOCK_DATA) {
       set({ cartItems: [] });
       return;

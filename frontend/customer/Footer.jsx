@@ -76,8 +76,12 @@ export default function Footer() {
         <div className="block md:hidden space-y-6 mb-8">
           {/* Brand Info */}
           <div>
-            <Link to="/" className="inline-block" onClick={() => window.scrollTo(0, 0)}>
-              <img src={blackLogoImg} alt="H&S - Hi & Shi" className="h-8 w-auto object-contain mb-3 brightness-0 invert hover:opacity-85 transition-opacity" />
+            <Link to="/" className="inline-block" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
+              <img 
+                src={blackLogoImg} 
+                alt="H&S - Hi & Shi" 
+                className="h-8 md:h-9 w-auto object-contain mb-3 brightness-0 invert transition-all duration-300 hover:opacity-85" 
+              />
             </Link>
             <p className="text-muted-foreground text-xs leading-relaxed mb-4">
               UNISEX STREETWEAR COLLECTIVE PREMIERE INDIAN STREET FASHION STUDIO.<br />
@@ -87,7 +91,7 @@ export default function Footer() {
               <a href="https://www.instagram.com/h_and_s__official?psln=MWZobW05NGplaWVmbg==" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-background transition-colors" aria-label="Instagram">
                 <InstagramIcon className="w-5 h-5" />
               </a>
-              <a href="https://www.youtube.com/" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-background transition-colors" aria-label="YouTube">
+              <a href="https://youtube.com/@h__s_official-ind?si=hhNQg6cRAi1SPAC7" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-background transition-colors" aria-label="YouTube">
                 <YoutubeIcon className="w-5 h-5" />
               </a>
             </div>
@@ -169,8 +173,12 @@ export default function Footer() {
         <div className="hidden md:grid grid-cols-4 gap-12 mb-12">
           
           <div className="col-span-1">
-            <Link to="/" className="inline-block" onClick={() => window.scrollTo(0, 0)}>
-              <img src={blackLogoImg} alt="H&S - Hi & Shi" className="h-9 w-auto object-contain mb-4 brightness-0 invert hover:opacity-85 transition-opacity" />
+            <Link to="/" className="inline-block" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
+              <img 
+                src={blackLogoImg} 
+                alt="H&S - Hi & Shi" 
+                className="h-9 md:h-10 w-auto object-contain mb-4 brightness-0 invert transition-all duration-300 hover:opacity-85" 
+              />
             </Link>
             <p className="text-muted-foreground text-sm mb-6 max-w-xs">
               UNISEX STREETWEAR COLLECTIVE PREMIERE INDIAN STREET FASHION STUDIO.<br />
@@ -180,7 +188,7 @@ export default function Footer() {
               <a href="https://www.instagram.com/h_and_s__official?psln=MWZobW05NGplaWVmbg==" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-background transition-colors" aria-label="Instagram">
                 <InstagramIcon className="w-5 h-5" />
               </a>
-              <a href="https://www.youtube.com/" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-background transition-colors" aria-label="YouTube">
+              <a href="https://youtube.com/@h__s_official-ind?si=hhNQg6cRAi1SPAC7" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-background transition-colors" aria-label="YouTube">
                 <YoutubeIcon className="w-5 h-5" />
               </a>
             </div>
@@ -235,8 +243,9 @@ export default function Footer() {
 
         {/* Copyright */}
         <div className="pt-8 border-t border-muted-foreground/20 md:border-transparent flex justify-center items-center text-xs text-muted-foreground text-center">
-          <p>
-            2026 &copy; All Rights Reserved by ASAT &nbsp;||&nbsp;{' '}
+          <p className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 leading-relaxed">
+            <span>2026 &copy; All Rights Reserved by ASAT</span>
+            <span className="hidden sm:inline">||</span>
             <a 
               href="https://evorestechnology.com/" 
               target="_blank" 

@@ -1,6 +1,7 @@
 import { DropStatus } from "./types";
 import apiClient from "../../shared/services/apiClient";
 import { API_BASE_URL } from "../../shared/config/apiConfig";
+import { notifyCatalogSync } from "../../shared/lib/catalogSync";
 // ==========================================
 // 1. GET CATALOG SUMMARY (GET /api/catalogue/summary or computed)
 // ==========================================
@@ -143,13 +144,17 @@ export const createProduct = async (dropId, product) => {
         ...product,
         dropId
     };
-    return await apiClient.post(`/catalogue/drops/${dropId}/products`, payload);
+    const res = await apiClient.post(`/catalogue/drops/${dropId}/products`, payload);
+    notifyCatalogSync({ action: 'create', productId: res?.id });
+    return res;
 };
 // ==========================================
 // 11. UPDATE PRODUCT (PUT /api/catalogue/products/:productId)
 // ==========================================
 export const updateProduct = async (productId, updates) => {
-    return await apiClient.put(`/catalogue/products/${productId}`, updates);
+    const res = await apiClient.put(`/catalogue/products/${productId}`, updates);
+    notifyCatalogSync({ action: 'update', productId });
+    return res;
 };
 // ==========================================
 // 12. TOGGLE PRODUCT STOCK STATUS (PATCH /api/catalogue/products/:productId/stock)
@@ -162,6 +167,7 @@ export const toggleProductStock = async (productId, inStock) => {
 // ==========================================
 export const deleteProduct = async (productId) => {
     await apiClient.delete(`/catalogue/products/${productId}`);
+    notifyCatalogSync({ action: 'delete', productId });
     return true;
 };
 // ==========================================

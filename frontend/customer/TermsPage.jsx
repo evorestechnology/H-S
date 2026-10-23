@@ -65,48 +65,29 @@ export default function TermsPage() {
         </p>
       </div>
 
-      {/* Mobile Navigation Dropdown */}
-      <div className="sm:hidden mb-8 sticky top-16 z-30 bg-background/95 backdrop-blur-md py-3 border-b border-border">
-        <label htmlFor="terms-dropdown" className="block text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1.5">
-          Jump to Section
-        </label>
-        <div className="relative">
-          <select
-            id="terms-dropdown"
-            value={activeSection}
-            onChange={handleSectionChange}
-            className="w-full appearance-none bg-background border border-border px-4 py-3 text-xs font-bold uppercase tracking-wider pr-10 focus:outline-none focus:border-foreground"
-          >
-            {sections.map((item) => (
-              <option key={item.id} value={item.id}>
-                {item.label}
-              </option>
-            ))}
-          </select>
-          <ChevronDown className="w-4 h-4 text-muted-foreground absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+      {/* Quick Links Dropdown */}
+      <div className="mb-10 sticky top-16 sm:top-20 z-30 bg-background/95 backdrop-blur-md py-3.5 border-y border-border">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 max-w-2xl mx-auto">
+          <label htmlFor="terms-dropdown" className="text-xs font-bold uppercase tracking-widest text-foreground flex items-center gap-2">
+            <span>Quick Links</span>
+            <span className="text-[10px] text-muted-foreground font-normal uppercase tracking-wider">• Jump to Policy</span>
+          </label>
+          <div className="relative flex-1 sm:max-w-md">
+            <select
+              id="terms-dropdown"
+              value={activeSection}
+              onChange={handleSectionChange}
+              className="w-full appearance-none bg-background border border-border px-4 py-2.5 text-xs font-bold uppercase tracking-wider pr-10 focus:outline-none focus:border-foreground cursor-pointer shadow-xs hover:border-black transition-colors"
+            >
+              {sections.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.label}
+                </option>
+              ))}
+            </select>
+            <ChevronDown className="w-4 h-4 text-muted-foreground absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+          </div>
         </div>
-      </div>
-
-      {/* Desktop Quick Navigation Pills */}
-      <div className="hidden sm:flex flex-wrap gap-2 mb-12 justify-center">
-        {sections.map((item) => (
-          <a
-            key={item.href}
-            href={item.href}
-            onClick={(e) => {
-              e.preventDefault();
-              setActiveSection(item.id);
-              document.getElementById(item.id)?.scrollIntoView({ behavior: 'smooth' });
-            }}
-            className={`px-3 py-1.5 border text-[10px] font-bold uppercase tracking-wider transition-colors ${
-              activeSection === item.id
-                ? 'bg-black text-white border-black'
-                : 'border-border hover:bg-black hover:text-white'
-            }`}
-          >
-            {item.label}
-          </a>
-        ))}
       </div>
 
       <div className="space-y-14 text-sm leading-relaxed text-muted-foreground">

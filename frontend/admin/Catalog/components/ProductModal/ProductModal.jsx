@@ -458,7 +458,16 @@ const ProductModal = ({ open, product, onClose, onSubmit, onDelete }) => {
             size: s.size,
             isAvailable: s.isAvailable
         }));
-        const allImages = Array.from(new Set(colors.flatMap(c => [c.frontView, c.backView, c.modelPhoto1, c.modelPhoto2]).filter(Boolean)));
+        const allImages = Array.from(new Set([
+            finalCoverPhoto,
+            ...colors.flatMap(c => [
+                c.frontView,
+                c.backView,
+                c.modelPhoto1,
+                c.modelPhoto2,
+                ...(Array.isArray(c.modelPhotos) ? c.modelPhotos : [])
+            ])
+        ].filter(Boolean)));
         const priceBreakdown = (submittedColors[0]?.baseCost || submittedColors[0]?.printingCost) ? {
             baseCost: submittedColors[0]?.baseCost || 0,
             printingCost: submittedColors[0]?.printingCost || 0,

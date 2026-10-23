@@ -97,6 +97,7 @@ export const getProducts = async (req, res) => {
         userPrice: true,
         manufacturePrice: true,
         coverPhoto: true,
+        images: true,
         category: true,
         gender: true,
         fit: true,
@@ -149,18 +150,32 @@ export const getProducts = async (req, res) => {
       console.warn('Could not aggregate sales data for products:', err.message);
     }
 
-    // Format lightweight products list: sanitize colors and prune duplicate Base64 arrays
+    // Format lightweight products list: sanitize colors and build authoritative images
     let formattedProducts = products.map(p => {
       const sanitizedColors = Array.isArray(p.colors)
         ? p.colors.map(sanitizeColorForList)
         : p.colors;
       const sales = salesMap[p.id] || { totalSold: 0, orderCount: 0 };
 
+      // Aggregate all views and model photos for full alternate hover support
+      const colorPhotos = Array.isArray(sanitizedColors)
+        ? sanitizedColors.flatMap(c => [c.frontView, c.backView, c.modelPhoto1, c.modelPhoto2].filter(Boolean))
+        : [];
+
+      const allImages = Array.from(new Set([
+        ...(p.coverPhoto ? [p.coverPhoto] : []),
+        ...(Array.isArray(p.images) ? p.images : []),
+        ...colorPhotos
+      ].filter(Boolean)));
+
+      const activeCover = p.coverPhoto || allImages[0] || '';
+
       return {
         ...p,
+        coverPhoto: activeCover,
+        images: allImages.length > 0 ? allImages : (activeCover ? [activeCover] : []),
         totalSold: sales.totalSold,
         orderCount: sales.orderCount,
-        images: p.coverPhoto ? [p.coverPhoto] : [],
         colors: sanitizedColors
       };
     });
@@ -218,7 +233,29 @@ export const getProductById = async (req, res) => {
     });
 
     if (product) {
-      res.json(product);
+      const colorPhotos = Array.isArray(product.colors)
+        ? product.colors.flatMap(c => [
+            c.frontView, 
+            c.backView, 
+            c.modelPhoto1, 
+            c.modelPhoto2,
+            ...(Array.isArray(c.modelPhotos) ? c.modelPhotos : [])
+          ].filter(Boolean))
+        : [];
+
+      const allImages = Array.from(new Set([
+        ...(product.coverPhoto ? [product.coverPhoto] : []),
+        ...(Array.isArray(product.images) ? product.images : []),
+        ...colorPhotos
+      ].filter(Boolean)));
+
+      const activeCover = product.coverPhoto || allImages[0] || '';
+
+      res.json({
+        ...product,
+        coverPhoto: activeCover,
+        images: allImages.length > 0 ? allImages : (activeCover ? [activeCover] : [])
+      });
     } else {
       res.status(404).json({ message: 'Product not found' });
     }
@@ -319,6 +356,31 @@ export const updateProduct = async (req, res) => {
       }));
     }
 
+    let resolvedCoverPhoto = coverPhoto;
+    let resolvedImages = images;
+
+    if (finalColors && Array.isArray(finalColors) && finalColors.length > 0) {
+      const colorPhotos = finalColors.flatMap(c => [
+        c.frontView,
+        c.backView,
+        c.modelPhoto1,
+        c.modelPhoto2,
+        ...(Array.isArray(c.modelPhotos) ? c.modelPhotos : [])
+      ].filter(Boolean));
+
+      if (!resolvedCoverPhoto || resolvedCoverPhoto.trim() === '') {
+        resolvedCoverPhoto = finalColors[0]?.frontView || finalColors[0]?.modelPhoto1 || product.coverPhoto || '';
+      }
+
+      const combined = [
+        ...(resolvedCoverPhoto ? [resolvedCoverPhoto] : []),
+        ...(Array.isArray(resolvedImages) ? resolvedImages : []),
+        ...colorPhotos
+      ].filter(Boolean);
+
+      resolvedImages = Array.from(new Set(combined));
+    }
+
     const updatedProduct = await prisma.product.update({
       where: { id: productId },
       data: {
@@ -328,8 +390,8 @@ export const updateProduct = async (req, res) => {
         ...(parsedPrice !== undefined && { price: parsedPrice }),
         ...(parsedUserPrice !== undefined && { userPrice: parsedUserPrice }),
         ...(manufacturePrice !== undefined && { manufacturePrice: safeParseFloat(manufacturePrice) }),
-        ...(images !== undefined && { images: Array.isArray(images) ? images : [] }),
-        ...(coverPhoto !== undefined && { coverPhoto }),
+        ...(resolvedImages !== undefined && { images: Array.isArray(resolvedImages) ? resolvedImages : [] }),
+        ...(resolvedCoverPhoto !== undefined && { coverPhoto: resolvedCoverPhoto }),
         ...(category !== undefined && { category }),
         ...(gender !== undefined && { gender }),
         ...(fit !== undefined && { fit }),

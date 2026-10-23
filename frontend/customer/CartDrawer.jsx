@@ -5,7 +5,7 @@ import { useWishlistStore } from '../shared/store/useWishlistStore';
 import { Link } from 'react-router-dom';
 
 export default function CartDrawer() {
-  const { isCartOpen, closeCart, cartItems, updateQuantity, removeFromCart } = useCartStore();
+  const { isCartOpen, closeCart, cartItems, incrementQuantity, decrementQuantity, removeFromCart } = useCartStore();
   const { wishlistItems, toggleWishlist } = useWishlistStore();
 
   const subtotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
@@ -105,15 +105,20 @@ export default function CartDrawer() {
                       <div className="mt-auto flex items-center justify-between">
                         <div className="flex items-center border border-border">
                           <button 
-                            onClick={() => updateQuantity(item.id, item.size, item.quantity - 1, item.color)}
-                            className="p-2 hover:bg-muted transition-colors"
+                            type="button"
+                            onClick={() => decrementQuantity(item.id, item.size, item.color)}
+                            disabled={item.quantity <= 1}
+                            className="p-2 hover:bg-muted transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                            aria-label="Decrease quantity"
                           >
                             <Minus className="w-3 h-3" />
                           </button>
-                          <span className="w-8 text-center text-sm font-medium">{item.quantity}</span>
+                          <span className="w-8 text-center text-sm font-medium select-none">{item.quantity}</span>
                           <button 
-                            onClick={() => updateQuantity(item.id, item.size, item.quantity + 1, item.color)}
+                            type="button"
+                            onClick={() => incrementQuantity(item.id, item.size, item.color)}
                             className="p-2 hover:bg-muted transition-colors"
+                            aria-label="Increase quantity"
                           >
                             <Plus className="w-3 h-3" />
                           </button>

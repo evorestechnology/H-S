@@ -8,6 +8,7 @@ import { useWishlistStore } from '../shared/store/useWishlistStore';
 import { useAuthStore } from '../shared/store/useAuthStore';
 import { useNavigate } from 'react-router-dom';
 import ImageLightboxModal from '../shared/components/ImageLightboxModal';
+import { subscribeToCatalogSync } from '../shared/lib/catalogSync';
 
 const Accordion = ({ title, children, defaultOpen = false }) => {
   const [isOpen, setIsOpen] = useState(defaultOpen);
@@ -63,14 +64,14 @@ export default function ProductDetailPage() {
 
   useEffect(() => {
     window.scrollTo(0, 0);
-    const loadProduct = async () => {
-      setLoading(true);
+    const loadProduct = async (showLoadingSpinner = true) => {
+      if (showLoadingSpinner) setLoading(true);
       try {
         const data = await getProductById(id);
         setProduct(data);
         if (data) {
-          setSelectedSize(typeof data.sizes?.[0] === 'string' ? data.sizes[0] : data.sizes?.[0]?.size || '');
-          setSelectedColor(typeof data.colors?.[0] === 'string' ? data.colors[0] : data.colors?.[0]?.name || 'Default');
+          setSelectedSize(prev => prev || (typeof data.sizes?.[0] === 'string' ? data.sizes[0] : data.sizes?.[0]?.size || ''));
+          setSelectedColor(prev => prev || (typeof data.colors?.[0] === 'string' ? data.colors[0] : data.colors?.[0]?.name || 'Default'));
           setQuantity(1);
           setIsAdded(false);
           setShowRelated(false);
@@ -82,10 +83,20 @@ export default function ProductDetailPage() {
       } catch (error) {
         console.error('Failed to load product:', error);
       } finally {
-        setLoading(false);
+        if (showLoadingSpinner) setLoading(false);
       }
     };
-    loadProduct();
+    loadProduct(true);
+
+    const unsubscribe = subscribeToCatalogSync((syncData) => {
+      if (!syncData?.productId || String(syncData.productId) === String(id)) {
+        loadProduct(false);
+      }
+    });
+
+    return () => {
+      unsubscribe();
+    };
   }, [id, getProductById, fetchProducts, allProducts.length]);
 
   if (loading) {
@@ -122,15 +133,27 @@ export default function ProductDetailPage() {
     (typeof c === 'string' ? c : c?.name || 'Default Color') === selectedColor
   ) || {};
 
-  // If the selected color has specific model photos, use them!
-  const colorImages = Array.isArray(selectedColorObj.modelPhotos) && selectedColorObj.modelPhotos.length > 0
-    ? selectedColorObj.modelPhotos
-    : (product.images || []);
+  // Extract all photo views for the selected color
+  const colorPhotos = [
+    selectedColorObj.frontView,
+    selectedColorObj.modelPhoto1,
+    selectedColorObj.modelPhoto2,
+    selectedColorObj.backView,
+    ...(Array.isArray(selectedColorObj.modelPhotos) ? selectedColorObj.modelPhotos : [])
+  ].filter(Boolean);
 
-  if (product.coverPhoto) {
-    allImages = [product.coverPhoto, ...colorImages.filter(img => img !== product.coverPhoto)];
+  const uniqueColorPhotos = Array.from(new Set(colorPhotos));
+
+  if (uniqueColorPhotos.length > 0) {
+    allImages = uniqueColorPhotos;
+  } else if (Array.isArray(product.images) && product.images.length > 0) {
+    allImages = product.coverPhoto 
+      ? Array.from(new Set([product.coverPhoto, ...product.images]))
+      : product.images;
+  } else if (product.coverPhoto) {
+    allImages = [product.coverPhoto];
   } else {
-    allImages = colorImages.length > 0 ? colorImages : ['https://via.placeholder.com/800'];
+    allImages = ['https://via.placeholder.com/800'];
   }
 
   return (
@@ -275,9 +298,24 @@ export default function ProductDetailPage() {
 
           <div className="flex gap-2 sm:gap-4 mb-10">
             <div className="w-20 sm:w-24 border border-border flex items-center justify-between px-2 sm:px-4">
-              <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="text-base sm:text-lg p-1">-</button>
-              <span className="font-bold text-xs sm:text-sm">{quantity}</span>
-              <button onClick={() => setQuantity(quantity + 1)} className="text-base sm:text-lg p-1">+</button>
+              <button 
+                type="button"
+                onClick={() => setQuantity(q => Math.max(1, q - 1))} 
+                disabled={quantity <= 1}
+                className="text-base sm:text-lg p-1 disabled:opacity-40 disabled:cursor-not-allowed select-none"
+                aria-label="Decrease quantity"
+              >
+                -
+              </button>
+              <span className="font-bold text-xs sm:text-sm select-none">{quantity}</span>
+              <button 
+                type="button"
+                onClick={() => setQuantity(q => q + 1)} 
+                className="text-base sm:text-lg p-1 select-none"
+                aria-label="Increase quantity"
+              >
+                +
+              </button>
             </div>
             
             <button 

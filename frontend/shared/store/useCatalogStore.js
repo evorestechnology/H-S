@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { axiosInstance } from '../lib/axios';
 import { mockProducts, mockDrops } from '../../data/mockCatalog';
+import { subscribeToCatalogSync } from '../lib/catalogSync';
 
 const USE_MOCK_DATA = import.meta.env.VITE_USE_MOCK_DATA === 'true';
 
@@ -79,3 +80,19 @@ export const useCatalogStore = create((set, get) => ({
     }
   }
 }));
+
+// Automatically sync across tabs when admin modifies catalogue products
+if (typeof window !== 'undefined') {
+  subscribeToCatalogSync(() => {
+    const state = useCatalogStore.getState();
+    if (state.products.length > 0) {
+      state.fetchProducts();
+    }
+    if (state.drops.length > 0) {
+      state.fetchDrops();
+    }
+    if (state.categories.length > 0) {
+      state.fetchCategories();
+    }
+  });
+}

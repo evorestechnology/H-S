@@ -32,6 +32,10 @@ const computeOrderMfgPayment = (order) => {
   if (!order || order.status === 'CANCELED' || order.status === 'CANCELLED' || order.cancelRequested) {
     return 0;
   }
+  // If order has an authoritative mfgPayment saved in the DB, use it directly
+  if (typeof order.mfgPayment === 'number' && order.mfgPayment > 0) {
+    return order.mfgPayment;
+  }
   if (Array.isArray(order.items) && order.items.length > 0) {
     let computed = 0;
     for (const it of order.items) {
@@ -53,13 +57,11 @@ const computeOrderMfgPayment = (order) => {
     }
     if (computed > 0) {
       if (order.priceAdjustmentStatus === 'Approved' && order.priceAdjustmentAmount) {
-        computed += order.priceAdjustmentAmount;
+        // Adjustment is per order, never per item
+        computed += Number(order.priceAdjustmentAmount);
       }
       return computed;
     }
-  }
-  if (typeof order.mfgPayment === 'number' && order.mfgPayment > 0) {
-    return order.mfgPayment;
   }
   return 0;
 };
@@ -666,7 +668,7 @@ export const toggleAdminTransactionAdjustment = async (req, res) => {
         (current.priceAdjustmentAmount && current.priceAdjustmentAmount > 0)
       );
 
-      const defaultAdj = 300.0;
+      const targetAdj = Number(current.priceAdjustmentAmount) > 0 ? Number(current.priceAdjustmentAmount) : 100.0;
       let newMfgPayment;
       let newAdjAmount;
       let newStatus;
@@ -674,17 +676,17 @@ export const toggleAdminTransactionAdjustment = async (req, res) => {
 
       if (currentlyAdjusted) {
         // Toggle off
-        const adjToSubtract = current.priceAdjustmentAmount || defaultAdj;
+        const adjToSubtract = Number(current.priceAdjustmentAmount) || targetAdj;
         newMfgPayment = Math.max(0, (current.mfgPayment || 0) - adjToSubtract);
         newAdjAmount = 0;
         newStatus = 'None';
         newReason = null;
       } else {
         // Toggle on
-        newMfgPayment = (current.mfgPayment || 0) + defaultAdj;
-        newAdjAmount = defaultAdj;
+        newMfgPayment = (current.mfgPayment || 0) + targetAdj;
+        newAdjAmount = targetAdj;
         newStatus = 'Approved';
-        newReason = 'Custom Specification Surcharge';
+        newReason = current.priceAdjustmentReason || 'Custom Specification Surcharge';
       }
 
       return await tx.order.update({
