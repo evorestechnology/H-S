@@ -114,10 +114,13 @@ export default function ProductDetailPage() {
 
   const handleAddToCart = () => {
     if (!isAuthenticated) {
-      navigate('/login');
+      navigate('/login', { state: { from: `/product/${id}` } });
       return;
     }
-    addToCart(product, selectedSize, quantity, selectedColor);
+    const finalSize = selectedSize || (typeof product.sizes?.[0] === 'string' ? product.sizes[0] : product.sizes?.[0]?.size) || 'Standard';
+    const finalColor = selectedColor || (typeof product.colors?.[0] === 'string' ? product.colors[0] : product.colors?.[0]?.name) || 'Default';
+
+    addToCart(product, finalSize, quantity, finalColor);
     setIsAdded(true);
     setTimeout(() => setIsAdded(false), 2000);
   };

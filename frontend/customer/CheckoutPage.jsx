@@ -376,9 +376,13 @@ export default function CheckoutPage() {
           
           <div className="space-y-6 mb-8 max-h-[45vh] lg:max-h-[75vh] overflow-y-auto pr-2 sm:pr-4">
             {cartItems.map(item => (
-              <div key={`${item.id}-${item.size}`} className="flex gap-6 border-b border-border pb-6">
+              <div key={item.itemId || `${item.id}-${item.size}-${item.color}`} className="flex gap-6 border-b border-border pb-6">
                 <Link to={`/product/${item.id}`} className="w-24 h-32 bg-muted relative flex-shrink-0 hover:opacity-80 transition-opacity">
-                  <img src={item.images[0]} alt={item.name} className="w-full h-full object-cover" />
+                  <img 
+                    src={item.images?.[0] || item.coverPhoto || 'https://via.placeholder.com/300'} 
+                    alt={item.name} 
+                    className="w-full h-full object-cover" 
+                  />
                 </Link>
                 <div className="flex-1 flex flex-col justify-between">
                   <div>

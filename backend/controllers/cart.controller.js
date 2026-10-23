@@ -6,6 +6,7 @@ const CART_PRODUCT_SELECT = {
   name: true,
   price: true,
   coverPhoto: true,
+  images: true,
   stock: true,
   inStock: true
 };
@@ -93,15 +94,18 @@ export const addToCart = async (req, res) => {
       });
     }
 
+    const targetColor = color || 'Default';
+    const parsedQty = Math.max(1, parseInt(quantity, 10) || 1);
+
     // Check if item already exists in cart with same size/color
     const existingItem = (cart.items || []).find(
-      (item) => item.productId === productId && item.size === size && item.color === color
+      (item) => item.productId === productId && item.size === size && (item.color || 'Default') === targetColor
     );
 
     if (existingItem) {
       await prisma.cartItem.update({
         where: { id: existingItem.id },
-        data: { quantity: existingItem.quantity + quantity }
+        data: { quantity: (parseInt(existingItem.quantity, 10) || 1) + parsedQty }
       });
     } else {
       await prisma.cartItem.create({
@@ -109,8 +113,8 @@ export const addToCart = async (req, res) => {
           cartId: cart.id,
           productId,
           size,
-          color,
-          quantity
+          color: targetColor,
+          quantity: parsedQty
         }
       });
     }
@@ -145,9 +149,10 @@ export const updateCartItem = async (req, res) => {
       return res.status(404).json({ message: 'Cart item not found' });
     }
 
+    const parsedQty = Math.max(1, parseInt(quantity, 10) || 1);
     await prisma.cartItem.update({
       where: { id: itemId },
-      data: { quantity: Math.max(1, quantity) }
+      data: { quantity: parsedQty }
     });
 
     const updatedCart = await getOrCreateCart(req.user.id);

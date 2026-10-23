@@ -63,10 +63,10 @@ export default function CartDrawer() {
                 </div>
               ) : (
                 cartItems.map((item) => (
-                  <div key={`${item.id}-${item.size}`} className="flex gap-4 border-b border-border/50 pb-6 last:border-0 last:pb-0">
+                  <div key={item.itemId || `${item.id}-${item.size}-${item.color}`} className="flex gap-4 border-b border-border/50 pb-6 last:border-0 last:pb-0">
                     <Link to={`/product/${item.id}`} onClick={closeCart} className="w-24 h-32 bg-muted flex-shrink-0 hover:opacity-80 transition-opacity">
                       <img 
-                        src={item.images[0]} 
+                        src={item.images?.[0] || item.coverPhoto || 'https://via.placeholder.com/300'} 
                         alt={item.name} 
                         className="w-full h-full object-cover"
                       />

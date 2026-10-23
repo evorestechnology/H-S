@@ -5,6 +5,41 @@ const USE_MOCK_DATA = import.meta.env.VITE_USE_MOCK_DATA === 'true';
 const pendingDebounceTimers = new Map();
 const pendingTargetQuantities = new Map();
 
+// Helper to reliably compare cart items across sizes, colors, and productId
+export const isSameCartItem = (item, productId, size, color) => {
+  if (!item) return false;
+  const matchId = String(item.id) === String(productId) || (item.itemId && String(item.itemId) === String(productId));
+  const matchSize = String(item.size || '').toLowerCase() === String(size || '').toLowerCase();
+  const itemColor = String(item.color || 'Default').toLowerCase();
+  const targetColor = String(color || 'Default').toLowerCase();
+  const matchColor = !color || itemColor === targetColor;
+  return matchId && matchSize && matchColor;
+};
+
+// Helper to format backend cart into frontend state
+export const formatCartItems = (cartData) => {
+  if (!cartData || !Array.isArray(cartData.items)) return [];
+  return cartData.items.map((item) => {
+    const product = item.product || {};
+    const cover = product.coverPhoto || '';
+    const imgList = Array.isArray(product.images) && product.images.length > 0
+      ? product.images
+      : (cover ? [cover] : ['https://via.placeholder.com/300']);
+
+    return {
+      id: item.productId, // Map productId back to id for UI
+      itemId: item.id, // The unique cartItem ID
+      name: product.name || 'Product',
+      price: typeof product.price === 'number' ? product.price : (Number(product.price) || 0),
+      images: imgList,
+      coverPhoto: cover,
+      size: item.size || 'Standard',
+      color: item.color || 'Default',
+      quantity: Math.max(1, Number(item.quantity) || 1),
+    };
+  });
+};
+
 const syncQuantityToBackend = (itemId, get, set) => {
   if (pendingDebounceTimers.has(itemId)) {
     clearTimeout(pendingDebounceTimers.get(itemId));
@@ -18,7 +53,7 @@ const syncQuantityToBackend = (itemId, get, set) => {
     try {
       const res = await axiosInstance.put(`/cart/${itemId}`, { quantity: targetQty });
       // Only overwrite local cart if user hasn't made another change in the meantime
-      if (!pendingTargetQuantities.has(itemId)) {
+      if (!pendingTargetQuantities.has(itemId) && res.data) {
         set({ cartItems: formatCartItems(res.data) });
       } else {
         syncQuantityToBackend(itemId, get, set);
@@ -53,7 +88,11 @@ export const useCartStore = create((set, get) => ({
     set({ isLoading: true });
     try {
       const res = await axiosInstance.get('/cart');
-      set({ cartItems: formatCartItems(res.data), isLoading: false });
+      if (res.data) {
+        set({ cartItems: formatCartItems(res.data), isLoading: false });
+      } else {
+        set({ isLoading: false });
+      }
     } catch (error) {
       console.error('Error fetching cart:', error);
       set({ isLoading: false });
@@ -63,33 +102,59 @@ export const useCartStore = create((set, get) => ({
   // 2. Add to Cart
   addToCart: async (product, size, quantity = 1, color = 'Default') => {
     set({ isCartOpen: true });
-    if (USE_MOCK_DATA) {
-      set((state) => {
-        const existingItem = state.cartItems.find(item => isSameCartItem(item, product.id, size, color));
-        if (existingItem) {
-          return {
-            cartItems: state.cartItems.map(item =>
-              isSameCartItem(item, product.id, size, color)
-                ? { ...item, quantity: item.quantity + quantity }
-                : item
-            )
-          };
-        }
-        return { cartItems: [...state.cartItems, { ...product, size, color, quantity }] };
-      });
-      return;
-    }
+    const targetSize = size || 'Standard';
+    const targetColor = color || 'Default';
+    const parsedQty = Math.max(1, parseInt(quantity, 10) || 1);
+
+    // Optimistic local update first for instant responsiveness
+    set((state) => {
+      const existingItem = state.cartItems.find(item => isSameCartItem(item, product.id, targetSize, targetColor));
+      if (existingItem) {
+        return {
+          cartItems: state.cartItems.map(item =>
+            isSameCartItem(item, product.id, targetSize, targetColor)
+              ? { ...item, quantity: item.quantity + parsedQty }
+              : item
+          )
+        };
+      }
+      const cover = product.coverPhoto || '';
+      const imgList = Array.isArray(product.images) && product.images.length > 0
+        ? product.images
+        : (cover ? [cover] : ['https://via.placeholder.com/300']);
+
+      return {
+        cartItems: [
+          ...state.cartItems,
+          {
+            id: product.id,
+            itemId: `local-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            name: product.name || 'Product',
+            price: typeof product.price === 'number' ? product.price : (Number(product.price) || 0),
+            images: imgList,
+            coverPhoto: cover,
+            size: targetSize,
+            color: targetColor,
+            quantity: parsedQty
+          }
+        ]
+      };
+    });
+
+    if (USE_MOCK_DATA) return;
 
     try {
       const res = await axiosInstance.post('/cart', {
         productId: product.id,
-        size,
-        color,
-        quantity
+        size: targetSize,
+        color: targetColor,
+        quantity: parsedQty
       });
-      set({ cartItems: formatCartItems(res.data) });
+      if (res.data) {
+        set({ cartItems: formatCartItems(res.data) });
+      }
     } catch (error) {
-      console.error('Error adding to cart:', error);
+      console.error('Error syncing add-to-cart to backend:', error);
     }
   },
 
@@ -102,20 +167,20 @@ export const useCartStore = create((set, get) => ({
       pendingTargetQuantities.delete(itemToRemove.itemId);
     }
     
-    if (USE_MOCK_DATA || !itemToRemove?.itemId) {
-      set((state) => ({
-        cartItems: state.cartItems.filter(item => !isSameCartItem(item, productId, size, color))
-      }));
+    // Optimistic update
+    set((state) => ({
+      cartItems: state.cartItems.filter(item => !isSameCartItem(item, productId, size, color))
+    }));
+
+    if (USE_MOCK_DATA || !itemToRemove?.itemId || String(itemToRemove.itemId).startsWith('local-')) {
       return;
     }
 
     try {
-      // Optimistic update
-      set((state) => ({
-        cartItems: state.cartItems.filter(item => !isSameCartItem(item, productId, size, color))
-      }));
       const res = await axiosInstance.delete(`/cart/${itemToRemove.itemId}`);
-      set({ cartItems: formatCartItems(res.data) });
+      if (res.data) {
+        set({ cartItems: formatCartItems(res.data) });
+      }
     } catch (error) {
       console.error('Error removing from cart:', error);
       get().fetchCart(); // Revert on failure
@@ -137,7 +202,7 @@ export const useCartStore = create((set, get) => ({
       )
     }));
 
-    if (USE_MOCK_DATA || !itemToUpdate.itemId) return;
+    if (USE_MOCK_DATA || !itemToUpdate.itemId || String(itemToUpdate.itemId).startsWith('local-')) return;
 
     pendingTargetQuantities.set(itemToUpdate.itemId, normalizedQuantity);
     syncQuantityToBackend(itemToUpdate.itemId, get, set);
@@ -165,16 +230,22 @@ export const useCartStore = create((set, get) => ({
     pendingDebounceTimers.clear();
     pendingTargetQuantities.clear();
 
-    if (USE_MOCK_DATA) {
-      set({ cartItems: [] });
-      return;
-    }
+    set({ cartItems: [] });
+
+    if (USE_MOCK_DATA) return;
 
     try {
-      set({ cartItems: [] });
       await axiosInstance.delete('/cart');
     } catch (error) {
       console.error('Error clearing cart:', error);
     }
   },
+
+  // 6. Reset local cart state (on user logout)
+  resetCart: () => {
+    pendingDebounceTimers.forEach(t => clearTimeout(t));
+    pendingDebounceTimers.clear();
+    pendingTargetQuantities.clear();
+    set({ cartItems: [] });
+  }
 }));
