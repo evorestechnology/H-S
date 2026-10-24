@@ -157,23 +157,34 @@ export const getProducts = async (req, res) => {
         : p.colors;
       const sales = salesMap[p.id] || { totalSold: 0, orderCount: 0 };
 
+      // Primary color variant for front/back views
+      const primaryColor = Array.isArray(sanitizedColors) && sanitizedColors.length > 0 ? sanitizedColors[0] : null;
+      const coverPhoto = p.coverPhoto || primaryColor?.frontView || (Array.isArray(p.images) && p.images[0]) || '';
+      const frontView = primaryColor?.frontView || coverPhoto;
+      const backView = primaryColor?.backView 
+        || (Array.isArray(p.images) && p.images.length > 1 ? p.images[1] : '')
+        || primaryColor?.modelPhoto1 
+        || '';
+
       // Aggregate all views and model photos for full alternate hover support
       const colorPhotos = Array.isArray(sanitizedColors)
         ? sanitizedColors.flatMap(c => [c.frontView, c.backView, c.modelPhoto1, c.modelPhoto2].filter(Boolean))
         : [];
 
       const allImages = Array.from(new Set([
-        ...(p.coverPhoto ? [p.coverPhoto] : []),
-        ...(Array.isArray(p.images) ? p.images : []),
-        ...colorPhotos
+        ...(coverPhoto ? [coverPhoto] : []),
+        ...(frontView ? [frontView] : []),
+        ...(backView ? [backView] : []),
+        ...colorPhotos,
+        ...(Array.isArray(p.images) ? p.images : [])
       ].filter(Boolean)));
-
-      const activeCover = p.coverPhoto || allImages[0] || '';
 
       return {
         ...p,
-        coverPhoto: activeCover,
-        images: allImages.length > 0 ? allImages : (activeCover ? [activeCover] : []),
+        frontView,
+        backView,
+        coverPhoto,
+        images: allImages.length > 0 ? allImages : (coverPhoto ? [coverPhoto] : []),
         totalSold: sales.totalSold,
         orderCount: sales.orderCount,
         colors: sanitizedColors
@@ -233,8 +244,20 @@ export const getProductById = async (req, res) => {
     });
 
     if (product) {
-      const colorPhotos = Array.isArray(product.colors)
-        ? product.colors.flatMap(c => [
+      const sanitizedColors = Array.isArray(product.colors)
+        ? product.colors.map(sanitizeColorForList)
+        : product.colors;
+
+      const primaryColor = Array.isArray(sanitizedColors) && sanitizedColors.length > 0 ? sanitizedColors[0] : null;
+      const coverPhoto = product.coverPhoto || primaryColor?.frontView || (Array.isArray(product.images) && product.images[0]) || '';
+      const frontView = primaryColor?.frontView || coverPhoto;
+      const backView = primaryColor?.backView 
+        || (Array.isArray(product.images) && product.images.length > 1 ? product.images[1] : '')
+        || primaryColor?.modelPhoto1 
+        || '';
+
+      const colorPhotos = Array.isArray(sanitizedColors)
+        ? sanitizedColors.flatMap(c => [
             c.frontView, 
             c.backView, 
             c.modelPhoto1, 
@@ -244,17 +267,20 @@ export const getProductById = async (req, res) => {
         : [];
 
       const allImages = Array.from(new Set([
-        ...(product.coverPhoto ? [product.coverPhoto] : []),
-        ...(Array.isArray(product.images) ? product.images : []),
-        ...colorPhotos
+        ...(coverPhoto ? [coverPhoto] : []),
+        ...(frontView ? [frontView] : []),
+        ...(backView ? [backView] : []),
+        ...colorPhotos,
+        ...(Array.isArray(product.images) ? product.images : [])
       ].filter(Boolean)));
-
-      const activeCover = product.coverPhoto || allImages[0] || '';
 
       res.json({
         ...product,
-        coverPhoto: activeCover,
-        images: allImages.length > 0 ? allImages : (activeCover ? [activeCover] : [])
+        frontView,
+        backView,
+        coverPhoto,
+        images: allImages.length > 0 ? allImages : (coverPhoto ? [coverPhoto] : []),
+        colors: sanitizedColors
       });
     } else {
       res.status(404).json({ message: 'Product not found' });

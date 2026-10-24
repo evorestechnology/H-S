@@ -44,7 +44,7 @@ export default function WishlistPage() {
   }
 
   return (
-    <div className="pt-20 sm:pt-24 md:pt-28 pb-16 sm:pb-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 min-h-[100dvh]">
+    <div className="pt-16 sm:pt-18 md:pt-20 pb-16 sm:pb-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 min-h-[100dvh]">
       <div className="flex items-center gap-4 mb-8 sm:mb-12 border-b border-border pb-6">
         <Heart className="w-7 h-7 sm:w-8 sm:h-8" />
         <h1 className="font-heading text-2xl sm:text-4xl font-bold uppercase tracking-tight">Your Wishlist</h1>

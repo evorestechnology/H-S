@@ -71,7 +71,7 @@ export default function TrackingDetailPage() {
   const isRefunded = refundStatus === 'Refunded';
 
   return (
-    <div className="pt-20 sm:pt-24 md:pt-28 pb-16 sm:pb-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 min-h-[100dvh]">
+    <div className="pt-16 sm:pt-18 md:pt-20 pb-16 sm:pb-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 min-h-[100dvh]">
       {/* Optional image preview modal */}
       {previewImage && (
         <div 

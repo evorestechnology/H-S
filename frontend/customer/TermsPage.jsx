@@ -51,7 +51,7 @@ export default function TermsPage() {
   };
 
   return (
-    <div className="pt-20 sm:pt-24 md:pt-28 pb-16 sm:pb-24 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 min-h-[100dvh]">
+    <div className="pt-16 sm:pt-18 md:pt-20 pb-16 sm:pb-24 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 min-h-[100dvh]">
       {/* Header */}
       <div className="text-center mb-8 sm:mb-14 border-b border-border pb-6 sm:pb-8">
         <span className="text-[10px] font-bold uppercase tracking-[0.3em] text-muted-foreground block mb-2">

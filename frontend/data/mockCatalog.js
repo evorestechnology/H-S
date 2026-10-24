@@ -22,6 +22,11 @@ export const mockProducts = [
     category: 'Hoodies',
     images: [img1, img2],
     coverPhoto: img1,
+    frontView: img1,
+    backView: img2,
+    colors: [
+      { name: 'Heather Grey', code: '#6B7280', frontView: img1, backView: img2 }
+    ],
     isNew: true,
     isBestSeller: true,
     totalSold: 142,
@@ -35,8 +40,13 @@ export const mockProducts = [
     description: 'The perfect everyday t-shirt with a relaxed fit.',
     price: 35.00,
     category: 'T-Shirts',
-    images: [img2],
+    images: [img2, img4],
     coverPhoto: img2,
+    frontView: img2,
+    backView: img4,
+    colors: [
+      { name: 'Optic White', code: '#FFFFFF', frontView: img2, backView: img4 }
+    ],
     isNew: false,
     isBestSeller: true,
     totalSold: 98,
@@ -50,8 +60,13 @@ export const mockProducts = [
     description: 'Utility cargo pants with multiple pockets and adjustable cuffs.',
     price: 75.00,
     category: 'Pants',
-    images: [img3],
+    images: [img3, img1],
     coverPhoto: img3,
+    frontView: img3,
+    backView: img1,
+    colors: [
+      { name: 'Olive Green', code: '#3F6212', frontView: img3, backView: img1 }
+    ],
     isNew: true,
     isBestSeller: false,
     totalSold: 32,
@@ -65,8 +80,13 @@ export const mockProducts = [
     description: 'Classic knit beanie featuring our signature embroidered logo.',
     price: 25.00,
     category: 'Accessories',
-    images: [img4],
+    images: [img4, img2],
     coverPhoto: img4,
+    frontView: img4,
+    backView: img2,
+    colors: [
+      { name: 'Jet Black', code: '#000000', frontView: img4, backView: img2 }
+    ],
     isNew: false,
     isBestSeller: false,
     totalSold: 10,

@@ -86,6 +86,20 @@
   border-radius: 0px;
 }
 
+/* Scrollbar visibility hidden while keeping scroll functionality 100% active */
+.no-scrollbar::-webkit-scrollbar,
+.stylish-gallery-scroll::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+.no-scrollbar,
+.stylish-gallery-scroll {
+  -ms-overflow-style: none !important;  /* IE and Edge */
+  scrollbar-width: none !important;  /* Firefox */
+}
+
 /* Clean Global Text Field, Select & Input Border Styling (White Theme) */
 input[type="text"],
 input[type="email"],

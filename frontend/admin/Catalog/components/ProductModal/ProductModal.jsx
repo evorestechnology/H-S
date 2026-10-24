@@ -742,7 +742,7 @@ const ProductModal = ({ open, product, onClose, onSubmit, onDelete }) => {
                                                     </div>
 
                                                     {/* Product Views */}
-                                                    <div className="views-section-label">
+                                                    {/* <div className="views-section-label">
                                                         <span className="views-label-text">Product Views</span>
                                                         <span className="views-audience-badge badge-both">
                                                             Visible to Users &amp; Manufacture
@@ -751,7 +751,7 @@ const ProductModal = ({ open, product, onClose, onSubmit, onDelete }) => {
                                                     <div className="color-views-grid color-views-grid-2">
                                                         <ImageDropZone label="Front View" value={color.frontView} onChange={(val) => handleColorChange(idx, "frontView", val)} placeholder="Drag & drop front view"/>
                                                         <ImageDropZone label="Back View" value={color.backView} onChange={(val) => handleColorChange(idx, "backView", val)} placeholder="Drag & drop back view"/>
-                                                    </div>
+                                                    </div> */}
 
                                                     {/* Model Photos */}
                                                     <div className="views-section-label mt-16">

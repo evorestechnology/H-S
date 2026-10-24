@@ -161,7 +161,7 @@ export default function Navbar() {
   ];
 
   return (
-    <nav className={`fixed w-full top-0 z-50 transition-all duration-300 border-b ${isScrolled ? 'bg-white/95 backdrop-blur-md py-3 border-border' : 'bg-white py-5 border-transparent'}`}>
+    <nav className={`fixed w-full top-0 z-50 transition-all duration-300 border-b ${isScrolled ? 'bg-white/95 backdrop-blur-md py-2.5 sm:py-3 border-border shadow-xs' : 'bg-white py-3 sm:py-3.5 border-border/40'}`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
         <div className="flex justify-between items-center h-full">
           
