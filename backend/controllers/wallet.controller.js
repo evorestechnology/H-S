@@ -32,12 +32,10 @@ const computeOrderMfgPayment = (order) => {
   if (!order || order.status === 'CANCELED' || order.status === 'CANCELLED' || order.cancelRequested) {
     return 0;
   }
-  // If order has an authoritative mfgPayment saved in the DB, use it directly
-  if (typeof order.mfgPayment === 'number' && order.mfgPayment > 0) {
-    return order.mfgPayment;
-  }
+
+  // Calculate base manufacturing payment from items
+  let baseMfg = 0;
   if (Array.isArray(order.items) && order.items.length > 0) {
-    let computed = 0;
     for (const it of order.items) {
       const itColorAssets = resolveColorAssets(it.product || {}, it.color);
       const matched = itColorAssets.matchedColor;
@@ -53,16 +51,23 @@ const computeOrderMfgPayment = (order) => {
         || ((typeof it.product?.manufacturePrice === 'number' && it.product.manufacturePrice > 0)
           ? it.product.manufacturePrice
           : 0);
-      computed += unitMfg * (it.quantity || 1);
-    }
-    if (computed > 0) {
-      if (order.priceAdjustmentStatus === 'Approved' && order.priceAdjustmentAmount) {
-        // Adjustment is per order, never per item
-        computed += Number(order.priceAdjustmentAmount);
-      }
-      return computed;
+      baseMfg += unitMfg * (it.quantity || 1);
     }
   }
+
+  const isApproved = order.priceAdjustmentStatus === 'Approved';
+  const adjustment = (isApproved && Number(order.priceAdjustmentAmount) > 0) ? Number(order.priceAdjustmentAmount) : 0;
+
+  if (baseMfg > 0) {
+    // Adjustment is strictly per-order (+₹100 once), NEVER per-item
+    return Number((baseMfg + adjustment).toFixed(2));
+  }
+
+  // Fallback to order.mfgPayment if items could not be loaded
+  if (typeof order.mfgPayment === 'number' && order.mfgPayment > 0) {
+    return Number(order.mfgPayment.toFixed(2));
+  }
+
   return 0;
 };
 
@@ -430,19 +435,28 @@ export const getAdminWalletTransactions = async (req, res) => {
         status: { not: 'CANCELED' },
         cancelRequested: false
       },
-      select: {
-        id: true,
-        totalPrice: true,
-        mfgPayment: true,
-        taxPrice: true,
-        priceAdjustmentStatus: true,
-        priceAdjustmentAmount: true,
-        priceAdjustmentReason: true,
-        mfgPaymentStatus: true,
-        mfgPaidDate: true,
-        createdAt: true,
+      include: {
         user: { select: { fullName: true, email: true } },
-        manufacturer: { select: { companyName: true, fullName: true } }
+        manufacturer: { select: { companyName: true, fullName: true } },
+        items: {
+          select: {
+            id: true,
+            name: true,
+            size: true,
+            color: true,
+            quantity: true,
+            price: true,
+            product: {
+              select: {
+                id: true,
+                price: true,
+                manufacturePrice: true,
+                colors: true,
+                priceBreakdown: true
+              }
+            }
+          }
+        }
       },
       orderBy: { createdAt: 'desc' }
       }),
@@ -477,7 +491,7 @@ export const getAdminWalletTransactions = async (req, res) => {
 
     const regularTransactions = orders.map(order => {
       const grossSale = Number(order.totalPrice) || 0;
-      const mfgPay = Number(order.mfgPayment) || 0;
+      const mfgPay = computeOrderMfgPayment(order);
       const gstVal = Number(order.taxPrice) || 0;
       const adjStatus = order.priceAdjustmentStatus || 'None';
       const isAdjusted = Boolean(adjStatus === 'Approved' && order.priceAdjustmentAmount && order.priceAdjustmentAmount > 0);
@@ -658,7 +672,14 @@ export const toggleAdminTransactionAdjustment = async (req, res) => {
     }
 
     await prisma.$transaction(async (tx) => {
-      const current = await tx.order.findUnique({ where: { id: order.id } });
+      const current = await tx.order.findUnique({
+        where: { id: order.id },
+        include: {
+          items: {
+            include: { product: true }
+          }
+        }
+      });
       if (!current) {
         throw new Error('Order not found');
       }
@@ -668,6 +689,33 @@ export const toggleAdminTransactionAdjustment = async (req, res) => {
         (current.priceAdjustmentAmount && current.priceAdjustmentAmount > 0)
       );
 
+      // Compute base items manufacturing total
+      let baseMfg = 0;
+      if (Array.isArray(current.items) && current.items.length > 0) {
+        for (const it of current.items) {
+          const itColorAssets = resolveColorAssets(it.product || {}, it.color);
+          const matched = itColorAssets.matchedColor;
+          const colorMfgPrice = (matched && typeof matched.manufacturePrice === 'number' && matched.manufacturePrice > 0)
+            ? matched.manufacturePrice
+            : null;
+          const colorBreakdownTotal = (matched && (typeof matched.baseCost === 'number' || typeof matched.printingCost === 'number'))
+            ? ((Number(matched.baseCost) || 0) + (Number(matched.printingCost) || 0) + (Number(matched.shippingCost) || 0) + (Number(matched.additionalCost) || 0))
+            : 0;
+          const targetColorMfg = colorMfgPrice || (colorBreakdownTotal > 0 ? colorBreakdownTotal : null);
+          const unitMfg = targetColorMfg
+            || ((typeof it.product?.manufacturePrice === 'number' && it.product.manufacturePrice > 0)
+              ? it.product.manufacturePrice
+              : 0);
+          baseMfg += unitMfg * (it.quantity || 1);
+        }
+      }
+
+      if (baseMfg <= 0) {
+        baseMfg = currentlyAdjusted
+          ? Math.max(0, (current.mfgPayment || 0) - (Number(current.priceAdjustmentAmount) || 100))
+          : (current.mfgPayment || 0);
+      }
+
       const targetAdj = Number(current.priceAdjustmentAmount) > 0 ? Number(current.priceAdjustmentAmount) : 100.0;
       let newMfgPayment;
       let newAdjAmount;
@@ -675,15 +723,14 @@ export const toggleAdminTransactionAdjustment = async (req, res) => {
       let newReason;
 
       if (currentlyAdjusted) {
-        // Toggle off
-        const adjToSubtract = Number(current.priceAdjustmentAmount) || targetAdj;
-        newMfgPayment = Math.max(0, (current.mfgPayment || 0) - adjToSubtract);
+        // Toggle off: return strictly to baseMfg without adjustment
+        newMfgPayment = Number(baseMfg.toFixed(2));
         newAdjAmount = 0;
         newStatus = 'None';
         newReason = null;
       } else {
-        // Toggle on
-        newMfgPayment = (current.mfgPayment || 0) + targetAdj;
+        // Toggle on: strictly baseMfg + single adjustment (+₹100 once per order, never multiplied by 2 items)
+        newMfgPayment = Number((baseMfg + targetAdj).toFixed(2));
         newAdjAmount = targetAdj;
         newStatus = 'Approved';
         newReason = current.priceAdjustmentReason || 'Custom Specification Surcharge';

@@ -70,12 +70,33 @@ export const useCatalogStore = create((set, get) => ({
     }
   },
   
+  productDetailsCache: {},
+  
   getProductById: async (id) => {
     if (USE_MOCK_DATA) {
       await new Promise(resolve => setTimeout(resolve, 300));
       return mockProducts.find(p => p.id === id);
     } else {
+      const cached = get().productDetailsCache?.[id];
+      if (cached) {
+        // Return cached data immediately in 0ms, revalidate in background
+        axiosInstance.get(`/catalogue/products/${id}`)
+          .then(res => {
+            if (res.data) {
+              set(state => ({
+                productDetailsCache: { ...state.productDetailsCache, [id]: res.data }
+              }));
+            }
+          })
+          .catch(() => {});
+        return cached;
+      }
       const res = await axiosInstance.get(`/catalogue/products/${id}`);
+      if (res.data) {
+        set(state => ({
+          productDetailsCache: { ...state.productDetailsCache, [id]: res.data }
+        }));
+      }
       return res.data;
     }
   }
@@ -85,6 +106,7 @@ export const useCatalogStore = create((set, get) => ({
 if (typeof window !== 'undefined') {
   subscribeToCatalogSync(() => {
     const state = useCatalogStore.getState();
+    useCatalogStore.setState({ productDetailsCache: {} });
     if (state.products.length > 0) {
       state.fetchProducts();
     }

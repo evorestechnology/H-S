@@ -9,6 +9,7 @@ import { useAuthStore } from '../shared/store/useAuthStore';
 import { useNavigate } from 'react-router-dom';
 import ImageLightboxModal from '../shared/components/ImageLightboxModal';
 import { subscribeToCatalogSync } from '../shared/lib/catalogSync';
+import { resolveColorHex } from '../shared/lib/colorUtils';
 import ProductCard from './ProductCard';
 
 const Accordion = ({ title, children, defaultOpen = false }) => {
@@ -90,29 +91,41 @@ export default function ProductDetailPage() {
 
   useEffect(() => {
     window.scrollTo(0, 0);
-    const loadProduct = async (showLoadingSpinner = true) => {
+
+    // Instant Hydration from catalog store if already in memory (0ms instant load!)
+    const existing = allProducts.find(p => String(p.id) === String(id));
+    if (existing) {
+      setProduct(existing);
+      setSelectedSize(prev => prev || (typeof existing.sizes?.[0] === 'string' ? existing.sizes[0] : existing.sizes?.[0]?.size || ''));
+      setSelectedColor(prev => prev || (typeof existing.colors?.[0] === 'string' ? existing.colors[0] : existing.colors?.[0]?.name || 'Default'));
+      setLoading(false);
+    }
+
+    const loadProduct = async (showLoadingSpinner = !existing) => {
       if (showLoadingSpinner) setLoading(true);
       try {
         const data = await getProductById(id);
-        setProduct(data);
         if (data) {
+          setProduct(data);
           setSelectedSize(prev => prev || (typeof data.sizes?.[0] === 'string' ? data.sizes[0] : data.sizes?.[0]?.size || ''));
           setSelectedColor(prev => prev || (typeof data.colors?.[0] === 'string' ? data.colors[0] : data.colors?.[0]?.name || 'Default'));
           setQuantity(1);
           setIsAdded(false);
           setShowRelated(false);
-          // Fetch category products for 'related'
-          if (allProducts.length === 0) {
-            await fetchProducts();
-          }
         }
       } catch (error) {
         console.error('Failed to load product:', error);
       } finally {
         if (showLoadingSpinner) setLoading(false);
       }
+
+      // Fetch category products for 'related' asynchronously in the background
+      if (allProducts.length === 0) {
+        fetchProducts().catch(err => console.error('Failed to load related products:', err));
+      }
     };
-    loadProduct(true);
+
+    loadProduct(!existing);
 
     const unsubscribe = subscribeToCatalogSync((syncData) => {
       if (!syncData?.productId || String(syncData.productId) === String(id)) {
@@ -123,7 +136,7 @@ export default function ProductDetailPage() {
     return () => {
       unsubscribe();
     };
-  }, [id, getProductById, fetchProducts, allProducts.length]);
+  }, [id]);
 
   if (loading) {
     return <div className="pt-32 min-h-screen text-center uppercase tracking-widest font-bold text-muted-foreground text-sm">Loading Product...</div>;
@@ -160,87 +173,89 @@ export default function ProductDetailPage() {
     (typeof c === 'string' ? c : c?.name || 'Default Color') === selectedColor
   ) || {};
 
-  // 1. Cover Image
+  // Base / First Color Object in product
+  const baseColorObj = (Array.isArray(product.colors) && product.colors.length > 0) ? product.colors[0] : {};
+
+  // Find any color in product.colors that has model photos for fallback
+  const colorWithModel1 = (product.colors || []).find(c => c.modelPhoto1 || (Array.isArray(c.modelPhotos) && c.modelPhotos[2])) || baseColorObj;
+  const colorWithModel2 = (product.colors || []).find(c => c.modelPhoto2 || (Array.isArray(c.modelPhotos) && c.modelPhotos[3])) || baseColorObj;
+
+  // 1. Cover Image (Dedicated for Left Side)
   const coverUrl = product.coverPhoto 
     || (Array.isArray(product.images) && product.images[0]) 
     || '';
 
-  // 2. Front View (for selected color)
+  // 2. Front View (fv) for selected color
   const frontViewUrl = selectedColorObj.frontView 
+    || (Array.isArray(selectedColorObj.modelPhotos) ? selectedColorObj.modelPhotos[0] : null)
+    || baseColorObj.frontView
     || product.frontView 
-    || coverUrl 
+    || (Array.isArray(product.images) && product.images[0])
     || '';
 
-  // 3. Back View (for selected color)
+  // 3. Back View (bv) for selected color
   const backViewUrl = selectedColorObj.backView 
+    || (Array.isArray(selectedColorObj.modelPhotos) ? selectedColorObj.modelPhotos[1] : null)
+    || baseColorObj.backView
     || product.backView 
-    || (Array.isArray(product.images) && product.images.length > 1 ? product.images[1] : '')
+    || (Array.isArray(product.images) && product.images[1])
     || '';
 
-  // 4. Model View 1
+  // 4. Model View 1 (model 1) for selected color (fallback to base color or any color variant)
   const model1Url = selectedColorObj.modelPhoto1 
-    || (Array.isArray(product.images) && product.images.length > 2 ? product.images[2] : '') 
+    || (Array.isArray(selectedColorObj.modelPhotos) ? selectedColorObj.modelPhotos[2] : null)
+    || baseColorObj.modelPhoto1
+    || (Array.isArray(baseColorObj.modelPhotos) ? baseColorObj.modelPhotos[2] : null)
+    || colorWithModel1?.modelPhoto1
+    || (Array.isArray(colorWithModel1?.modelPhotos) ? colorWithModel1.modelPhotos[2] : null)
+    || (Array.isArray(product.images) && product.images.length > 2 ? product.images[2] : '')
     || '';
 
-  // 5. Model View 2
-  const model2Url = selectedColorObj.modelPhoto2 
-    || (Array.isArray(product.images) && product.images.length > 3 ? product.images[3] : '') 
+  // 5. Model View 2 (model 2) for selected color (fallback to base color or any color variant)
+  let model2Candidate = selectedColorObj.modelPhoto2 
+    || (Array.isArray(selectedColorObj.modelPhotos) ? selectedColorObj.modelPhotos[3] : null)
+    || baseColorObj.modelPhoto2
+    || (Array.isArray(baseColorObj.modelPhotos) ? baseColorObj.modelPhotos[3] : null)
+    || colorWithModel2?.modelPhoto2
+    || (Array.isArray(colorWithModel2?.modelPhotos) ? colorWithModel2.modelPhotos[3] : null)
     || '';
 
+  if ((!model2Candidate || model2Candidate === model1Url) && Array.isArray(product.images)) {
+    const alternate = product.images.find(img => img && img !== coverUrl && img !== frontViewUrl && img !== backViewUrl && img !== model1Url);
+    if (alternate) model2Candidate = alternate;
+  }
+  const model2Url = model2Candidate || '';
+
+  // Right Side Gallery: strictly fv, bv, model 1, model 2 for every color, and nothing more
   const galleryItems = [];
 
-  // Always show Cover Image
-  if (coverUrl) {
-    galleryItems.push({ label: 'Cover Image', shortLabel: 'Cover', type: 'cover', url: coverUrl });
-  }
-
-  // Always show Front View
   if (frontViewUrl) {
-    galleryItems.push({ label: 'Front View', shortLabel: 'Front', type: 'front', url: frontViewUrl });
+    galleryItems.push({ label: 'Front View', shortLabel: 'FV', type: 'front', url: frontViewUrl });
   }
 
-  // Always show Back View
-  if (backViewUrl) {
-    galleryItems.push({ label: 'Back View', shortLabel: 'Back', type: 'back', url: backViewUrl });
+  if (backViewUrl && backViewUrl !== frontViewUrl) {
+    galleryItems.push({ label: 'Back View', shortLabel: 'BV', type: 'back', url: backViewUrl });
   }
 
-  // Show Model Photo 1 if present
-  if (model1Url) {
-    galleryItems.push({ label: 'Model View 1', shortLabel: 'Model 1', type: 'model', url: model1Url });
+  if (model1Url && !galleryItems.some(item => item.url === model1Url)) {
+    galleryItems.push({ label: 'Model 1', shortLabel: 'Model 1', type: 'model1', url: model1Url });
   }
 
-  // Show Model Photo 2 if present
-  if (model2Url) {
-    galleryItems.push({ label: 'Model View 2', shortLabel: 'Model 2', type: 'model', url: model2Url });
+  if (model2Url && !galleryItems.some(item => item.url === model2Url)) {
+    galleryItems.push({ label: 'Model 2', shortLabel: 'Model 2', type: 'model2', url: model2Url });
   }
 
-  // Additional extra photos
-  const knownUrls = [coverUrl, frontViewUrl, backViewUrl, model1Url, model2Url].filter(Boolean);
-  const extraPhotos = [
-    ...(Array.isArray(selectedColorObj.modelPhotos) ? selectedColorObj.modelPhotos : []),
-    ...(Array.isArray(product.images) ? product.images : [])
-  ].filter(url => url && !knownUrls.includes(url));
+  // Fallback if no color views exist yet
+  if (galleryItems.length === 0 && coverUrl) {
+    galleryItems.push({ label: 'Front View', shortLabel: 'FV', type: 'front', url: coverUrl });
+  }
 
-  let angleCounter = 1;
-  extraPhotos.forEach(url => {
-    if (!galleryItems.some(item => item.url === url)) {
-      galleryItems.push({ 
-        label: `Angle ${angleCounter}`, 
-        shortLabel: `Angle ${angleCounter}`, 
-        type: 'extra', 
-        url 
-      });
-      angleCounter++;
-    }
-  });
-
-  // if (galleryItems.length === 0) {
-  //   galleryItems.push({ label: 'Product View', shortLabel: 'Main', type: 'front', url: 'https://via.placeholder.com/800' });
-  // }
-
-  const allImages = galleryItems.map(item => item.url);
-  const currentMainItem = galleryItems[activeViewIndex] || galleryItems[0];
-  const currentMainImage = currentMainItem.url;
+  // Unified list for lightbox
+  const lightboxList = [
+    ...(coverUrl ? [{ label: 'Cover Photo', url: coverUrl }] : []),
+    ...galleryItems
+  ];
+  const allImages = lightboxList.map(item => item.url);
 
   return (
     <div className="pt-16 sm:pt-18 md:pt-20 pb-16 sm:pb-20 max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 min-h-[100dvh]">
@@ -282,25 +297,20 @@ export default function ProductDetailPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-8 xl:gap-10 items-start relative">
         
-        {/* Cover Photo / Main Showcase - Sticky Left */}
-        <div className="hidden lg:block lg:col-span-4 lg:sticky lg:top-20 h-fit">
+        {/* Cover Photo Showcase - Sticky Left */}
+        <div className="w-full lg:col-span-4 lg:sticky lg:top-20 h-fit">
           <div 
-            onClick={() => { setLightboxIndex(activeViewIndex); setIsLightboxOpen(true); }}
-            className="aspect-[3/4] bg-muted w-full overflow-hidden rounded-2xl relative cursor-zoom-in group border border-border/40 shadow-sm"
-            title="Click to view full image in high resolution"
+            onClick={() => { setLightboxIndex(0); setIsLightboxOpen(true); }}
+            className="aspect-[3/4] bg-[#F7F7F8] dark:bg-neutral-900 w-full overflow-hidden rounded-2xl relative cursor-zoom-in group border border-neutral-200/60 dark:border-neutral-800 shadow-xs flex items-center justify-center transition-all duration-300 hover:shadow-md"
+            title="Click to view full cover photo in high resolution"
           >
             <img 
-              src={currentMainImage} 
-              alt={`${product.name} - ${currentMainItem.label}`} 
-              className={`w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 ${!product.inStock ? 'opacity-70 grayscale' : ''}`} 
+              src={coverUrl || 'https://via.placeholder.com/800'} 
+              alt={`${product.name} - Cover Photo`} 
+              className={`w-full h-full object-contain transition-transform duration-500 group-hover:scale-[1.03] ${!product.inStock ? 'opacity-70 grayscale' : ''}`} 
             />
-            
-            {/* Prominent View Badge */}
-            <div className="absolute top-3 left-3 z-10 bg-black/85 backdrop-blur-md text-white text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-full shadow-md border border-white/10">
-              {currentMainItem.label}
-            </div>
 
-            <div className="absolute top-3 right-3 z-10 bg-black/70 backdrop-blur-md text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-lg">
+            <div className="absolute top-3 right-3 z-10 bg-black/60 hover:bg-black/80 backdrop-blur-md text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-lg">
               <Maximize2 className="w-4 h-4" />
             </div>
 
@@ -312,74 +322,10 @@ export default function ProductDetailPage() {
               </div>
             )}
           </div>
-
-          {/* Labeled Thumbnail Navigation Row */}
-          {galleryItems.length > 1 && (
-            <div className="flex gap-2.5 mt-4 overflow-x-auto no-scrollbar pb-1">
-              {galleryItems.map((item, idx) => {
-                const isSelected = activeViewIndex === idx;
-                return (
-                  <button
-                    key={idx}
-                    type="button"
-                    onClick={() => handleSelectView(idx)}
-                    className="flex flex-col items-center gap-1.5 group flex-shrink-0"
-                    title={`Switch to ${item.label}`}
-                  >
-                    <div className={`w-16 h-20 rounded-xl overflow-hidden bg-muted border-2 transition-all ${isSelected ? 'border-black ring-2 ring-black/30' : 'border-border/60 hover:border-black/50'}`}>
-                      <img src={item.url} alt={item.label} className="w-full h-full object-cover" />
-                    </div>
-                    <span className={`text-[10px] uppercase font-bold tracking-wider ${isSelected ? 'text-black font-black' : 'text-muted-foreground'}`}>
-                      {item.shortLabel}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          )}
         </div>
 
         {/* Gallery Views - Stylish Scrolling Middle Panel */}
         <div className="lg:col-span-4 w-full flex flex-col">
-          {/* Panel Header with Controls */}
-          {/* <div className="flex items-center justify-between pb-3 px-1 border-b border-border/40 mb-3"> */}
-            {/* <div className="flex items-center gap-2">
-              <span className="w-6 h-6 rounded-md bg-black text-white flex items-center justify-center shadow-xs">
-                <Layers className="w-3.5 h-3.5" />
-              </span>
-              <span className="text-xs font-black uppercase tracking-wider text-foreground">
-                Product Gallery
-              </span>
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-muted text-muted-foreground border border-border/50">
-                {galleryItems.length} {galleryItems.length === 1 ? 'View' : 'Views'}
-              </span>
-            </div> */}
-
-            {/* Scroll Navigation Arrows */}
-            {/* {galleryItems.length > 1 && (
-              <div className="flex items-center gap-1.5">
-                <button
-                  type="button"
-                  onClick={handleScrollUp}
-                  className="w-7 h-7 rounded-full border border-border/80 bg-background/80 hover:bg-black hover:text-white transition-all flex items-center justify-center text-foreground shadow-xs active:scale-95"
-                  title="Scroll Up"
-                  aria-label="Scroll Up"
-                >
-                  <ChevronUp className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  type="button"
-                  onClick={handleScrollDown}
-                  className="w-7 h-7 rounded-full border border-border/80 bg-background/80 hover:bg-black hover:text-white transition-all flex items-center justify-center text-foreground shadow-xs active:scale-95"
-                  title="Scroll Down"
-                  aria-label="Scroll Down"
-                >
-                  <ChevronDown className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            )}
-          </div> */}
-
           {/* Bounded Scrollable Container with Hidden Scrollbar (Scroll Functionality Active) */}
           <div 
             ref={scrollPanelRef}
@@ -392,48 +338,33 @@ export default function ProductDetailPage() {
                   key={idx} 
                   data-gallery-index={idx}
                   onClick={() => handleSelectView(idx)}
-                  className={`aspect-[3/4] w-[85vw] sm:w-[50vw] lg:w-full flex-shrink-0 snap-center bg-muted overflow-hidden rounded-2xl relative cursor-pointer group transition-all duration-300 ${
+                  className={`aspect-[3/4] w-[85vw] sm:w-[50vw] lg:w-full flex-shrink-0 snap-center bg-[#F7F7F8] dark:bg-neutral-900 overflow-hidden rounded-2xl relative cursor-pointer group transition-all duration-300 flex items-center justify-center ${
                     isSelected 
-                      ? 'ring-2 ring-black border-2 border-transparent shadow-md' 
-                      : 'border border-border/50 hover:border-black/50 hover:shadow-sm opacity-90 hover:opacity-100'
+                      ? 'ring-2 ring-black dark:ring-white border border-transparent shadow-md' 
+                      : 'border border-neutral-200/60 dark:border-neutral-800/80 hover:border-black/30 dark:hover:border-white/30 hover:shadow-xs opacity-90 hover:opacity-100'
                   }`}
-                  title={`View ${item.label} (Click to set as main view)`}
+                  title={`View ${item.label}`}
                 >
                   <img 
                     src={item.url} 
                     alt={`${product.name} - ${item.label}`} 
-                    className={`w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 ${!product.inStock ? 'opacity-70 grayscale' : ''}`} 
+                    className={`w-full h-full object-contain transition-transform duration-500 group-hover:scale-[1.03] ${!product.inStock ? 'opacity-70 grayscale' : ''}`} 
                   />
-                  
-                  {/* Labeled badge with live viewing pulse */}
-                  <div className="absolute top-3 left-3 z-10 flex items-center gap-1.5 bg-black/85 backdrop-blur-md text-white text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-full shadow-md border border-white/10">
-                    {isSelected && (
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                    )}
-                    <span>{item.label}</span>
-                  </div>
 
                   {/* High-res Lightbox Trigger */}
                   <button
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation();
-                      setLightboxIndex(idx);
+                      setLightboxIndex(coverUrl ? idx + 1 : idx);
                       setIsLightboxOpen(true);
                     }}
-                    className="absolute top-3 right-3 z-10 bg-black/75 hover:bg-black text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-200 shadow-lg hover:scale-110 active:scale-95"
+                    className="absolute top-3 right-3 z-10 bg-black/60 hover:bg-black/80 backdrop-blur-md text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-200 shadow-lg hover:scale-110 active:scale-95"
                     title="Expand high-res preview"
                     aria-label="Expand image"
                   >
                     <Maximize2 className="w-3.5 h-3.5" />
                   </button>
-
-                  {/* Active view indicator corner tag */}
-                  {isSelected && (
-                    <div className="absolute bottom-3 right-3 z-10 bg-black text-white text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-md shadow-md border border-white/20">
-                      Active View
-                    </div>
-                  )}
 
                   {!product.inStock && idx === 0 && (
                     <div className="absolute inset-0 flex items-center justify-center z-10">
@@ -494,30 +425,28 @@ export default function ProductDetailPage() {
             <div className="flex flex-wrap gap-4">
               {(product.colors || ['Default Color']).map(colorObj => {
                 const color = typeof colorObj === 'string' ? colorObj : colorObj?.name || 'Default Color';
-                const hexValue = typeof colorObj === 'object' && colorObj?.hex ? colorObj.hex : null;
-                
-                const hex = hexValue || (color.toLowerCase().includes('black') ? '#111' 
-                          : color.toLowerCase().includes('white') ? '#eee' 
-                          : color.toLowerCase().includes('grey') || color.toLowerCase().includes('gray') ? '#999'
-                          : color.toLowerCase().includes('olive') ? '#556b2f'
-                          : '#ccc');
+                const hex = resolveColorHex(colorObj);
+                const isSelected = selectedColor === color;
 
                 return (
                   <button
                     key={color}
+                    type="button"
                     onClick={() => {
                       setSelectedColor(color);
                       setActiveViewIndex(0);
                     }}
-                    title={color}
-                    className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
-                      selectedColor === color 
-                        ? 'border border-foreground' 
-                        : 'border border-transparent'
+                    title={`${color} (${hex})`}
+                    className={`group w-11 h-11 rounded-full flex items-center justify-center transition-all duration-200 cursor-pointer ${
+                      isSelected 
+                        ? 'border-2 border-black dark:border-white scale-110 shadow-md ring-2 ring-black/25 dark:ring-white/25 ring-offset-2' 
+                        : 'border border-transparent hover:border-black/40 dark:hover:border-white/40 hover:scale-110 hover:shadow-sm'
                     }`}
                   >
                     <div 
-                      className="w-8 h-8 rounded-full shadow-inner border border-black/10"
+                      className={`w-8 h-8 rounded-full shadow-inner border border-neutral-300 dark:border-neutral-600 transition-transform duration-200 group-hover:scale-105 ${
+                        isSelected ? 'ring-1 ring-black/30 dark:ring-white/30' : ''
+                      }`}
                       style={{ backgroundColor: hex }}
                     />
                   </button>
@@ -594,6 +523,7 @@ export default function ProductDetailPage() {
             </button>
 
             <button 
+              type="button"
               onClick={() => {
                 if (!isAuthenticated) {
                   navigate('/login');
@@ -601,14 +531,15 @@ export default function ProductDetailPage() {
                 }
                 toggleWishlist(product);
               }}
-              className={`w-11 sm:w-14 flex items-center justify-center border-2 transition-colors flex-shrink-0 ${
+              className={`group w-11 sm:w-14 flex items-center justify-center border-2 transition-all duration-200 cursor-pointer flex-shrink-0 hover:scale-105 active:scale-95 ${
                 isWishlisted
-                  ? 'border-foreground bg-foreground text-background'
-                  : 'border-border bg-background text-foreground hover:border-foreground'
+                  ? 'border-foreground bg-foreground text-background shadow-md'
+                  : 'border-border bg-background text-foreground hover:border-foreground hover:bg-neutral-100 dark:hover:bg-neutral-800 hover:text-red-600 hover:shadow-md'
               }`}
               title={isWishlisted ? "Remove from Wishlist" : "Add to Wishlist"}
+              aria-label={isWishlisted ? "Remove from Wishlist" : "Add to Wishlist"}
             >
-              <Heart className={`w-4 h-4 sm:w-5 sm:h-5 ${isWishlisted ? 'fill-current' : ''}`} />
+              <Heart className={`w-4 h-4 sm:w-5 sm:h-5 transition-transform duration-200 group-hover:scale-125 ${isWishlisted ? 'fill-current' : 'group-hover:fill-red-500/20'}`} />
             </button>
           </div>
 

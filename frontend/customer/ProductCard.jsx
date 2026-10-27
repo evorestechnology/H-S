@@ -4,11 +4,11 @@ import { Heart, Eye } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useWishlistStore } from '../shared/store/useWishlistStore';
 import { useAuthStore } from '../shared/store/useAuthStore';
+import { resolveColorHex } from '../shared/lib/colorUtils';
 
 export default function ProductCard({ product }) {
   const [isHovered, setIsHovered] = useState(false);
   const [selectedColorIndex, setSelectedColorIndex] = useState(0);
-  const [activeView, setActiveView] = useState('front'); // 'front' | 'back'
   const { wishlistItems, toggleWishlist } = useWishlistStore();
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
   const navigate = useNavigate();
@@ -19,30 +19,26 @@ export default function ProductCard({ product }) {
   const colorsList = Array.isArray(product?.colors) && product.colors.length > 0 ? product.colors : [];
   const activeColor = colorsList.length > 0 ? (colorsList[selectedColorIndex] || colorsList[0]) : null;
 
-  // Cover Image extraction
-  const coverPhoto = product?.coverPhoto || '';
-
-  // Front View extraction
-  const frontView = activeColor?.frontView
-    || product?.frontView
-    || coverPhoto
-    || (Array.isArray(product?.images) && product.images[0])
+  // Primary image is ALWAYS the cover photo (with fallbacks)
+  const primaryImage = product?.coverPhoto 
+    || (Array.isArray(product?.images) && product.images[0]) 
+    || activeColor?.frontView 
+    || product?.frontView 
     || '';
 
-  // Back View extraction
-  const backView = activeColor?.backView
-    || product?.backView
-    || (Array.isArray(product?.images) && product.images.length > 1 ? product.images[1] : '')
-    || activeColor?.modelPhoto1
-    || '';
+  // If user tapped a specific color variant, preview that color's front view
+  const currentImage = (selectedColorIndex > 0 && activeColor?.frontView)
+    ? activeColor.frontView
+    : primaryImage;
 
-  const hasDistinctCover = Boolean(coverPhoto && coverPhoto !== frontView);
-  const hasBackView = Boolean(backView);
-
-  // Determine which image should currently display: 'cover', 'back', or 'front'
-  const isDisplayingBack = hasBackView && (activeView === 'back' || (isHovered && activeView !== 'front' && activeView !== 'cover'));
-  const isDisplayingCover = hasDistinctCover && activeView === 'cover' && !isHovered;
-  const isShowingBack = isDisplayingBack;
+  // Secondary/hover image (front view, back view, or 2nd image if different from current)
+  const hoverImage = activeColor?.backView && activeColor.backView !== currentImage
+    ? activeColor.backView
+    : ((activeColor?.frontView && activeColor.frontView !== currentImage)
+      ? activeColor.frontView
+      : ((Array.isArray(product?.images) && product.images.length > 1 && product.images[1] !== currentImage)
+        ? product.images[1]
+        : ''));
 
   const handleViewProduct = (e) => {
     e.preventDefault();
@@ -66,121 +62,53 @@ export default function ProductCard({ product }) {
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      {/* Badges */}
-      <div className="absolute top-3 left-3 z-20 flex flex-col gap-2 rounded-xl">
-        {product.isNew && (
-          <span className="bg-white text-black text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded-xl shadow-sm">
-            New
-          </span>
-        )}
-        {product.isBestSeller && (
-          <span className="bg-black text-white text-[10px] font-bold uppercase tracking-widest px-2 py-1 shadow-sm">
-            Best Seller
-          </span>
-        )}
-      </div>
+      {/* Sleek, Non-Dominating Badges on Mobile */}
+      {(product.isBestSeller || product.isNew) && (
+        <div className="absolute top-2 left-2 z-20 flex items-center">
+          {product.isBestSeller ? (
+            <span className="bg-black/80 backdrop-blur-md text-white text-[8px] sm:text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full shadow-xs border border-white/10">
+              Best Seller
+            </span>
+          ) : product.isNew ? (
+            <span className="bg-white/90 backdrop-blur-md text-black text-[8px] sm:text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full shadow-xs border border-black/10">
+              New
+            </span>
+          ) : null}
+        </div>
+      )}
 
-      {/* Wishlist Button */}
+      {/* Wishlist Button - Sleek and compact */}
       <button 
+        type="button"
         onClick={handleWishlistToggle}
-        className="absolute top-3 right-3 z-20 p-2 bg-white/80 backdrop-blur hover:bg-white rounded-full transition-colors shadow-sm"
+        className="group absolute top-2 right-2 z-20 p-1.5 sm:p-2 bg-white/80 hover:bg-white backdrop-blur-md rounded-full transition-all duration-200 shadow-xs hover:shadow-md hover:scale-110 active:scale-95 cursor-pointer"
         aria-label="Toggle Wishlist"
       >
-        <Heart className={`w-4 h-4 ${isWishlisted ? 'fill-black' : ''}`} />
+        <Heart className={`w-3.5 h-3.5 sm:w-4 sm:h-4 transition-transform duration-200 group-hover:scale-110 ${isWishlisted ? 'fill-black text-black' : 'text-neutral-700 group-hover:text-black'}`} />
       </button>
 
-      {/* Image Container */}
-      <div className="relative aspect-[3/4] bg-muted overflow-hidden mb-4 rounded-3xl">
-        {/* Cover Photo Layer (if distinct from front) */}
-        {hasDistinctCover && (
-          <img 
-            src={coverPhoto} 
-            alt={`${product.name} cover`}
-            className={`absolute inset-0 w-full h-full object-cover transition-all duration-700 ${isDisplayingCover ? 'opacity-100 scale-100' : 'opacity-0 scale-95'} ${!product.inStock ? 'opacity-70 grayscale' : ''}`}
-          />
-        )}
-
-        {/* Front View Image */}
+      {/* Image Container - Fully visible without cropping/trimming */}
+      <div className="relative aspect-[3/4] bg-[#F7F7F8] dark:bg-neutral-900 overflow-hidden mb-3 sm:mb-4 rounded-2xl flex items-center justify-center border border-neutral-200/60 dark:border-neutral-800">
+        {/* Primary / Selected Variant Image */}
         <img 
-          src={frontView || 'https://via.placeholder.com/600'} 
+          src={currentImage || 'https://via.placeholder.com/600'} 
           alt={product.name}
-          className={`w-full h-full object-cover transition-all duration-700 ${isShowingBack || isDisplayingCover ? 'opacity-0 scale-105' : 'opacity-100 scale-100'} ${!product.inStock ? 'opacity-70 grayscale' : ''}`}
+          className={`w-full h-full object-contain transition-all duration-700 ${isHovered && hoverImage ? 'opacity-0 scale-105' : 'opacity-100 scale-100'} ${!product.inStock ? 'opacity-70 grayscale' : ''}`}
         />
 
-        {/* Back View Image */}
-        {hasBackView && (
+        {/* Hover Alternate Image */}
+        {hoverImage && (
           <img 
-            src={backView} 
-            alt={`${product.name} back view`}
-            className={`absolute inset-0 w-full h-full object-cover transition-all duration-700 ${isShowingBack ? 'opacity-100 scale-100' : 'opacity-0 scale-95'} ${!product.inStock ? 'opacity-70 grayscale' : ''}`}
+            src={hoverImage} 
+            alt={`${product.name} alternate view`}
+            className={`absolute inset-0 w-full h-full object-contain transition-all duration-700 ${isHovered ? 'opacity-100 scale-105' : 'opacity-0 scale-100'} ${!product.inStock ? 'opacity-70 grayscale' : ''}`}
           />
-        )}
-        
-        {/* Cover / Front / Back Toggle Pill (one-tap on touch/mobile or manual switch on desktop) */}
-        {(hasDistinctCover || hasBackView) && (
-          <div 
-            className="absolute bottom-3 left-3 z-20 flex items-center bg-black/85 backdrop-blur-md rounded-full p-0.5 border border-white/20 shadow-lg text-[9px] font-bold tracking-wider uppercase text-white transition-opacity duration-300"
-            onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
-          >
-            {hasDistinctCover && (
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setActiveView('cover');
-                }}
-                className={`px-2 py-0.5 rounded-full transition-all ${
-                  isDisplayingCover
-                    ? 'bg-white text-black font-black shadow-sm' 
-                    : 'text-white/70 hover:text-white'
-                }`}
-                title="Show Cover Image"
-              >
-                Cover
-              </button>
-            )}
-            <button
-              type="button"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                setActiveView('front');
-              }}
-              className={`px-2 py-0.5 rounded-full transition-all ${
-                !isShowingBack && !isDisplayingCover
-                  ? 'bg-white text-black font-black shadow-sm' 
-                  : 'text-white/70 hover:text-white'
-              }`}
-              title="Show Front View"
-            >
-              Front
-            </button>
-            {hasBackView && (
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setActiveView('back');
-                }}
-                className={`px-2 py-0.5 rounded-full transition-all ${
-                  isShowingBack
-                    ? 'bg-white text-black font-black shadow-sm' 
-                    : 'text-white/70 hover:text-white'
-                }`}
-                title="Show Back View"
-              >
-                Back
-              </button>
-            )}
-          </div>
         )}
 
         {/* Sold Out Overlay */}
         {!product.inStock && (
           <div className="absolute inset-0 flex items-center justify-center z-10">
-            <span className="bg-black text-white px-6 py-2 font-bold uppercase tracking-widest text-xs rotate-[-12deg] shadow-xl border-2 border-white">
+            <span className="bg-black text-white px-5 py-1.5 font-bold uppercase tracking-widest text-[11px] rotate-[-12deg] shadow-xl border-2 border-white">
               Sold Out
             </span>
           </div>
@@ -188,12 +116,13 @@ export default function ProductCard({ product }) {
 
         {/* View Product Overlay */}
         {product.inStock && (
-          <div className={`absolute bottom-0 left-0 w-full p-4 transition-transform duration-300 ${isHovered ? 'translate-y-0' : 'translate-y-full'} z-20`}>
+          <div className={`hidden sm:block absolute bottom-0 left-0 w-full p-3 transition-transform duration-300 ${isHovered ? 'translate-y-0' : 'translate-y-full'} z-20`}>
             <button 
+              type="button"
               onClick={handleViewProduct}
-              className="w-full bg-black text-white py-3 font-bold uppercase text-xs tracking-widest hover:bg-white hover:text-black border-2 border-black transition-colors flex items-center justify-center gap-2 shadow-lg"
+              className="w-full bg-black text-white py-2.5 font-bold uppercase text-[11px] tracking-widest hover:bg-white hover:text-black border-2 border-black transition-all duration-200 flex items-center justify-center gap-2 shadow-lg rounded-xl cursor-pointer hover:shadow-xl active:scale-[0.99]"
             >
-              <Eye className="w-4 h-4" />
+              <Eye className="w-3.5 h-3.5" />
               View Product
             </button>
           </div>
@@ -202,11 +131,11 @@ export default function ProductCard({ product }) {
 
       {/* Details */}
       <div className="flex flex-col">
-        {/* Color variants preview dots */}
+        {/* Color variants preview dots with exact colors */}
         {colorsList.length > 1 && (
           <div className="flex items-center gap-1.5 mb-1.5">
             {colorsList.slice(0, 5).map((col, idx) => {
-              const code = col?.code || (typeof col === 'string' ? col : '#000');
+              const code = resolveColorHex(col);
               const name = col?.name || (typeof col === 'string' ? col : `Color ${idx + 1}`);
               return (
                 <button
@@ -217,13 +146,13 @@ export default function ProductCard({ product }) {
                     e.stopPropagation();
                     setSelectedColorIndex(idx);
                   }}
-                  className={`w-3.5 h-3.5 rounded-full border transition-all ${
+                  className={`w-3.5 h-3.5 rounded-full border transition-all duration-200 cursor-pointer ${
                     selectedColorIndex === idx 
-                      ? 'scale-125 border-black ring-2 ring-black/40 ring-offset-1' 
-                      : 'border-neutral-300 hover:scale-110'
+                      ? 'scale-125 border-black ring-2 ring-black/40 ring-offset-1 z-10 shadow-sm' 
+                      : 'border-neutral-300 dark:border-neutral-600 hover:scale-125 hover:shadow-sm hover:ring-1 hover:ring-black/20'
                   }`}
                   style={{ backgroundColor: code }}
-                  title={`${name} variant`}
+                  title={`${name} variant (${code})`}
                 />
               );
             })}

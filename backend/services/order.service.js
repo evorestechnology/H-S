@@ -556,14 +556,16 @@ export const formatOrderForUi = (order, isDetail = false) => {
   }, 0);
 
   let resolvedMfgPayment = 0;
-  if (order.priceAdjustmentStatus === 'Approved') {
-    resolvedMfgPayment = order.mfgPayment;
-  } else if (computedItemsMfgTotal > 0) {
-    resolvedMfgPayment = computedItemsMfgTotal;
+  const adjAmt = (order.priceAdjustmentStatus === 'Approved' && Number(order.priceAdjustmentAmount) > 0)
+    ? Number(order.priceAdjustmentAmount)
+    : 0;
+
+  if (computedItemsMfgTotal > 0) {
+    resolvedMfgPayment = Number((computedItemsMfgTotal + adjAmt).toFixed(2));
   } else if (typeof order.mfgPayment === 'number' && order.mfgPayment > 0) {
     resolvedMfgPayment = order.mfgPayment;
   } else {
-    resolvedMfgPayment = catalogMfgPrice || (typeof order.mfgPayment === 'number' ? order.mfgPayment : 0);
+    resolvedMfgPayment = Number(((catalogMfgPrice || 0) + adjAmt).toFixed(2));
   }
 
   // Top-level breakdown fallback
@@ -741,13 +743,12 @@ export const createDirectOrder = async (orderData, creatorUserId) => {
         }
       });
     } else {
-      // Decrement stock if available
+      // Decrement stock if available without overriding administrative inStock toggle
       const newStock = Math.max(0, (product.stock || 1) - 1);
       await tx.product.update({
         where: { id: product.id },
         data: {
-          stock: newStock,
-          inStock: newStock > 0
+          stock: newStock
         }
       });
     }
@@ -972,9 +973,8 @@ export const createCheckoutOrder = async (orderItems, shippingAddress, paymentMe
         throw new Error(`Product ${item.name || item.productId} not found`);
       }
 
-      // Check stock sufficiency: only block if inStock is explicitly false, or if positive stock inventory is less than requested
-      const totalRequested = requestedQtyPerProduct.get(item.productId) || item.quantity;
-      if (product.inStock === false || (typeof product.stock === 'number' && product.stock > 0 && product.stock < totalRequested)) {
+      // Check stock sufficiency: products are print-on-demand; strictly block if inStock is explicitly toggled false
+      if (product.inStock === false) {
         throw new Error(`"${product.name}" is currently out of stock.`);
       }
 
@@ -1020,8 +1020,7 @@ export const createCheckoutOrder = async (orderItems, shippingAddress, paymentMe
         await tx.product.update({
           where: { id: productId },
           data: {
-            stock: newStock,
-            inStock: newStock > 0
+            stock: newStock
           }
         });
       }
