@@ -14,6 +14,12 @@ export const useAuthStore = create(
       isSigningUp: false,
 
       checkAuth: async () => {
+        const token = localStorage.getItem('hs_auth_token') || sessionStorage.getItem('hs_auth_token');
+        if (!token) {
+          set({ user: null, isAuthenticated: false, isCheckingAuth: false });
+          return;
+        }
+
         try {
           const res = await axiosInstance.get('/auth/check');
           set({ user: res.data, isAuthenticated: true });
@@ -22,12 +28,13 @@ export const useAuthStore = create(
           console.log('Error checking auth:', error.message);
           // Only log out if it's explicitly an unauthorized or not found error
           if (error.response && (error.response.status === 401 || error.response.status === 403 || error.response.status === 404)) {
+            localStorage.removeItem('hs_auth_token');
             sessionStorage.removeItem('hs_auth_token');
+            localStorage.removeItem('hs_auth_user');
             set({ user: null, isAuthenticated: false });
             useCartStore.getState().resetCart();
           } else {
             // For network errors or 500s, assume the token is still valid if we were authenticated before
-            // We don't remove the token so they can try again later
           }
         } finally {
           set({ isCheckingAuth: false });
@@ -38,7 +45,12 @@ export const useAuthStore = create(
         set({ isSigningUp: true });
         try {
           const res = await axiosInstance.post('/auth/register', data);
-          sessionStorage.setItem('hs_auth_token', res.data.token);
+          const token = res.data.token;
+          if (token) {
+            localStorage.setItem('hs_auth_token', token);
+            sessionStorage.setItem('hs_auth_token', token);
+            localStorage.setItem('hs_auth_user', JSON.stringify(res.data));
+          }
           set({ user: res.data, isAuthenticated: true });
           toast.success('Account created successfully!');
           useCartStore.getState().fetchCart();
@@ -55,7 +67,12 @@ export const useAuthStore = create(
         set({ isLoggingIn: true });
         try {
           const res = await axiosInstance.post('/auth/login', data);
-          sessionStorage.setItem('hs_auth_token', res.data.token);
+          const token = res.data.token;
+          if (token) {
+            localStorage.setItem('hs_auth_token', token);
+            sessionStorage.setItem('hs_auth_token', token);
+            localStorage.setItem('hs_auth_user', JSON.stringify(res.data));
+          }
           set({ user: res.data, isAuthenticated: true });
           toast.success('Welcome back!');
           useCartStore.getState().fetchCart();
@@ -74,7 +91,9 @@ export const useAuthStore = create(
         } catch (error) {
           console.log('Error during logout API call', error);
         } finally {
+          localStorage.removeItem('hs_auth_token');
           sessionStorage.removeItem('hs_auth_token');
+          localStorage.removeItem('hs_auth_user');
           set({ user: null, isAuthenticated: false });
           useCartStore.getState().resetCart();
           toast.success('Logged out successfully');
@@ -83,7 +102,7 @@ export const useAuthStore = create(
     }),
     {
       name: 'hs_auth_store', // name of the item in the storage (must be unique)
-      storage: createJSONStorage(() => sessionStorage), // Use sessionStorage instead of default localStorage
+      storage: createJSONStorage(() => localStorage), // Persist in localStorage across reloads & tabs
       partialize: (state) => ({ user: state.user, isAuthenticated: state.isAuthenticated }),
     }
   )

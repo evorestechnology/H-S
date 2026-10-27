@@ -1,4 +1,8 @@
 const STORAGE_KEYS = {
+    customer: {
+        token: "hs_auth_token",
+        user: "hs_auth_user"
+    },
     admin: {
         token: "admin_authToken",
         user: "admin_authUser"
@@ -18,12 +22,15 @@ const STORAGE_KEYS = {
  */
 export const getCurrentPortal = () => {
     if (typeof window === "undefined")
-        return "admin";
+        return "customer";
     const path = window.location.pathname.toLowerCase();
     if (path.startsWith("/manufacturer") || path.includes("/login/manufacturer")) {
         return "manufacturer";
     }
-    return "admin";
+    if (path.startsWith("/master") || path.startsWith("/login/admin") || path.startsWith("/admin")) {
+        return "admin";
+    }
+    return "customer";
 };
 /**
  * Retrieve the active authentication token for the target portal (or current portal if unspecified).
@@ -32,11 +39,19 @@ export const getPortalToken = (portal) => {
     if (typeof window === "undefined")
         return "";
     const targetPortal = portal || getCurrentPortal();
-    const key = STORAGE_KEYS[targetPortal].token;
+    const key = STORAGE_KEYS[targetPortal]?.token;
     // 1. Check scoped storage (localStorage then sessionStorage)
-    const scopedToken = localStorage.getItem(key) || sessionStorage.getItem(key);
-    if (scopedToken)
-        return scopedToken;
+    if (key) {
+        const scopedToken = localStorage.getItem(key) || sessionStorage.getItem(key);
+        if (scopedToken && scopedToken !== "undefined" && scopedToken !== "null")
+            return scopedToken;
+    }
+    // Customer specific direct lookup
+    if (targetPortal === "customer") {
+        const custToken = localStorage.getItem("hs_auth_token") || sessionStorage.getItem("hs_auth_token");
+        if (custToken && custToken !== "undefined" && custToken !== "null")
+            return custToken;
+    }
     // 2. Fallback to legacy keys if the legacy user role matches this portal
     const legacyUser = getLegacyUser();
     if (legacyUser && isRoleMatchingPortal(legacyUser.role, targetPortal)) {
@@ -44,7 +59,7 @@ export const getPortalToken = (portal) => {
             localStorage.getItem(STORAGE_KEYS.legacy.tokenAlt) ||
             sessionStorage.getItem(STORAGE_KEYS.legacy.token) ||
             sessionStorage.getItem(STORAGE_KEYS.legacy.tokenAlt);
-        if (legacyToken)
+        if (legacyToken && legacyToken !== "undefined" && legacyToken !== "null")
             return legacyToken;
     }
     return "";
@@ -166,6 +181,9 @@ const isRoleMatchingPortal = (role, portal) => {
     }
     if (portal === "manufacturer") {
         return r === "MANUFACTURER";
+    }
+    if (portal === "customer") {
+        return r === "CUSTOMER" || r === "USER";
     }
     return false;
 };

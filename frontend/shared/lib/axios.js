@@ -8,8 +8,8 @@ export const axiosInstance = axios.create({
 });
 
 axiosInstance.interceptors.request.use((config) => {
-  const token = getPortalToken() || sessionStorage.getItem('hs_auth_token') || localStorage.getItem('token') || sessionStorage.getItem('token');
-  if (token && config.headers) {
+  const token = getPortalToken() || localStorage.getItem('hs_auth_token') || sessionStorage.getItem('hs_auth_token') || localStorage.getItem('token') || sessionStorage.getItem('token');
+  if (token && token !== 'undefined' && token !== 'null' && config.headers) {
     config.headers.Authorization = `Bearer ${token}`;
   }
   if (config.url && config.url.startsWith('/api/') && config.baseURL && config.baseURL.endsWith('/api')) {
