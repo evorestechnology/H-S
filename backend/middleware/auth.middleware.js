@@ -57,7 +57,8 @@ export const protectRoute = async (req, res, next) => {
         email: true,
         role: true,
         companyName: true,
-        status: true
+        status: true,
+        mobile: true
       }
     });
 

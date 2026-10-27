@@ -310,26 +310,64 @@ export default function CheckoutPage() {
           const sessionRes = await axiosInstance.post('/orders/cashfree/create-session', { orderId: newOrderId });
           const sessionData = sessionRes.data?.data;
 
+          if (sessionData?.isAlreadyPaid) {
+            clearCart();
+            setIsProcessing(false);
+            setCreatedOrderId(newOrderId);
+            setShowSuccess(true);
+            setTimeout(() => {
+              navigate(`/track/${newOrderId}`);
+            }, 2000);
+            return;
+          }
+
           if (sessionData && sessionData.payment_session_id) {
             clearCart();
             setIsProcessing(false);
 
+            const cfMode = (sessionData.mode || import.meta.env.VITE_CASHFREE_ENV || 'sandbox').toLowerCase() === 'production'
+              ? 'production'
+              : 'sandbox';
+
+            const triggerCashfreeCheckout = (CashfreeFn) => {
+              try {
+                const cashfree = CashfreeFn({ mode: cfMode });
+                cashfree.checkout({
+                  paymentSessionId: sessionData.payment_session_id,
+                  redirectTarget: "_self"
+                });
+              } catch (sdkErr) {
+                console.error('Failed to trigger Cashfree SDK checkout:', sdkErr);
+                navigate(`/track/${newOrderId}`);
+              }
+            };
+
             if (window.Cashfree) {
-              const cashfreeEnv = (import.meta.env.VITE_CASHFREE_ENV || 'sandbox').toLowerCase();
-              const cashfree = window.Cashfree({ mode: cashfreeEnv === 'production' ? 'production' : 'sandbox' });
-              cashfree.checkout({
-                paymentSessionId: sessionData.payment_session_id,
-                redirectTarget: "_self"
-              });
+              triggerCashfreeCheckout(window.Cashfree);
               return;
             } else {
-              navigate(`/orders/${newOrderId}`);
+              // Dynamically inject script if not yet ready
+              const script = document.createElement('script');
+              script.src = 'https://sdk.cashfree.com/js/v3/cashfree.js';
+              script.async = true;
+              script.onload = () => {
+                if (window.Cashfree) {
+                  triggerCashfreeCheckout(window.Cashfree);
+                } else {
+                  navigate(`/track/${newOrderId}`);
+                }
+              };
+              script.onerror = () => {
+                navigate(`/track/${newOrderId}`);
+              };
+              document.body.appendChild(script);
               return;
             }
           }
         } catch (cfErr) {
           console.error('Cashfree session creation error:', cfErr);
-          alert(cfErr.response?.data?.message || 'Error initializing Cashfree payment session');
+          const detailMsg = cfErr.response?.data?.details ? ` (${cfErr.response.data.details})` : '';
+          alert((cfErr.response?.data?.message || 'Error initializing Cashfree payment session') + detailMsg);
           setIsProcessing(false);
           return;
         }

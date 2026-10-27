@@ -12,7 +12,8 @@ export const createPaymentSession = async (req, res) => {
     }
 
     const order = await prisma.order.findUnique({
-      where: { id: orderId }
+      where: { id: orderId },
+      include: { user: true }
     });
 
     if (!order) {
@@ -23,7 +24,8 @@ export const createPaymentSession = async (req, res) => {
       return res.status(403).json({ success: false, message: 'Forbidden access to order' });
     }
 
-    const sessionData = await cashfreeService.createCashfreeOrderSession(order, req.user);
+    const customerUser = order.user || req.user;
+    const sessionData = await cashfreeService.createCashfreeOrderSession(order, customerUser);
 
     return res.status(200).json({
       success: true,
@@ -31,7 +33,12 @@ export const createPaymentSession = async (req, res) => {
     });
   } catch (error) {
     console.error('Error creating Cashfree payment session:', error);
-    return res.status(500).json({ success: false, message: error.message || 'Payment session creation failed' });
+    const statusCode = error.status || 500;
+    return res.status(statusCode).json({
+      success: false,
+      message: error.message || 'Payment session creation failed',
+      details: error.details || undefined
+    });
   }
 };
 
@@ -53,7 +60,12 @@ export const verifyPayment = async (req, res) => {
     });
   } catch (error) {
     console.error('Error verifying Cashfree payment:', error);
-    return res.status(500).json({ success: false, message: error.message || 'Payment verification failed' });
+    const statusCode = error.status || 500;
+    return res.status(statusCode).json({
+      success: false,
+      message: error.message || 'Payment verification failed',
+      details: error.details || undefined
+    });
   }
 };
 
@@ -72,7 +84,11 @@ export const handleWebhook = async (req, res) => {
     }
 
     const { data, type } = req.body || {};
-    const orderId = data?.order?.order_id;
+    let orderId = data?.order?.order_id;
+    if (orderId) {
+      // Normalize attempt-based order IDs (e.g. HS-12345-ABCD-A123 -> HS-12345-ABCD)
+      orderId = orderId.replace(/-A\d+$/, '');
+    }
 
     if (type === 'PAYMENT_SUCCESS_WEBHOOK' && orderId) {
       await prisma.order.update({

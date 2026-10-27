@@ -2,7 +2,7 @@ import { test, describe } from 'node:test';
 import assert from 'node:assert';
 import crypto from 'crypto';
 
-import { verifyCashfreeWebhookSignature } from '../backend/services/cashfree.service.js';
+import { verifyCashfreeWebhookSignature, getCashfreeConfig } from '../backend/services/cashfree.service.js';
 
 describe('H&S Monolith — Unit & Integration Test Suite', () => {
 
@@ -103,6 +103,43 @@ describe('H&S Monolith — Unit & Integration Test Suite', () => {
         .digest('base64');
 
       assert.strictEqual(computed, validSignature);
+    });
+
+    test('Cashfree auto-detects SANDBOX mode for test keys even when CASHFREE_ENV=PRODUCTION', () => {
+      const origAppId = process.env.CASHFREE_APP_ID;
+      const origSecret = process.env.CASHFREE_SECRET_KEY;
+      const origEnv = process.env.CASHFREE_ENV;
+
+      try {
+        process.env.CASHFREE_APP_ID = 'TEST_MOCK_APP_ID_123';
+        process.env.CASHFREE_SECRET_KEY = 'mock_secret_key_xyz';
+        process.env.CASHFREE_ENV = 'PRODUCTION'; // Deliberately set to PRODUCTION to simulate Render misconfiguration
+
+        const config = getCashfreeConfig();
+        assert.strictEqual(config.mode, 'SANDBOX');
+        assert.strictEqual(config.baseUrl, 'https://sandbox.cashfree.com/pg');
+      } finally {
+        process.env.CASHFREE_APP_ID = origAppId;
+        process.env.CASHFREE_SECRET_KEY = origSecret;
+        process.env.CASHFREE_ENV = origEnv;
+      }
+    });
+
+    test('Cashfree sanitizes surrounding quotes and whitespace from credentials', () => {
+      const origAppId = process.env.CASHFREE_APP_ID;
+      const origSecret = process.env.CASHFREE_SECRET_KEY;
+
+      try {
+        process.env.CASHFREE_APP_ID = '  "TEST12345"  ';
+        process.env.CASHFREE_SECRET_KEY = "  'mock_secret_abc'  ";
+
+        const config = getCashfreeConfig();
+        assert.strictEqual(config.appId, 'TEST12345');
+        assert.strictEqual(config.secretKey, 'mock_secret_abc');
+      } finally {
+        process.env.CASHFREE_APP_ID = origAppId;
+        process.env.CASHFREE_SECRET_KEY = origSecret;
+      }
     });
   });
 
