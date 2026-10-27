@@ -33,7 +33,7 @@ export const getCashfreeConfig = () => {
  * Creates a Cashfree payment session for an existing pending order.
  * Handles duplicate orders (HTTP 409), customer data sanitization, and auto-detects sandbox/production.
  */
-export const createCashfreeOrderSession = async (order, customer) => {
+export const createCashfreeOrderSession = async (order, customer, options = {}) => {
   const { appId, secretKey, mode, baseUrl } = getCashfreeConfig();
 
   if (!appId || !secretKey) {
@@ -49,11 +49,19 @@ export const createCashfreeOrderSession = async (order, customer) => {
     };
   }
 
-  const clientUrl = process.env.FRONTEND_URL
+  let clientUrl = options.clientOrigin
+    || (options.returnUrl ? (() => { try { return new URL(options.returnUrl).origin; } catch (e) { return ''; } })() : '')
+    || process.env.FRONTEND_URL
     || (process.env.CLIENT_URL ? (process.env.CLIENT_URL.split(',').find(u => u.includes('5173') || u.includes('3000')) || process.env.CLIENT_URL.split(',')[0].trim()) : '')
     || process.env.RENDER_EXTERNAL_URL
-    || 'https://www.hiandshi.shop';
+    || 'https://hands-monolith.onrender.com';
+
+  // Safeguard: automatically fix mistyped hs-monolith to hands-monolith
+  clientUrl = clientUrl.replace(/https?:\/\/hs-monolith\.onrender\.com/g, 'https://hands-monolith.onrender.com');
   const cleanClientUrl = clientUrl.replace(/\/+$/, '');
+
+  let finalReturnUrl = options.returnUrl || `${cleanClientUrl}/track/${order.id}?cashfree_order_id={order_id}`;
+  finalReturnUrl = finalReturnUrl.replace(/https?:\/\/hs-monolith\.onrender\.com/g, 'https://hands-monolith.onrender.com');
 
   // Extract customer phone number robustly from shippingAddress or customer user profile
   let rawPhone = '';
@@ -95,7 +103,7 @@ export const createCashfreeOrderSession = async (order, customer) => {
       customer_name: cleanCustomerName
     },
     order_meta: {
-      return_url: `${cleanClientUrl}/track/${order.id}?cashfree_order_id={order_id}`
+      return_url: finalReturnUrl
     }
   };
 
@@ -168,7 +176,7 @@ export const createCashfreeOrderSession = async (order, customer) => {
           ...payload,
           order_id: attemptOrderId,
           order_meta: {
-            return_url: `${cleanClientUrl}/track/${order.id}?cashfree_order_id={order_id}`
+            return_url: finalReturnUrl
           }
         })
       });

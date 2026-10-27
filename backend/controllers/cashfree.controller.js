@@ -6,7 +6,7 @@ import { prisma } from '../lib/prisma.js';
 // @access  Private (Customer)
 export const createPaymentSession = async (req, res) => {
   try {
-    const { orderId } = req.body;
+    const { orderId, returnUrl } = req.body;
     if (!orderId) {
       return res.status(400).json({ success: false, message: 'orderId is required' });
     }
@@ -24,8 +24,9 @@ export const createPaymentSession = async (req, res) => {
       return res.status(403).json({ success: false, message: 'Forbidden access to order' });
     }
 
+    const clientOrigin = req.headers.origin || (req.headers.referer ? (() => { try { return new URL(req.headers.referer).origin; } catch (e) { return undefined; } })() : undefined);
     const customerUser = order.user || req.user;
-    const sessionData = await cashfreeService.createCashfreeOrderSession(order, customerUser);
+    const sessionData = await cashfreeService.createCashfreeOrderSession(order, customerUser, { returnUrl, clientOrigin });
 
     return res.status(200).json({
       success: true,

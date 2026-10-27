@@ -307,7 +307,10 @@ export default function CheckoutPage() {
 
       if (paymentMethod === 'CASHFREE') {
         try {
-          const sessionRes = await axiosInstance.post('/orders/cashfree/create-session', { orderId: newOrderId });
+          const sessionRes = await axiosInstance.post('/orders/cashfree/create-session', {
+            orderId: newOrderId,
+            returnUrl: `${window.location.origin}/track/${newOrderId}?cashfree_order_id={order_id}`
+          });
           const sessionData = sessionRes.data?.data;
 
           if (sessionData?.isAlreadyPaid) {
