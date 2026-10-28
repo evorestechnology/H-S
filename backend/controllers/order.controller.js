@@ -45,13 +45,29 @@ export const createOrder = async (req, res) => {
       }
 
       const { shippingAddress, paymentMethod, couponCode } = req.body;
-      createdOrder = await orderService.createCheckoutOrder(
-        orderItems,
-        shippingAddress,
-        paymentMethod,
-        userId,
-        couponCode
-      );
+      try {
+        createdOrder = await orderService.createCheckoutOrder(
+          orderItems,
+          shippingAddress,
+          paymentMethod,
+          userId,
+          couponCode
+        );
+      } catch (firstErr) {
+        if (firstErr.message?.includes('Transaction') || firstErr.message?.includes('timeout') || firstErr.message?.includes('closed')) {
+          console.warn('Initial createCheckoutOrder failed with transaction/pooler timeout, retrying once after 500ms:', firstErr.message);
+          await new Promise(resolve => setTimeout(resolve, 500));
+          createdOrder = await orderService.createCheckoutOrder(
+            orderItems,
+            shippingAddress,
+            paymentMethod,
+            userId,
+            couponCode
+          );
+        } else {
+          throw firstErr;
+        }
+      }
     }
 
     // Invalidate dashboard stats cache so real-time metrics update

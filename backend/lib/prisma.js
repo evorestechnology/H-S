@@ -43,7 +43,12 @@ if (dbUrl.includes('postgresql://') || dbUrl.includes('postgres://')) {
 
   if (dbUrl.includes('pooler.supabase.com') || dbUrl.includes('pgbouncer=true')) {
     if (!dbUrl.includes('connection_limit')) {
-      dbUrl += (dbUrl.includes('?') ? '&' : '?') + 'connection_limit=15&pool_timeout=60';
+      dbUrl += (dbUrl.includes('?') ? '&' : '?') + 'connection_limit=15';
+    }
+    if (!dbUrl.includes('pool_timeout')) {
+      dbUrl += (dbUrl.includes('?') ? '&' : '?') + 'pool_timeout=60';
+    } else if (dbUrl.includes('pool_timeout=20') || dbUrl.includes('pool_timeout=10')) {
+      dbUrl = dbUrl.replace(/pool_timeout=\d+/, 'pool_timeout=60');
     }
   }
   if (!dbUrl.includes('connect_timeout')) {

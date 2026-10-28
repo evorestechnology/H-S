@@ -940,21 +940,8 @@ export const createDirectOrder = async (orderData, creatorUserId) => {
       }
     });
 
-    if (orderData.couponCode || orderData.couponDiscount) {
-      await tx.$executeRawUnsafe(
-        `UPDATE "Order" SET "couponCode" = $1, "couponDiscount" = $2, "couponApplied" = $3 WHERE "id" = $4`,
-        orderData.couponCode || null,
-        Number(orderData.couponDiscount) || 0,
-        Boolean(orderData.couponCode || (orderData.couponDiscount && Number(orderData.couponDiscount) > 0)),
-        customOrderId
-      );
-      order.couponCode = orderData.couponCode || null;
-      order.couponDiscount = Number(orderData.couponDiscount) || 0;
-      order.couponApplied = Boolean(orderData.couponCode || (orderData.couponDiscount && Number(orderData.couponDiscount) > 0));
-    }
-
     return formatOrderForUi(order);
-  });
+  }, { maxWait: 15000, timeout: 60000 });
 };
 
 /**
@@ -992,162 +979,193 @@ export const calculateAuthoritativeShipping = async (items, country = 'India', c
  * Server-authoritative: validates inventory, decrements stock, calculates coupon, tax, shipping, and total.
  */
 export const createCheckoutOrder = async (orderItems, shippingAddress, paymentMethod, userId, couponCode = null) => {
-  return await prisma.$transaction(async (tx) => {
-    let itemsPrice = 0;
-    let totalMfgPayment = 0;
-    const itemsToCreate = [];
-    const itemsForShipping = [];
+  const productIds = Array.from(new Set(orderItems.map(it => it.productId).filter(Boolean)));
+  const cleanCouponCode = (couponCode && typeof couponCode === 'string' && couponCode.trim())
+    ? couponCode.trim().toUpperCase()
+    : null;
 
-    // Batch load all ordered products to eliminate N+1 queries
-    const productIds = Array.from(new Set(orderItems.map(it => it.productId).filter(Boolean)));
-    const products = await tx.product.findMany({
-      where: { id: { in: productIds } }
+  // Determine country from shippingAddress
+  let destinationCountry = 'India';
+  if (typeof shippingAddress === 'object' && shippingAddress?.country) {
+    destinationCountry = shippingAddress.country;
+  } else if (typeof shippingAddress === 'string') {
+    try {
+      const parsed = JSON.parse(shippingAddress);
+      if (parsed.country) destinationCountry = parsed.country;
+    } catch (e) {
+      // Fallback
+    }
+  }
+  const isDomestic = (destinationCountry || 'India').trim().toLowerCase() === 'india';
+
+  // 1. Concurrently fetch all read-only data OUTSIDE the transaction to avoid holding pooler connections
+  const [products, coupon, shipSettingRow, categories, taxSettings] = await Promise.all([
+    prisma.product.findMany({ where: { id: { in: productIds } } }),
+    cleanCouponCode ? prisma.coupon.findUnique({ where: { code: cleanCouponCode } }) : Promise.resolve(null),
+    isDomestic ? Promise.resolve(null) : prisma.setting.findUnique({ where: { key: 'shipping' } }),
+    isDomestic ? Promise.resolve([]) : prisma.category.findMany(),
+    getTaxSettingsHelper(prisma)
+  ]);
+
+  const productMap = new Map(products.map(p => [p.id, p]));
+  let itemsPrice = 0;
+  let totalMfgPayment = 0;
+  const itemsToCreate = [];
+  const itemsForShipping = [];
+  const requestedQtyPerProduct = new Map();
+
+  for (const item of orderItems) {
+    const product = productMap.get(item.productId);
+    if (!product) {
+      throw new Error(`Product ${item.name || item.productId} not found`);
+    }
+
+    if (product.inStock === false) {
+      throw new Error(`"${product.name}" is currently out of stock.`);
+    }
+
+    const qty = Number(item.quantity) || 1;
+    requestedQtyPerProduct.set(item.productId, (requestedQtyPerProduct.get(item.productId) || 0) + qty);
+
+    const unitPrice = product.price;
+    itemsPrice += unitPrice * qty;
+
+    const colorAssets = resolveColorAssets(product, item.color);
+    const matched = colorAssets.matchedColor;
+    const colorMfgPrice = (matched && typeof matched.manufacturePrice === 'number' && matched.manufacturePrice > 0)
+      ? matched.manufacturePrice
+      : null;
+    const colorBreakdownTotal = (matched && (typeof matched.baseCost === 'number' || typeof matched.printingCost === 'number'))
+      ? ((Number(matched.baseCost) || 0) + (Number(matched.printingCost) || 0) + (Number(matched.shippingCost) || 0) + (Number(matched.additionalCost) || 0))
+      : 0;
+    const targetColorMfg = colorMfgPrice || (colorBreakdownTotal > 0 ? colorBreakdownTotal : null);
+
+    const unitMfgPrice = targetColorMfg
+      || ((typeof product.manufacturePrice === 'number' && product.manufacturePrice > 0)
+        ? product.manufacturePrice
+        : 0);
+    totalMfgPayment += unitMfgPrice * qty;
+
+    itemsToCreate.push({
+      productId: product.id,
+      name: product.name,
+      size: item.size || 'M',
+      color: item.color || null,
+      quantity: qty,
+      price: unitPrice
     });
-    const productMap = new Map(products.map(p => [p.id, p]));
 
-    // Aggregate requested quantities per product to validate and decrement stock atomically
-    const requestedQtyPerProduct = new Map();
-    for (const item of orderItems) {
-      const qty = Number(item.quantity) || 1;
-      requestedQtyPerProduct.set(item.productId, (requestedQtyPerProduct.get(item.productId) || 0) + qty);
+    itemsForShipping.push({
+      category: product.category,
+      quantity: qty
+    });
+  }
+
+  // Authoritative Coupon Validation (in-memory)
+  let couponDiscount = 0;
+  let validCouponCode = null;
+  let isCouponApplied = false;
+  let couponIdToIncrement = null;
+
+  if (coupon && coupon.status === 'Active') {
+    const notExpired = !coupon.expiryDate || new Date(coupon.expiryDate).setHours(23, 59, 59, 999) >= Date.now();
+    const minSpendMet = coupon.minSpend <= itemsPrice;
+    const limitNotReached = coupon.usageLimit === 0 || coupon.usageCount < coupon.usageLimit;
+
+    if (notExpired && minSpendMet && limitNotReached) {
+      if (coupon.discountType === 'Percentage') {
+        couponDiscount = (itemsPrice * coupon.discountValue) / 100;
+      } else {
+        couponDiscount = Math.min(itemsPrice, coupon.discountValue);
+      }
+      validCouponCode = coupon.code;
+      isCouponApplied = true;
+      couponIdToIncrement = coupon.id;
+    }
+  }
+
+  // Authoritative Shipping Calculation (in-memory)
+  let shippingPrice = 0;
+  if (!isDomestic && itemsForShipping.length > 0) {
+    const shipConfig = shipSettingRow?.value || { blockStepKg: 5, ratePerBlock: 5000 };
+    const blockStepKg = Number(shipConfig.blockStepKg) || 5;
+    const ratePerBlock = Number(shipConfig.ratePerBlock) || 5000;
+    const weightMap = {};
+    (categories || []).forEach(c => {
+      weightMap[c.name.toLowerCase()] = c.weightPerPiece;
+    });
+
+    let totalWeightKg = 0;
+    for (const it of itemsForShipping) {
+      const catKey = (it.category || '').toLowerCase();
+      const unitWeight = weightMap[catKey] || 0.500;
+      totalWeightKg += unitWeight * (it.quantity || 1);
     }
 
-    for (const item of orderItems) {
-      const product = productMap.get(item.productId);
-      if (!product) {
-        throw new Error(`Product ${item.name || item.productId} not found`);
-      }
-
-      // Check stock sufficiency: products are print-on-demand; strictly block if inStock is explicitly toggled false
-      if (product.inStock === false) {
-        throw new Error(`"${product.name}" is currently out of stock.`);
-      }
-
-      const unitPrice = product.price;
-      itemsPrice += unitPrice * item.quantity;
-
-      const colorAssets = resolveColorAssets(product, item.color);
-      const matched = colorAssets.matchedColor;
-      const colorMfgPrice = (matched && typeof matched.manufacturePrice === 'number' && matched.manufacturePrice > 0)
-        ? matched.manufacturePrice
-        : null;
-      const colorBreakdownTotal = (matched && (typeof matched.baseCost === 'number' || typeof matched.printingCost === 'number'))
-        ? ((Number(matched.baseCost) || 0) + (Number(matched.printingCost) || 0) + (Number(matched.shippingCost) || 0) + (Number(matched.additionalCost) || 0))
-        : 0;
-      const targetColorMfg = colorMfgPrice || (colorBreakdownTotal > 0 ? colorBreakdownTotal : null);
-
-      const unitMfgPrice = targetColorMfg
-        || ((typeof product.manufacturePrice === 'number' && product.manufacturePrice > 0)
-          ? product.manufacturePrice
-          : 0);
-      totalMfgPayment += unitMfgPrice * item.quantity;
-
-      itemsToCreate.push({
-        productId: product.id,
-        name: product.name,
-        size: item.size || 'M',
-        color: item.color || null,
-        quantity: item.quantity,
-        price: unitPrice
-      });
-
-      itemsForShipping.push({
-        category: product.category,
-        quantity: item.quantity
-      });
+    if (totalWeightKg > 0) {
+      const blocks = Math.ceil(totalWeightKg / blockStepKg);
+      shippingPrice = blocks * ratePerBlock;
     }
+  }
 
-    // Atomically decrement stock for products with explicit tracked positive inventory inside transaction
+  // Authoritative Tax Calculation (in-memory)
+  let taxPrice = 0;
+  if (taxSettings?.enableGst) {
+    if (isDomestic) {
+      taxPrice = itemsPrice > taxSettings.indianThreshold
+        ? itemsPrice * (taxSettings.indianHighRate / 100)
+        : itemsPrice * (taxSettings.indianLowRate / 100);
+    } else {
+      taxPrice = itemsPrice * (taxSettings.nonIndianRate / 100);
+    }
+  }
+
+  const totalPrice = Number((itemsPrice - couponDiscount + taxPrice + shippingPrice).toFixed(2));
+  const mfgPayment = totalMfgPayment;
+  const paymentStatus = (paymentMethod === 'COD' || paymentMethod === 'CASHFREE') ? 'PENDING' : 'SUCCESSFUL';
+
+  const dateStr = getIstDateString().slice(2).replace(/-/g, '');
+  const randomHex = Math.random().toString(36).substring(2, 6).toUpperCase();
+  const customOrderId = `HS-${dateStr}-${randomHex}`;
+  const formattedShippingAddress = typeof shippingAddress === 'string'
+    ? shippingAddress
+    : JSON.stringify(shippingAddress || {});
+
+  // 2. Fast atomic write transaction (executes purely the writes in ~100ms)
+  return await prisma.$transaction(async (tx) => {
+    // Decrement stock for tracked products
     for (const [productId, qtyToDecrement] of requestedQtyPerProduct.entries()) {
       const prod = productMap.get(productId);
       if (prod && typeof prod.stock === 'number' && prod.stock > 0) {
         const newStock = Math.max(0, prod.stock - qtyToDecrement);
         await tx.product.update({
           where: { id: productId },
-          data: {
-            stock: newStock
-          }
+          data: { stock: newStock }
         });
       }
     }
 
-    // Authoritative Coupon Validation
-    let couponDiscount = 0;
-    let validCouponCode = null;
-    let isCouponApplied = false;
-    if (couponCode && typeof couponCode === 'string' && couponCode.trim()) {
-      const cleanCode = couponCode.trim().toUpperCase();
-      const coupon = await tx.coupon.findUnique({ where: { code: cleanCode } });
-      if (coupon && coupon.status === 'Active') {
-        const notExpired = !coupon.expiryDate || new Date(coupon.expiryDate).setHours(23, 59, 59, 999) >= new Date().getTime();
-        const minSpendMet = coupon.minSpend <= itemsPrice;
-        const limitNotReached = coupon.usageLimit === 0 || coupon.usageCount < coupon.usageLimit;
-
-        if (notExpired && minSpendMet && limitNotReached) {
-          if (coupon.discountType === 'Percentage') {
-            couponDiscount = (itemsPrice * coupon.discountValue) / 100;
-          } else {
-            couponDiscount = Math.min(itemsPrice, coupon.discountValue);
-          }
-          validCouponCode = coupon.code;
-          isCouponApplied = true;
-          await tx.coupon.update({
-            where: { id: coupon.id },
-            data: { usageCount: { increment: 1 } }
-          });
-        }
-      }
+    if (couponIdToIncrement) {
+      await tx.coupon.update({
+        where: { id: couponIdToIncrement },
+        data: { usageCount: { increment: 1 } }
+      });
     }
-
-    // Determine country from shippingAddress
-    let destinationCountry = 'India';
-    if (typeof shippingAddress === 'object' && shippingAddress?.country) {
-      destinationCountry = shippingAddress.country;
-    } else if (typeof shippingAddress === 'string') {
-      try {
-        const parsed = JSON.parse(shippingAddress);
-        if (parsed.country) destinationCountry = parsed.country;
-      } catch (e) {
-        // Fallback
-      }
-    }
-
-    // Authoritative Shipping Calculation
-    const shippingPrice = await calculateAuthoritativeShipping(itemsForShipping, destinationCountry, tx);
-
-    // Authoritative Tax Calculation
-    const taxSettings = await getTaxSettingsHelper(tx);
-    let taxPrice = 0;
-    if (taxSettings.enableGst) {
-      const isIndian = destinationCountry.trim().toLowerCase() === 'india';
-      if (isIndian) {
-        taxPrice = itemsPrice > taxSettings.indianThreshold
-          ? itemsPrice * (taxSettings.indianHighRate / 100)
-          : itemsPrice * (taxSettings.indianLowRate / 100);
-      } else {
-        taxPrice = itemsPrice * (taxSettings.nonIndianRate / 100);
-      }
-    }
-
-    const totalPrice = Number((itemsPrice - couponDiscount + taxPrice + shippingPrice).toFixed(2));
-    const mfgPayment = totalMfgPayment;
-    const paymentStatus = (paymentMethod === 'COD' || paymentMethod === 'CASHFREE') ? 'PENDING' : 'SUCCESSFUL';
-
-    const dateStr = getIstDateString().slice(2).replace(/-/g, '');
-    const randomHex = Math.random().toString(36).substring(2, 6).toUpperCase();
-    const customOrderId = `HS-${dateStr}-${randomHex}`;
 
     const order = await tx.order.create({
       data: {
         id: customOrderId,
         userId,
-        shippingAddress: typeof shippingAddress === 'string' ? shippingAddress : JSON.stringify(shippingAddress),
+        shippingAddress: formattedShippingAddress,
         taxPrice: Number(taxPrice.toFixed(2)),
         shippingPrice: Number(shippingPrice.toFixed(2)),
         totalPrice,
         mfgPayment,
         paymentStatus,
         status: 'IN_PROGRESS',
+        couponCode: validCouponCode,
+        couponDiscount: Number(couponDiscount.toFixed(2)),
+        couponApplied: isCouponApplied,
         items: {
           create: itemsToCreate
         }
@@ -1186,21 +1204,8 @@ export const createCheckoutOrder = async (orderItems, shippingAddress, paymentMe
       }
     });
 
-    if (isCouponApplied && validCouponCode) {
-      await tx.$executeRawUnsafe(
-        `UPDATE "Order" SET "couponCode" = $1, "couponDiscount" = $2, "couponApplied" = $3 WHERE "id" = $4`,
-        validCouponCode,
-        Number(couponDiscount.toFixed(2)),
-        true,
-        customOrderId
-      );
-      order.couponCode = validCouponCode;
-      order.couponDiscount = Number(couponDiscount.toFixed(2));
-      order.couponApplied = true;
-    }
-
     return formatOrderForUi(order);
-  }, { maxWait: 10000, timeout: 20000 });
+  }, { maxWait: 15000, timeout: 60000 });
 };
 
 /**
@@ -1517,7 +1522,7 @@ export const cancelOrder = async (id, cancelReason, actor = { role: 'ADMIN', id:
     }
 
     return formatOrderForUi(updated);
-  }, { maxWait: 10000, timeout: 20000 });
+  }, { maxWait: 15000, timeout: 60000 });
 };
 
 /**
@@ -1797,7 +1802,7 @@ export const handleCancellationResponse = async (id, action, actor = { role: 'AD
       }
       return formatOrderForUi(updated);
     }
-  }, { maxWait: 10000, timeout: 20000 });
+  }, { maxWait: 15000, timeout: 60000 });
 };
 
 /**
