@@ -112,6 +112,10 @@ const Orders = () => {
     };
     const filteredOrders = useMemo(() => {
         return orders.filter((item) => {
+            // Manufacturers strictly only process orders with successful payment
+            if (item.paymentStatus && item.paymentStatus !== "SUCCESSFUL" && item.paymentStatus !== "PAID") {
+                return false;
+            }
             const matchesStatus = filter === "All" ? true : item.status === filter;
             const keyword = search.toLowerCase();
             const matchesSearch = item.id.toLowerCase().includes(keyword) ||

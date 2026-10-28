@@ -12,6 +12,7 @@ import {
   requestOrderCancellation,
   respondToCancelRequest,
   updateMfgPaymentStatus,
+  updatePaymentStatus,
   getOrderById,
   getMyOrders
 } from '../controllers/order.controller.js';
@@ -41,6 +42,9 @@ router.patch('/:id/cancel-request', respondToCancelRequest);
 
 // Manufacturer payment payout status (Admin updates)
 router.patch('/:id/mfg-payment-status', updateMfgPaymentStatus);
+
+// Order payment status update (Admin updates)
+router.patch('/:id/payment-status', updatePaymentStatus);
 
 // Specific order details (Keep :id at the bottom)
 router.get('/:id', getOrderById);

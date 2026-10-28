@@ -2,7 +2,7 @@ import { useState } from "react";
 import "./OrdersTable.css";
 import { ExternalLink, CheckCircle2, XCircle, Eye, Truck, Clock, CreditCard, Tag, Copy, Check, MapPin, Receipt, Loader2 } from "lucide-react";
 import ShippingAddressModal, { copyToClipboard } from "../ShippingAddressModal/ShippingAddressModal";
-const OrdersTable = ({ orders, loadingDetailsOrderId, onMoveToShipping, onUpdateTracking, onMoveToCompleted, onInitiateCancel, onManageRefund, onAcceptCancelRequest, onRejectCancelRequest, onViewCancelReason, onViewOrderDetails, onViewPriceAdjRequest, onMarkAsPaid }) => {
+const OrdersTable = ({ orders, loadingDetailsOrderId, onMoveToShipping, onUpdateTracking, onMoveToCompleted, onInitiateCancel, onManageRefund, onAcceptCancelRequest, onRejectCancelRequest, onViewCancelReason, onViewOrderDetails, onViewPriceAdjRequest, onMarkAsPaid, onMarkPaymentAsPaid }) => {
     const [selectedAddressOrder, setSelectedAddressOrder] = useState(null);
     const [copiedOrderId, setCopiedOrderId] = useState(null);
     const handleQuickCopy = async (address, orderId) => {
@@ -26,6 +26,7 @@ const OrdersTable = ({ orders, loadingDetailsOrderId, onMoveToShipping, onUpdate
                         <th className="col-phone">PHONE NUMBER</th>
                         <th className="col-country">COUNTRY</th>
                         <th className="col-address">SHIPPING ADDRESS</th>
+                        <th className="col-payment-status">PAYMENT STATUS</th>
                         <th className="col-amount">AMOUNT PAID</th>
                         <th className="col-gst-collected">GST COLLECTED</th>
                         <th className="col-mfg-payment">MFG PAYMENT</th>
@@ -111,6 +112,29 @@ const OrdersTable = ({ orders, loadingDetailsOrderId, onMoveToShipping, onUpdate
                                                 {copiedOrderId === item.id ? (<Check size={12} className="copy-check-icon"/>) : (<Copy size={12}/>)}
                                             </button>)}
                                     </div>
+                                </td>
+                                <td className="col-payment-status-cell">
+                                    {(item.paymentStatus === "SUCCESSFUL" || item.paymentStatus === "PAID") ? (
+                                        <span className="payment-badge payment-paid" title={`Payment Verified: ${item.transactionId || 'Online'}`}>
+                                            <CheckCircle2 size={12} />
+                                            <span>Paid</span>
+                                        </span>
+                                    ) : item.paymentStatus === "PENDING" ? (
+                                        <span className="payment-badge payment-pending" title="Payment pending or checkout session abandoned">
+                                            <Clock size={12} />
+                                            <span>Pending</span>
+                                        </span>
+                                    ) : (
+                                        <span className="payment-badge payment-failed" title={`Payment Failed: ${item.paymentStatus || 'Failed'}`}>
+                                            <XCircle size={12} />
+                                            <span>Failed</span>
+                                        </span>
+                                    )}
+                                    {item.transactionId && (
+                                        <span className="payment-txn-id" title={item.transactionId}>
+                                            {item.transactionId.length > 12 ? `${item.transactionId.slice(0, 10)}...` : item.transactionId}
+                                        </span>
+                                    )}
                                 </td>
                                 <td className="col-amount-val">₹{item.amountPaid.toFixed(2)}</td>
                                 <td className="col-gst-collected-val">
@@ -236,64 +260,91 @@ const OrdersTable = ({ orders, loadingDetailsOrderId, onMoveToShipping, onUpdate
                                 {/* Action column for Admin */}
                                 <td>
                                     <div className="order-actions-cell">
-                                        {item.status === "In Progress" && (<>
-                                                <button className="action-btn-status btn-shipping" title="Move from In Progress to Shipping" onClick={() => onMoveToShipping(item)}>
-                                                    <Truck size={13}/>
-                                                    <span>Move to Shipping</span>
-                                                </button>
-                                                <button className="action-btn-status btn-cancel" title="Cancel Order" onClick={() => onInitiateCancel(item)}>
-                                                    <XCircle size={13}/>
-                                                    <span>Cancel Order</span>
-                                                </button>
-                                            </>)}
-
-                                        {item.status === "Shipping" && (<>
-                                                <button className="action-btn-status btn-shipping" title="Update Shipper Name, Tracking ID & Link while keeping order in Shipping status" onClick={() => onUpdateTracking(item)}>
-                                                    <Truck size={13}/>
-                                                    <span>Update Tracking</span>
-                                                </button>
-                                                <button className="action-btn-status btn-complete" title="Move from Shipping to Delivered" onClick={() => onMoveToCompleted(item)}>
-                                                    <CheckCircle2 size={13}/>
-                                                    <span>Move to Delivered</span>
-                                                </button>
-                                                <button className="action-btn-status btn-cancel" title="Cancel Order" onClick={() => onInitiateCancel(item)}>
-                                                    <XCircle size={13}/>
-                                                    <span>Cancel Order</span>
-                                                </button>
-                                            </>)}
-
-                                        {item.status === "Cancel Requested" && (<>
-                                                <button className="action-btn-status btn-accept-cancel" title="Accept Cancellation Request" onClick={() => onAcceptCancelRequest(item)}>
-                                                    <CheckCircle2 size={13}/>
-                                                    <span>Accept Cancel</span>
-                                                </button>
-                                                <button className="action-btn-status btn-reject-cancel" title="Reject Cancellation Request" onClick={() => onRejectCancelRequest(item)}>
-                                                    <XCircle size={13}/>
-                                                    <span>Reject Cancel</span>
-                                                </button>
-                                            </>)}
-
-                                        {(item.status === "Completed" || item.status === "Delivered") && (<span className="status-completed-text">
-                                                <CheckCircle2 size={14}/> Delivered
-                                            </span>)}
-
-                                        {item.status === "Cancelled" && (
-                                            <div style={{ display: "flex", flexDirection: "column", gap: "6px", alignItems: "stretch" }}>
+                                        {(item.paymentStatus && item.paymentStatus !== "SUCCESSFUL" && item.paymentStatus !== "PAID") ? (
+                                            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                                                {onMarkPaymentAsPaid && (
+                                                    <button
+                                                        type="button"
+                                                        className="action-btn-status btn-mark-payment-paid"
+                                                        title="Manually mark payment as received/successful and move order to active processing"
+                                                        onClick={() => onMarkPaymentAsPaid(item)}
+                                                    >
+                                                        <CheckCircle2 size={13}/>
+                                                        <span>Mark Paid</span>
+                                                    </button>
+                                                )}
                                                 <button
                                                     type="button"
-                                                    className="action-btn-status btn-admin-refund"
-                                                    title="Manage / process Admin refund for this cancelled order"
-                                                    onClick={() => onManageRefund && onManageRefund(item)}
+                                                    className="action-btn-status btn-cancel"
+                                                    title="Cancel unpaid/abandoned order"
+                                                    onClick={() => onInitiateCancel(item)}
                                                 >
-                                                    <Receipt size={13}/>
-                                                    <span>Admin Refund</span>
+                                                    <XCircle size={13}/>
+                                                    <span>Cancel Order</span>
                                                 </button>
-                                                {item.refundImage && (
-                                                    <span style={{ fontSize: "10px", color: "#059669", fontWeight: 700, textAlign: "center" }}>
-                                                        ✓ Receipt Attached
-                                                    </span>
-                                                )}
                                             </div>
+                                        ) : (
+                                            <>
+                                                {item.status === "In Progress" && (<>
+                                                        <button className="action-btn-status btn-shipping" title="Move from In Progress to Shipping" onClick={() => onMoveToShipping(item)}>
+                                                            <Truck size={13}/>
+                                                            <span>Move to Shipping</span>
+                                                        </button>
+                                                        <button className="action-btn-status btn-cancel" title="Cancel Order" onClick={() => onInitiateCancel(item)}>
+                                                            <XCircle size={13}/>
+                                                            <span>Cancel Order</span>
+                                                        </button>
+                                                    </>)}
+
+                                                {item.status === "Shipping" && (<>
+                                                        <button className="action-btn-status btn-shipping" title="Update Shipper Name, Tracking ID & Link while keeping order in Shipping status" onClick={() => onUpdateTracking(item)}>
+                                                            <Truck size={13}/>
+                                                            <span>Update Tracking</span>
+                                                        </button>
+                                                        <button className="action-btn-status btn-complete" title="Move from Shipping to Delivered" onClick={() => onMoveToCompleted(item)}>
+                                                            <CheckCircle2 size={13}/>
+                                                            <span>Move to Delivered</span>
+                                                        </button>
+                                                        <button className="action-btn-status btn-cancel" title="Cancel Order" onClick={() => onInitiateCancel(item)}>
+                                                            <XCircle size={13}/>
+                                                            <span>Cancel Order</span>
+                                                        </button>
+                                                    </>)}
+
+                                                {item.status === "Cancel Requested" && (<>
+                                                        <button className="action-btn-status btn-accept-cancel" title="Accept Cancellation Request" onClick={() => onAcceptCancelRequest(item)}>
+                                                            <CheckCircle2 size={13}/>
+                                                            <span>Accept Cancel</span>
+                                                        </button>
+                                                        <button className="action-btn-status btn-reject-cancel" title="Reject Cancellation Request" onClick={() => onRejectCancelRequest(item)}>
+                                                            <XCircle size={13}/>
+                                                            <span>Reject Cancel</span>
+                                                        </button>
+                                                    </>)}
+
+                                                {(item.status === "Completed" || item.status === "Delivered") && (<span className="status-completed-text">
+                                                        <CheckCircle2 size={14}/> Delivered
+                                                    </span>)}
+
+                                                {item.status === "Cancelled" && (
+                                                    <div style={{ display: "flex", flexDirection: "column", gap: "6px", alignItems: "stretch" }}>
+                                                        <button
+                                                            type="button"
+                                                            className="action-btn-status btn-admin-refund"
+                                                            title="Manage / process Admin refund for this cancelled order"
+                                                            onClick={() => onManageRefund && onManageRefund(item)}
+                                                        >
+                                                            <Receipt size={13}/>
+                                                            <span>Admin Refund</span>
+                                                        </button>
+                                                        {item.refundImage && (
+                                                            <span style={{ fontSize: "10px", color: "#059669", fontWeight: 700, textAlign: "center" }}>
+                                                                ✓ Receipt Attached
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </>
                                         )}
                                     </div>
                                 </td>

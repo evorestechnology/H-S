@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import "./Orders.css";
-import { getOrders, getOrderDetails, createOrder, updateOrderToShipping, completeOrder, cancelOrder, processOrderRefund, respondToPriceAdjustment, respondToCancelRequest, updateMfgPaymentStatus } from "./api";
+import { getOrders, getOrderDetails, createOrder, updateOrderToShipping, completeOrder, cancelOrder, processOrderRefund, respondToPriceAdjustment, respondToCancelRequest, updateMfgPaymentStatus, updatePaymentStatus } from "./api";
 import OrdersHeader from "./components/OrdersHeader/OrdersHeader";
 import OrdersSearch from "./components/OrdersSearch/OrdersSearch";
 import OrdersTable from "./components/OrdersTable/OrdersTable";
@@ -146,9 +146,26 @@ const Orders = () => {
             return updater(prev);
         });
     };
+
+    const failedPaymentsCount = useMemo(() => {
+        return orders.filter((item) => (item.paymentStatus || "").toUpperCase() !== "SUCCESSFUL").length;
+    }, [orders]);
+
     const filteredOrders = useMemo(() => {
+        const isFailedPaymentsTab = filter === "Failed Payments";
         return orders.filter((item) => {
-            const matchesStatus = filter === "All" ? true : item.status === filter;
+            const isSuccessful = (item.paymentStatus || "").toUpperCase() === "SUCCESSFUL";
+
+            if (isFailedPaymentsTab) {
+                // Failed Payments panel: strictly show orders where payment was NOT successful
+                if (isSuccessful) return false;
+            } else {
+                // Active processing tabs ("All", "In Progress", "Shipping", "Delivered", etc.):
+                // Strictly ONLY show orders where payment was SUCCESSFUL!
+                if (!isSuccessful) return false;
+                if (filter !== "All" && item.status !== filter) return false;
+            }
+
             const keyword = search.toLowerCase();
             const matchesSearch = item.id.toLowerCase().includes(keyword) ||
                 item.itemName.toLowerCase().includes(keyword) ||
@@ -161,8 +178,10 @@ const Orders = () => {
                 (item.trackingId && item.trackingId.toLowerCase().includes(keyword)) ||
                 (item.shipperName && item.shipperName.toLowerCase().includes(keyword)) ||
                 (item.couponCode && item.couponCode.toLowerCase().includes(keyword)) ||
-                (item.cancelReason && item.cancelReason.toLowerCase().includes(keyword));
-            return matchesStatus && matchesSearch;
+                (item.cancelReason && item.cancelReason.toLowerCase().includes(keyword)) ||
+                (item.paymentStatus && item.paymentStatus.toLowerCase().includes(keyword)) ||
+                (item.transactionId && item.transactionId.toLowerCase().includes(keyword));
+            return matchesSearch;
         });
     }, [orders, filter, search]);
     const totalPages = Math.max(1, Math.ceil(filteredOrders.length / PAGE_SIZE));
@@ -495,6 +514,33 @@ const Orders = () => {
             alert(`Error: ${err.message}`);
         }
     };
+
+    // Mark Order Payment Status as SUCCESSFUL (e.g. for orders in Failed Payments panel)
+    const handleMarkPaymentAsPaid = async (targetOrder) => {
+        const confirmed = window.confirm(
+            `Mark Order #${targetOrder.id} payment as SUCCESSFUL?\n\nThis will verify payment received and move the order into your active fulfillment pipeline.`
+        );
+        if (!confirmed) return;
+
+        try {
+            await updatePaymentStatus(targetOrder.id, "SUCCESSFUL");
+            updateOrdersState((prev) => prev.map((order) => {
+                if (order.id === targetOrder.id) {
+                    return {
+                        ...order,
+                        paymentStatus: "SUCCESSFUL"
+                    };
+                }
+                return order;
+            }));
+            await loadOrdersData();
+            alert(`Order #${targetOrder.id} payment has been marked as SUCCESSFUL and moved to active orders!`);
+        }
+        catch (err) {
+            console.error("Failed to update order payment status:", err);
+            alert(`Error updating payment status: ${err.message}`);
+        }
+    };
     const handleCreateOrder = async (newOrderData) => {
         setIsCreating(true);
         try {
@@ -526,17 +572,23 @@ const Orders = () => {
     return (<div className="orders-page">
             <OrdersHeader onNewOrder={() => setIsCreateModalOpen(true)} onRefresh={() => loadOrdersData(false, true)} isRefreshing={isSyncing}/>
 
-            <OrdersSearch value={search} onChange={(val) => {
-            setSearch(val);
-            setCurrentPage(1);
-        }} activeFilter={filter} onFilterChange={(val) => {
-            setFilter(val);
-            setCurrentPage(1);
-        }}/>
+            <OrdersSearch
+                value={search}
+                onChange={(val) => {
+                    setSearch(val);
+                    setCurrentPage(1);
+                }}
+                activeFilter={filter}
+                onFilterChange={(val) => {
+                    setFilter(val);
+                    setCurrentPage(1);
+                }}
+                failedPaymentsCount={failedPaymentsCount}
+            />
 
             {isLoading && orders.length === 0 ? (<div style={{ textAlign: "center", padding: "40px", color: "#888" }}>
                     Loading orders from server...
-                </div>) : (<OrdersTable orders={paginatedOrders} loadingDetailsOrderId={loadingDetailsOrderId} onMoveToShipping={handleOpenShippingModal} onUpdateTracking={(order) => setSelectedOrderForTrackingUpdate(order)} onMoveToCompleted={handleMoveToCompleted} onInitiateCancel={handleInitiateCancel} onManageRefund={(order) => setSelectedOrderForRefund(order)} onAcceptCancelRequest={handleAcceptCancelRequest} onRejectCancelRequest={handleRejectCancelRequest} onViewCancelReason={(order) => setSelectedOrderForViewReason(order)} onViewOrderDetails={handleOpenViewDetails} onViewPriceAdjRequest={(order) => setSelectedOrderForViewPriceAdj(order)} onMarkAsPaid={handleMarkAsPaid}/>)}
+                </div>) : (<OrdersTable orders={paginatedOrders} loadingDetailsOrderId={loadingDetailsOrderId} onMoveToShipping={handleOpenShippingModal} onUpdateTracking={(order) => setSelectedOrderForTrackingUpdate(order)} onMoveToCompleted={handleMoveToCompleted} onInitiateCancel={handleInitiateCancel} onManageRefund={(order) => setSelectedOrderForRefund(order)} onAcceptCancelRequest={handleAcceptCancelRequest} onRejectCancelRequest={handleRejectCancelRequest} onViewCancelReason={(order) => setSelectedOrderForViewReason(order)} onViewOrderDetails={handleOpenViewDetails} onViewPriceAdjRequest={(order) => setSelectedOrderForViewPriceAdj(order)} onMarkAsPaid={handleMarkAsPaid} onMarkPaymentAsPaid={handleMarkPaymentAsPaid}/>)}
 
             <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage}/>
 

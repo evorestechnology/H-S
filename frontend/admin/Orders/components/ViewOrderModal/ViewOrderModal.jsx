@@ -743,6 +743,21 @@ const ViewOrderModal = ({ open, order, onClose, onRequestPriceAdj }) => {
                             <div className="financial-stat-box">
                                 <span className="stat-label">Total Amount Paid by Customer</span>
                                 <p className="stat-value paid">₹{order.amountPaid.toFixed(2)}</p>
+                                <div style={{ marginTop: "6px" }}>
+                                    {(order.paymentStatus === "SUCCESSFUL" || order.paymentStatus === "PAID") ? (
+                                        <span style={{ background: "#ECFDF5", color: "#065F46", border: "1px solid #A7F3D0", padding: "2px 8px", borderRadius: "4px", fontSize: "11px", fontWeight: 700, textTransform: "uppercase" }}>
+                                            ✓ Paid / Successful
+                                        </span>
+                                    ) : order.paymentStatus === "PENDING" ? (
+                                        <span style={{ background: "#FFFBEB", color: "#92400E", border: "1px solid #FDE68A", padding: "2px 8px", borderRadius: "4px", fontSize: "11px", fontWeight: 700, textTransform: "uppercase" }}>
+                                            ⏳ Payment Pending
+                                        </span>
+                                    ) : (
+                                        <span style={{ background: "#FEF2F2", color: "#991B1B", border: "1px solid #FECACA", padding: "2px 8px", borderRadius: "4px", fontSize: "11px", fontWeight: 700, textTransform: "uppercase" }}>
+                                            ✕ Payment Failed ({order.paymentStatus || 'Failed'})
+                                        </span>
+                                    )}
+                                </div>
                             </div>
 
                             <div className="financial-stat-group">

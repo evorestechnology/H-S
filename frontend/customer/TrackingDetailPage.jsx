@@ -116,23 +116,48 @@ export default function TrackingDetailPage() {
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end mb-8 border-b border-border pb-6 gap-2">
         <div>
           <h1 className="font-heading text-2xl sm:text-3xl uppercase font-bold tracking-tight">Order Tracking</h1>
-          <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground sm:hidden mt-1 break-all">Order #{order.id}</p>
-          {isCancelled && (
-            <div className="mt-2 flex flex-wrap items-center gap-2">
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground mr-1">Order #{order.id}</span>
+            {(() => {
+              const pStatus = (order.paymentStatus || 'PENDING').toUpperCase();
+              if (pStatus === 'SUCCESSFUL' || pStatus === 'PAID') {
+                return (
+                  <span className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider rounded-sm bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center gap-1">
+                    <Check className="w-3 h-3 text-emerald-600" />
+                    Payment: Successful
+                  </span>
+                );
+              } else if (pStatus === 'PENDING') {
+                return (
+                  <span className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider rounded-sm bg-amber-100 text-amber-800 border border-amber-300 flex items-center gap-1">
+                    <Clock className="w-3 h-3 text-amber-600" />
+                    Payment: Pending Confirmation
+                  </span>
+                );
+              } else {
+                return (
+                  <span className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider rounded-sm bg-rose-100 text-rose-800 border border-rose-300 flex items-center gap-1">
+                    <AlertTriangle className="w-3 h-3 text-rose-600" />
+                    Payment: Failed
+                  </span>
+                );
+              }
+            })()}
+            {isCancelled && (
               <span className="px-2.5 py-1 bg-red-100 text-red-800 text-[10px] font-black uppercase tracking-widest rounded-sm">
                 ORDER CANCELLED
               </span>
-              {refundStatus && (
-                <span className={`px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider rounded-sm flex items-center gap-1 ${
-                  isRefunded ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' :
-                  'bg-amber-100 text-amber-800 border border-amber-200'
-                }`}>
-                  <RotateCcw className="w-3 h-3" />
-                  Refund: {refundStatus}
-                </span>
-              )}
-            </div>
-          )}
+            )}
+            {isCancelled && refundStatus && (
+              <span className={`px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider rounded-sm flex items-center gap-1 ${
+                isRefunded ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' :
+                'bg-amber-100 text-amber-800 border border-amber-200'
+              }`}>
+                <RotateCcw className="w-3 h-3" />
+                Refund: {refundStatus}
+              </span>
+            )}
+          </div>
         </div>
         <p className="text-sm font-bold uppercase tracking-widest text-muted-foreground hidden sm:block">Order #{order.id}</p>
       </div>
@@ -409,10 +434,39 @@ export default function TrackingDetailPage() {
               Payment Summary
             </h3>
             <div className="space-y-3 text-sm">
-              <div className="flex justify-between text-muted-foreground">
+              <div className="flex justify-between items-center text-muted-foreground">
                 <span>Payment Status</span>
-                <span className="font-bold text-black uppercase tracking-wider text-xs">{order.paymentStatus || 'PENDING'}</span>
+                {(() => {
+                  const pStatus = (order.paymentStatus || 'PENDING').toUpperCase();
+                  if (pStatus === 'SUCCESSFUL' || pStatus === 'PAID') {
+                    return (
+                      <span className="font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded text-xs uppercase tracking-wider flex items-center gap-1">
+                        <Check className="w-3 h-3 text-emerald-600" /> Paid / Successful
+                      </span>
+                    );
+                  } else if (pStatus === 'PENDING') {
+                    return (
+                      <span className="font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2.5 py-0.5 rounded text-xs uppercase tracking-wider flex items-center gap-1">
+                        <Clock className="w-3 h-3 text-amber-600" /> Pending
+                      </span>
+                    );
+                  } else {
+                    return (
+                      <span className="font-bold text-rose-700 bg-rose-50 border border-rose-200 px-2.5 py-0.5 rounded text-xs uppercase tracking-wider flex items-center gap-1">
+                        <AlertTriangle className="w-3 h-3 text-rose-600" /> Failed
+                      </span>
+                    );
+                  }
+                })()}
               </div>
+
+              {order.transactionId && (
+                <div className="flex justify-between text-muted-foreground text-xs">
+                  <span>Transaction ID</span>
+                  <span className="font-mono text-black font-semibold select-all">{order.transactionId}</span>
+                </div>
+              )}
+
               {(order.couponApplied || order.couponCode) && (
                 <div className="flex justify-between items-center text-emerald-600 font-bold">
                   <span>Coupon ({order.couponCode || 'Applied'})</span>
@@ -424,6 +478,31 @@ export default function TrackingDetailPage() {
                 <span>₹{(Number(order.totalPrice || order.amountPaid) || 0).toFixed(2)}</span>
               </div>
             </div>
+
+            {/* Helper notice below Payment Summary */}
+            {(() => {
+              const pStatus = (order.paymentStatus || 'PENDING').toUpperCase();
+              if (pStatus !== 'SUCCESSFUL' && pStatus !== 'PAID') {
+                return (
+                  <div className="mt-4 p-3 bg-amber-50/80 border border-amber-200 rounded text-xs text-amber-900 leading-relaxed">
+                    <p className="font-semibold mb-1">
+                      {pStatus === 'PENDING' ? '⏳ Payment Incomplete / Pending' : '⚠️ Payment Failed'}
+                    </p>
+                    <p className="text-[11px] text-amber-800">
+                      {pStatus === 'PENDING'
+                        ? 'Your payment was not marked as completed. If funds were debited from your bank, please allow a few moments for verification or contact support.'
+                        : 'This payment attempt was not successful. Please place a new order or reach out to support if your account was charged.'}
+                    </p>
+                  </div>
+                );
+              }
+              return (
+                <div className="mt-4 p-3 bg-emerald-50/60 border border-emerald-200 rounded text-xs text-emerald-900 flex items-center gap-2">
+                  <Check className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+                  <span className="text-[11px] font-medium">Payment received and verified. Your order is being processed.</span>
+                </div>
+              );
+            })()}
           </div>
 
         </div>

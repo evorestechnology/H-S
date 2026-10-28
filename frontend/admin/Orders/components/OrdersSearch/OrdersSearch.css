@@ -11,6 +11,13 @@
     flex-wrap: wrap;
 }
 
+.orders-filter-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
 .orders-filter {
     display: flex;
     gap: 6px;
@@ -39,6 +46,53 @@
     background: #FFFFFF;
     color: #0F172A;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+}
+
+.failed-payments-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #FFF1F2;
+    border: 1px solid #FECDD3;
+    color: #BE123C;
+    border-radius: 10px;
+    padding: 8px 14px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.failed-payments-tab:hover {
+    background: #FFE4E6;
+    color: #9F1239;
+    border-color: #FDA4AF;
+}
+
+.failed-payments-tab.active {
+    background: #E11D48;
+    color: #FFFFFF;
+    border-color: #BE123C;
+    box-shadow: 0 2px 8px rgba(225, 29, 72, 0.25);
+}
+
+.failed-payments-tab.active .failed-tab-icon {
+    color: #FFFFFF;
+}
+
+.failed-count-badge {
+    background: #BE123C;
+    color: #FFFFFF;
+    font-size: 11px;
+    font-weight: 800;
+    padding: 1px 7px;
+    border-radius: 10px;
+    line-height: 1.4;
+}
+
+.failed-payments-tab.active .failed-count-badge {
+    background: #FFFFFF;
+    color: #E11D48;
 }
 
 .orders-search-box {

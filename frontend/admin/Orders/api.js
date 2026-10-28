@@ -138,3 +138,14 @@ export const updateMfgPaymentStatus = async (id, mfgPaymentStatus) => {
     });
     return true;
 };
+
+// ==========================================
+// 11. UPDATE ORDER PAYMENT STATUS (PATCH /api/orders/:id/payment-status)
+// ==========================================
+export const updatePaymentStatus = async (id, paymentStatus) => {
+    const res = await apiClient.patch(`/orders/${id}/payment-status`, {
+        paymentStatus
+    });
+    return res.data || res;
+};
+

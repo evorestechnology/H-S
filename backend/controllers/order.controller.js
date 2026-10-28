@@ -721,3 +721,52 @@ export const getMyOrders = async (req, res) => {
     });
   }
 };
+
+// @desc    Update order payment status (Admin only)
+// @route   PATCH /api/orders/:id/payment-status
+// @access  Private (Admin)
+export const updatePaymentStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { paymentStatus } = req.body;
+    const userRole = (req.user?.role || '').toUpperCase();
+
+    if (userRole !== 'ADMIN' && userRole !== 'ADMINISTRATOR') {
+      return res.status(403).json({
+        success: false,
+        message: 'Forbidden: Only admin can update payment status',
+        data: null
+      });
+    }
+
+    const order = await prisma.order.findUnique({ where: { id } });
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: 'Order not found',
+        data: null
+      });
+    }
+
+    const updated = await prisma.order.update({
+      where: { id },
+      data: {
+        paymentStatus: paymentStatus || 'SUCCESSFUL'
+      }
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: 'Payment status updated successfully',
+      data: updated
+    });
+  } catch (error) {
+    console.error('Error updating payment status:', error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || 'Server error updating payment status',
+      data: null
+    });
+  }
+};
+

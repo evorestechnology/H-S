@@ -657,6 +657,8 @@ export const formatOrderForUi = (order, isDetail = false) => {
     priceAdjustmentStatus: order.priceAdjustmentStatus || 'None',
     priceAdjustmentAmount: order.priceAdjustmentAmount || 0,
     priceAdjustmentReason: order.priceAdjustmentReason || '',
+    paymentStatus: order.paymentStatus || 'PENDING',
+    transactionId: order.transactionId || null,
     mfgPaymentStatus: order.status === 'CANCELED' ? 'Excluded' : (order.mfgPaymentStatus || 'Unpaid'),
     mfgPaidDate: order.mfgPaidDate || null,
     completedDate: order.completedDate || null,
@@ -1214,6 +1216,8 @@ export const getOrdersForUser = async (user, options = {}) => {
       { manufacturerId: user.id },
       { manufacturerId: null }
     ];
+    // Manufacturers must strictly ONLY receive and process orders where payment is successful
+    whereClause.paymentStatus = 'SUCCESSFUL';
   } else if (userRole === 'USER' && user?.id) {
     whereClause.userId = user.id;
   }
