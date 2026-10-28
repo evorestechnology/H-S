@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, useRef } from "react";
 import "./Orders.css";
-import { getOrders, createOrder, updateOrderToShipping, completeOrder, cancelOrder, requestPriceAdjustment, requestOrderCancellation, saveOrdersToStorage } from "./api";
+import { getOrders, getOrderDetails, createOrder, updateOrderToShipping, completeOrder, cancelOrder, requestPriceAdjustment, requestOrderCancellation, saveOrdersToStorage } from "./api";
 import OrdersHeader from "./components/OrdersHeader/OrdersHeader";
 import OrdersSearch from "./components/OrdersSearch/OrdersSearch";
 import OrdersTable from "./components/OrdersTable/OrdersTable";
@@ -127,6 +127,17 @@ const Orders = () => {
     const totalPages = Math.max(1, Math.ceil(filteredOrders.length / PAGE_SIZE));
     const paginatedOrders = filteredOrders.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
     // Transition 1: Move from In Progress to Shipping (Shipper Name mandatory, tracking ID/link optional)
+    const handleOpenViewDetails = async (order) => {
+        setSelectedOrderForViewDetails(order);
+        try {
+            const fullOrder = await getOrderDetails(order.id);
+            if (fullOrder && fullOrder.id === order.id) {
+                setSelectedOrderForViewDetails(fullOrder);
+            }
+        } catch (err) {
+            console.warn("Could not load full order details:", err);
+        }
+    };
     const handleOpenShippingModal = (order) => {
         setSelectedOrderForShipping(order);
     };
@@ -361,7 +372,7 @@ const Orders = () => {
 
             {isLoading && orders.length === 0 ? (<div style={{ textAlign: "center", padding: "40px", color: "#888" }}>
                     Loading manufacturer orders...
-                </div>) : (<OrdersTable orders={paginatedOrders} onMoveToShipping={handleOpenShippingModal} onUpdateTracking={(order) => setSelectedOrderForTrackingUpdate(order)} onMoveToCompleted={handleMoveToCompleted} onInitiateCancel={handleInitiateCancel} onRequestPriceAdj={(order) => setSelectedOrderForPriceAdj(order)} onViewCancelReason={(order) => setSelectedOrderForViewReason(order)} onViewOrderDetails={(order) => setSelectedOrderForViewDetails(order)}/>)}
+                </div>) : (<OrdersTable orders={paginatedOrders} onMoveToShipping={handleOpenShippingModal} onUpdateTracking={(order) => setSelectedOrderForTrackingUpdate(order)} onMoveToCompleted={handleMoveToCompleted} onInitiateCancel={handleInitiateCancel} onRequestPriceAdj={(order) => setSelectedOrderForPriceAdj(order)} onViewCancelReason={(order) => setSelectedOrderForViewReason(order)} onViewOrderDetails={handleOpenViewDetails}/>)}
 
             <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage}/>
 

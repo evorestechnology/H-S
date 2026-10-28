@@ -187,11 +187,24 @@ export const resolveColorAssets = (product, orderColor) => {
 
   // If frontImg still empty and color matches product's default or no color views exist, fallback to product coverPhoto
   if (!frontImg) {
-    frontImg = product?.images?.[0] || product?.coverPhoto || '';
+    frontImg = product?.coverPhoto || (Array.isArray(product?.images) && product.images[0]) || '';
   }
-  if (!backImg) {
-    backImg = product?.images?.[1] || product?.images?.[0] || product?.coverPhoto || '';
+
+  // Back View should never fall back to cover photo, model photos, or other colors' images
+  if (!backImg && matchedColor && typeof matchedColor === 'object' && matchedColor.backView) {
+    backImg = matchedColor.backView;
   }
+
+  // Print Weave & Back Weave assets
+  const printWeave = (matchedColor && typeof matchedColor === 'object' && matchedColor.printWeave) ||
+    product?.manufactureSpec?.printWeave ||
+    product?.printWeave ||
+    null;
+
+  const backWeave = (matchedColor && typeof matchedColor === 'object' && matchedColor.backWeave) ||
+    product?.manufactureSpec?.backWeave ||
+    product?.backWeave ||
+    null;
 
   // Resolve all configured print placements dynamically
   let printPlacements = [];
@@ -204,9 +217,11 @@ export const resolveColorAssets = (product, orderColor) => {
     const mUp = item.mockup || null;
     const hasData = item.printType || item.printPosition || item.designFile || item.mockup;
     if (!hasData) return null;
+    const isDtf = pType.toUpperCase().includes('DTF');
+    const defaultLabel = isDtf ? `DTF Design ${idx + 1}` : `Print Placement ${idx + 1} (${pType})`;
     return {
       placementIndex: idx + 1,
-      name: `Print Placement ${idx + 1}`,
+      name: item.name || defaultLabel,
       printType: pType,
       printPosition: pPos,
       designFile: dFile,
@@ -256,9 +271,10 @@ export const resolveColorAssets = (product, orderColor) => {
 
   // 4. If still empty, check product root fields (designFile or printType)
   if (printPlacements.length === 0 && (product?.designFile || product?.printType)) {
+    const isDtf = (product.printType || 'DTF').toUpperCase().includes('DTF');
     printPlacements.push({
       placementIndex: 1,
-      name: 'Print Placement 1',
+      name: isDtf ? 'DTF Design 1' : `Print Placement 1 (${product.printType || 'DTF'})`,
       printType: product.printType || 'DTF',
       printPosition: product.printPosition || 'Front Center',
       designFile: product.designFile || null,
@@ -269,9 +285,10 @@ export const resolveColorAssets = (product, orderColor) => {
 
   // 5. If STILL empty, single fallback placement based on resolved printType/designFile
   if (printPlacements.length === 0) {
+    const isDtf = (printType || 'DTF').toUpperCase().includes('DTF');
     printPlacements.push({
       placementIndex: 1,
-      name: 'Print Placement 1',
+      name: isDtf ? 'DTF Design 1' : `Print Placement 1 (${printType || 'DTF'})`,
       printType: printType || 'DTF',
       printPosition: printPosition || 'Front Center',
       designFile: designFile || null,
@@ -297,8 +314,10 @@ export const resolveColorAssets = (product, orderColor) => {
   }
 
   return {
-    frontImg,
-    backImg,
+    frontImg: frontImg || null,
+    backImg: backImg || null,
+    printWeave,
+    backWeave,
     designFile,
     printType,
     printPosition,
@@ -357,15 +376,8 @@ export const formatOrderForUi = (order, isDetail = false) => {
 
   // Resolve color-specific assets (mockups, DTF/DTG design file, print specs, neck tag)
   const colorAssets = resolveColorAssets(product, firstItem.color);
-  let frontImg = colorAssets.frontImg;
-  let backImg = colorAssets.backImg;
-
-  if (!frontImg) {
-    frontImg = 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800&auto=format&fit=crop&q=80';
-  }
-  if (!backImg) {
-    backImg = 'https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?w=800&auto=format&fit=crop&q=80';
-  }
+  let frontImg = colorAssets.frontImg || product.coverPhoto || '';
+  let backImg = colorAssets.backImg || '';
 
   // Resolve color/product-specific catalog manufacturing price
   const matchedColor = colorAssets.matchedColor;
@@ -409,8 +421,8 @@ export const formatOrderForUi = (order, isDetail = false) => {
   const formattedItems = rawOrderItems.map((it, idx) => {
     const itProduct = it.product || {};
     const itColorAssets = resolveColorAssets(itProduct, it.color);
-    let itFront = itColorAssets.frontImg || itProduct.coverPhoto || 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800&auto=format&fit=crop&q=80';
-    let itBack = itColorAssets.backImg || itFront;
+    let itFront = itColorAssets.frontImg || itProduct.coverPhoto || '';
+    let itBack = itColorAssets.backImg || '';
     const itMatched = itColorAssets.matchedColor;
 
     // Resolve color-specific manufacturing price
@@ -478,12 +490,17 @@ export const formatOrderForUi = (order, isDetail = false) => {
         otherCost: itOtherCost,
         total: itTotalBreakdown
       },
-      image: itFront,
-      images: itFront ? [itFront] : (itProduct.coverPhoto ? [itProduct.coverPhoto] : []),
+      image: itFront || itProduct.coverPhoto || '',
+      images: [itFront, itBack].filter(Boolean),
       productDetails: {
         mfgProductName: itProduct.manufactureName || itProduct.name || it.name || 'MFG Athletic Product',
         frontViewUrl: itFront,
         backViewUrl: itBack,
+        printWeaveUrl: itColorAssets.printWeave || null,
+        backWeaveUrl: itColorAssets.backWeave || null,
+        availableColors: Array.isArray(itProduct.colors) ? itProduct.colors : [],
+        productImages: Array.isArray(itProduct.images) ? itProduct.images : (itProduct.coverPhoto ? [itProduct.coverPhoto] : []),
+        coverPhoto: itProduct.coverPhoto || itFront || null,
         neckLogoUrl: itColorAssets.isLight ? '/Black Neck Logo.jpeg' : '/White Neck Logo.jpeg',
         designFile: resolvedItemDesignFile,
         printType: itColorAssets.printType,
@@ -525,7 +542,9 @@ export const formatOrderForUi = (order, isDetail = false) => {
         price: itProduct.price || it.price || 0,
         manufacturePrice: itProduct.manufacturePrice || null,
         manufactureName: itProduct.manufactureName || null,
-        coverPhoto: itProduct.coverPhoto || itFront || null
+        coverPhoto: itProduct.coverPhoto || itFront || null,
+        colors: Array.isArray(itProduct.colors) ? itProduct.colors : [],
+        images: Array.isArray(itProduct.images) ? itProduct.images : []
       }
     };
   });
@@ -630,6 +649,11 @@ export const formatOrderForUi = (order, isDetail = false) => {
       mfgProductName: product.manufactureName || product.name || firstItem.name || 'MFG Athletic Item',
       frontViewUrl: frontImg,
       backViewUrl: backImg,
+      printWeaveUrl: colorAssets.printWeave || null,
+      backWeaveUrl: colorAssets.backWeave || null,
+      availableColors: Array.isArray(product.colors) ? product.colors : [],
+      productImages: Array.isArray(product.images) ? product.images : (product.coverPhoto ? [product.coverPhoto] : []),
+      coverPhoto: product.coverPhoto || frontImg || null,
       neckLogoUrl: colorAssets.isLight ? '/Black Neck Logo.jpeg' : '/White Neck Logo.jpeg',
       designFile: resolvedTopDesignFile,
       printType: colorAssets.printType,

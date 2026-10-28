@@ -72,8 +72,10 @@ const ProductModal = ({ open, product, onClose, onSubmit, onDelete }) => {
                         const pPos = c.printPosition || c.manufactureSpec?.printPosition || product.manufactureSpec?.printPosition || "";
                         const dFile = c.designFile || c.manufactureSpec?.designFile || product.manufactureSpec?.designFile || "";
                         const mup = c.mockup || c.manufactureSpec?.mockup || product.manufactureSpec?.mockup || "";
+                        const pWeave = c.printWeave || c.manufactureSpec?.printWeave || product.manufactureSpec?.printWeave || "";
+                        const bWeave = c.backWeave || c.manufactureSpec?.backWeave || product.manufactureSpec?.backWeave || "";
                         const mPrice = c.manufacturePrice ?? "";
-                        if (pType || pPos || dFile || mup || mPrice !== "") {
+                        if (pType || pPos || dFile || mup || mPrice !== "" || pWeave || bWeave) {
                             hasAnyMfr = true;
                         }
                         const specs = (c.printSpecs && c.printSpecs.length > 0)
@@ -107,6 +109,8 @@ const ProductModal = ({ open, product, onClose, onSubmit, onDelete }) => {
                             isExisting: true,
                             frontView: front,
                             backView: back,
+                            printWeave: pWeave,
+                            backWeave: bWeave,
                             modelPhoto1: m1,
                             modelPhoto2: m2,
                             manufacturePrice: mPrice,
@@ -184,6 +188,8 @@ const ProductModal = ({ open, product, onClose, onSubmit, onDelete }) => {
             isExisting: false,
             frontView: "",
             backView: "",
+            printWeave: "",
+            backWeave: "",
             modelPhoto1: "",
             modelPhoto2: "",
             manufacturePrice: "",
@@ -391,7 +397,9 @@ const ProductModal = ({ open, product, onClose, onSubmit, onDelete }) => {
                 printType: c.printType || undefined,
                 printPosition: c.printPosition || undefined,
                 designFile: c.designFile || undefined,
-                mockup: c.mockup || undefined
+                mockup: c.mockup || undefined,
+                printWeave: c.printWeave || undefined,
+                backWeave: c.backWeave || undefined
             } : undefined;
             const cBase = Number(c.baseCost) || 0;
             const cPrint = Number(c.printingCost) || 0;
@@ -426,6 +434,8 @@ const ProductModal = ({ open, product, onClose, onSubmit, onDelete }) => {
                 isAvailable: c.isAvailable,
                 frontView: c.frontView,
                 backView: c.backView,
+                printWeave: c.printWeave || undefined,
+                backWeave: c.backWeave || undefined,
                 modelPhoto1: c.modelPhoto1,
                 modelPhoto2: c.modelPhoto2,
                 modelPhotos: photos,
@@ -478,7 +488,9 @@ const ProductModal = ({ open, product, onClose, onSubmit, onDelete }) => {
             printType: colors[0].printType || undefined,
             printPosition: colors[0].printPosition || undefined,
             designFile: colors[0].designFile || undefined,
-            mockup: colors[0].mockup || undefined
+            mockup: colors[0].mockup || undefined,
+            printWeave: colors[0].printWeave || undefined,
+            backWeave: colors[0].backWeave || undefined
         } : undefined;
         setError("");
         setIsSubmitting(true);
@@ -813,6 +825,18 @@ const ProductModal = ({ open, product, onClose, onSubmit, onDelete }) => {
                                                                     <button type="button" className="btn btn-secondary btn-sm mt-8 mb-16" onClick={() => handleAddPrintSpec(idx)}>
                                                                         <Plus size={14}/> Add Another Print Position
                                                                     </button>
+                                                                </div>
+
+                                                                {/* ── Weave Specifications (Print Weave & Back Weave) ── */}
+                                                                <div className="views-section-label mt-16 mb-8">
+                                                                    <span className="views-label-text">Weave Specifications</span>
+                                                                    <span className="views-audience-badge badge-both">
+                                                                        Manufacture Asset
+                                                                    </span>
+                                                                </div>
+                                                                <div className="color-views-grid color-views-grid-2 mb-16">
+                                                                    <ImageDropZone label="Print Weave (Front)" value={color.printWeave || ""} onChange={(val) => handleColorChange(idx, "printWeave", val)} optional placeholder="Drag & drop print/front weave asset"/>
+                                                                    <ImageDropZone label="Back Weave" value={color.backWeave || ""} onChange={(val) => handleColorChange(idx, "backWeave", val)} optional placeholder="Drag & drop back weave asset"/>
                                                                 </div>
 
                                                                 {/* ── Per-Color Price Breakdown: Manufacture Price & User Price ── */}

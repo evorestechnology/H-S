@@ -20,6 +20,8 @@ const ProductPreviewModal = ({ product, open, onClose }) => {
     const colorModel2 = selectedColor?.modelPhoto2 || "";
     const colorMockup = selectedColor?.mockup || "";
     const colorDesign = selectedColor?.designFile || "";
+    const colorPrintWeave = selectedColor?.printWeave || "";
+    const colorBackWeave = selectedColor?.backWeave || "";
     const coverImg = product.coverPhoto || product.images?.[0] || "";
     // Active Display Image
     const activeImage = activeImageOverride || colorFront || colorMockup || coverImg || "";
@@ -31,6 +33,10 @@ const ProductPreviewModal = ({ product, open, onClose }) => {
         thumbnails.push({ label: "Front", url: colorFront });
     if (colorBack)
         thumbnails.push({ label: "Back", url: colorBack });
+    if (colorPrintWeave)
+        thumbnails.push({ label: "Print Weave", url: colorPrintWeave });
+    if (colorBackWeave)
+        thumbnails.push({ label: "Back Weave", url: colorBackWeave });
     if (colorModel1)
         thumbnails.push({ label: "Model 1", url: colorModel1 });
     if (colorModel2)
@@ -39,6 +45,14 @@ const ProductPreviewModal = ({ product, open, onClose }) => {
         thumbnails.push({ label: "Mockup", url: colorMockup });
     if (colorDesign)
         thumbnails.push({ label: "Design", url: colorDesign });
+    if (Array.isArray(selectedColor?.printSpecs)) {
+        selectedColor.printSpecs.forEach((ps, sidx) => {
+            const isDtf = (ps.printType || "").toUpperCase().includes("DTF");
+            const labelPrefix = isDtf ? `DTF ${sidx + 1}` : `Print ${sidx + 1}`;
+            if (ps.mockup && ps.mockup !== colorMockup) thumbnails.push({ label: `${labelPrefix} Mockup`, url: ps.mockup });
+            if (ps.designFile && ps.designFile !== colorDesign) thumbnails.push({ label: `${labelPrefix} Design`, url: ps.designFile });
+        });
+    }
     // Deduplicate thumbnails by URL
     const uniqueThumbnails = thumbnails.filter((thumb, idx, self) => idx === self.findIndex(t => t.url === thumb.url));
     const userPrice = selectedColor?.userPrice || selectedColor?.sellingPrice || product.userPrice || product.price || 0;

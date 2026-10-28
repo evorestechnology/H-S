@@ -13,6 +13,13 @@ export const getOrders = async () => {
     return { orders: ordersList };
 };
 // ==========================================
+// 1.1 GET SINGLE ORDER DETAILS (GET /api/orders/:id)
+// ==========================================
+export const getOrderDetails = async (id) => {
+    const json = await apiClient.get(`/orders/${id}`);
+    return json.data || json.order || json;
+};
+// ==========================================
 // 2. CREATE NEW ORDER (POST /api/orders)
 // ==========================================
 export const createOrder = async (newOrderData) => {

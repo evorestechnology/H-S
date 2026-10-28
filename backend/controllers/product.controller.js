@@ -40,10 +40,11 @@ export const invalidateProductCache = (productId = null) => {
   listCache.clear();
 };
 
-// Helper to sanitize color variant for catalog list responses (exclude heavy Base64 modelPhotos & designFile)
+// Helper to sanitize color variant for catalog list responses
 const sanitizeColorForList = (color) => {
   if (!color || typeof color !== 'object') return color;
   return {
+    ...color,
     name: color.name || '',
     code: color.code || null,
     userPrice: color.userPrice ?? color.sellingPrice ?? null,
@@ -55,11 +56,15 @@ const sanitizeColorForList = (color) => {
     additionalCost: color.additionalCost ?? 0,
     printType: color.printType || null,
     printPosition: color.printPosition || null,
-    printSpecs: color.printSpecs || null,
+    printSpecs: Array.isArray(color.printSpecs) ? color.printSpecs : (color.printSpecs ? [color.printSpecs] : null),
+    designFile: color.designFile || null,
+    mockup: color.mockup || null,
+    printWeave: color.printWeave || null,
+    backWeave: color.backWeave || null,
     frontView: color.frontView || color.image || null,
     backView: color.backView || null,
-    modelPhoto1: color.modelPhoto1 || (Array.isArray(color.modelPhotos) ? color.modelPhotos[2] : null) || null,
-    modelPhoto2: color.modelPhoto2 || (Array.isArray(color.modelPhotos) ? color.modelPhotos[3] : null) || null
+    modelPhoto1: color.modelPhoto1 || (Array.isArray(color.modelPhotos) ? color.modelPhotos[0] : null) || null,
+    modelPhoto2: color.modelPhoto2 || (Array.isArray(color.modelPhotos) ? color.modelPhotos[1] : null) || null
   };
 };
 
@@ -274,7 +279,6 @@ export const getProductById = async (req, res) => {
       const frontView = primaryColor?.frontView || coverPhoto;
       const backView = primaryColor?.backView 
         || (Array.isArray(product.images) && product.images.length > 1 ? product.images[1] : '')
-        || primaryColor?.modelPhoto1 
         || '';
 
       const colorPhotos = Array.isArray(sanitizedColors)
