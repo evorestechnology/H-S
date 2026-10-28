@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import "./Orders.css";
 import { getOrders, createOrder, updateOrderToShipping, completeOrder, cancelOrder, requestPriceAdjustment, requestOrderCancellation, saveOrdersToStorage } from "./api";
 import OrdersHeader from "./components/OrdersHeader/OrdersHeader";
@@ -14,6 +14,7 @@ const PAGE_SIZE = 5;
 const Orders = () => {
     const [orders, setOrders] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
+    const isFetchingRef = useRef(false);
     const [isCreating, setIsCreating] = useState(false);
     const [search, setSearch] = useState("");
     const [filter, setFilter] = useState("All");
@@ -34,15 +35,17 @@ const Orders = () => {
     const [isSyncing, setIsSyncing] = useState(false);
     useEffect(() => {
         loadOrdersData(true);
-        // Auto-polling interval: Sync with backend every 15 seconds if tab is visible
+        // Auto-polling interval: Sync with backend every 30 seconds if tab is visible and not already fetching
         const pollInterval = setInterval(() => {
-            if (document.visibilityState === "visible") {
+            if (document.visibilityState === "visible" && !isFetchingRef.current) {
                 loadOrdersData(false);
             }
-        }, 15000);
-        const handleFocus = () => loadOrdersData(false);
+        }, 30000);
+        const handleFocus = () => {
+            if (!isFetchingRef.current) loadOrdersData(false);
+        };
         const handleVisibilityChange = () => {
-            if (document.visibilityState === "visible") {
+            if (document.visibilityState === "visible" && !isFetchingRef.current) {
                 loadOrdersData(false);
             }
         };
@@ -71,6 +74,9 @@ const Orders = () => {
         };
     }, []);
     const loadOrdersData = async (initialLoad = false, manualSync = false) => {
+        if (isFetchingRef.current)
+            return;
+        isFetchingRef.current = true;
         if (initialLoad)
             setIsLoading(true);
         if (manualSync)
@@ -86,6 +92,7 @@ const Orders = () => {
             console.error("Error loading manufacturer orders:", err);
         }
         finally {
+            isFetchingRef.current = false;
             if (initialLoad)
                 setIsLoading(false);
             if (manualSync)

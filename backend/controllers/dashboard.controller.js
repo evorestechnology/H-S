@@ -510,7 +510,7 @@ export const getDashboardStats = async (req, res) => {
     // Recent orders
     orders.slice(0, 4).forEach(o => {
       activityFeed.push({
-        id: `ACT-ORD-${o.id.slice(0, 6)}`,
+        id: `ACT-ORD-${o.id}`,
         type: 'order_completed',
         message: `Order #${o.id.slice(0, 8)} for ₹${Number(o.totalPrice).toFixed(2)} (${o.user?.fullName || 'Customer'}).`,
         timestamp: o.createdAt ? new Date(o.createdAt).toISOString() : new Date().toISOString()
@@ -520,7 +520,7 @@ export const getDashboardStats = async (req, res) => {
     // Recent drops
     drops.slice(0, 3).forEach(d => {
       activityFeed.push({
-        id: `ACT-DRP-${d.id.slice(0, 6)}`,
+        id: `ACT-DRP-${d.id}`,
         type: 'drop_published',
         message: `Drop '${d.dropName || d.title || 'Collection'}' active with ${d.products?.length || 0} product(s).`,
         timestamp: d.createdAt ? new Date(d.createdAt).toISOString() : new Date().toISOString()
@@ -530,7 +530,7 @@ export const getDashboardStats = async (req, res) => {
     // Recent user signups
     users.slice(0, 3).forEach(u => {
       activityFeed.push({
-        id: `ACT-USR-${u.id.slice(0, 6)}`,
+        id: `ACT-USR-${u.id}`,
         type: 'user_registered',
         message: `User ${u.fullName || u.email} joined H&S platform.`,
         timestamp: u.createdAt ? new Date(u.createdAt).toISOString() : new Date().toISOString()
@@ -547,7 +547,7 @@ export const getDashboardStats = async (req, res) => {
     // 1. Critical inventory alerts (Out of stock first, then low stock)
     products.filter(p => p.stock === 0).slice(0, 2).forEach(p => {
       notifications.push({
-        id: `NOT-OOS-${p.id.slice(0, 6)}`,
+        id: `NOT-OOS-${p.id}`,
         type: 'low_inventory',
         message: `Stock Alert: '${p.name}' is out of stock.`,
         timestamp: p.updatedAt ? new Date(p.updatedAt).toISOString() : new Date().toISOString(),
@@ -557,7 +557,7 @@ export const getDashboardStats = async (req, res) => {
 
     products.filter(p => p.stock > 0 && p.stock <= 5).slice(0, 2).forEach(p => {
       notifications.push({
-        id: `NOT-LOW-${p.id.slice(0, 6)}`,
+        id: `NOT-LOW-${p.id}`,
         type: 'low_inventory',
         message: `Low Stock: '${p.name}' has only ${p.stock} units left.`,
         timestamp: p.updatedAt ? new Date(p.updatedAt).toISOString() : new Date().toISOString(),
@@ -568,7 +568,7 @@ export const getDashboardStats = async (req, res) => {
     // 2. Pending price adjustment requests
     orders.filter(o => o.priceAdjustmentStatus === 'Pending Approval').slice(0, 2).forEach(o => {
       notifications.push({
-        id: `NOT-ADJ-${o.id.slice(0, 6)}`,
+        id: `NOT-ADJ-${o.id}`,
         type: 'withdrawal_request',
         message: `Price Adjustment: Order #${o.id.slice(0, 8)} has a pending request (+₹${o.priceAdjustmentAmount}).`,
         timestamp: o.updatedAt ? new Date(o.updatedAt).toISOString() : new Date().toISOString(),
@@ -579,7 +579,7 @@ export const getDashboardStats = async (req, res) => {
     // 3. Pending cancel requests
     orders.filter(o => o.cancelRequested).slice(0, 2).forEach(o => {
       notifications.push({
-        id: `NOT-CNL-${o.id.slice(0, 6)}`,
+        id: `NOT-CNL-${o.id}`,
         type: 'new_order',
         message: `Order #${o.id.slice(0, 8)} requested cancellation: ${o.cancelReason || 'Customer requested'}.`,
         timestamp: o.updatedAt ? new Date(o.updatedAt).toISOString() : new Date().toISOString(),
@@ -590,7 +590,7 @@ export const getDashboardStats = async (req, res) => {
     // 4. Today's recent orders
     orders.filter(o => o.createdAt && new Date(o.createdAt) >= todayStart).slice(0, 3).forEach(o => {
       notifications.push({
-        id: `NOT-ORD-${o.id.slice(0, 6)}`,
+        id: `NOT-ORD-${o.id}`,
         type: 'new_order',
         message: `New Order received: #${o.id.slice(0, 8)} for ₹${Number(o.totalPrice).toFixed(2)}.`,
         timestamp: new Date(o.createdAt).toISOString(),

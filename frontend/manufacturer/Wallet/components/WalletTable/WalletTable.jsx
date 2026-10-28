@@ -22,10 +22,10 @@ const WalletTable = ({ records }) => {
                             <td colSpan={7} style={{ textAlign: 'center', padding: '30px' }}>
                                 No earnings records found matching the filter.
                             </td>
-                        </tr>) : (records.map((rec) => {
+                        </tr>) : (records.map((rec, index) => {
             const isPaid = rec.paymentStatus === "Paid";
             const adjStatus = rec.adjustmentStatus || (rec.isAdjusted ? "Approved" : "None");
-            return (<tr key={rec.id}>
+            return (<tr key={rec.id ? `${rec.id}-${index}` : `mfg-${rec.orderId}-${index}`}>
                                     <td className="col-id">#{rec.orderId}</td>
                                     <td>{rec.orderedDate}</td>
                                     <td><strong>{rec.itemName}</strong> ({rec.size} • {rec.color})</td>

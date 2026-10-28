@@ -36,10 +36,10 @@ const WalletTable = ({ transactions, onMarkAsPaid, onToggleAdjustment }) => {
                                         <p>No financial ledger records match the selected filter.</p>
                                     </div>
                                 </td>
-                            </tr>) : (transactions.map((txn) => {
+                            </tr>) : (transactions.map((txn, index) => {
             const isPaid = txn.paymentStatus === "Paid";
             const isRefund = Boolean(txn.isRefund);
-            return (<tr key={txn.id} className={isRefund ? "row-refund" : (isPaid ? "row-paid" : "row-unpaid")}>
+            return (<tr key={txn.id ? `${txn.id}-${index}` : `txn-${txn.orderId}-${index}`} className={isRefund ? "row-refund" : (isPaid ? "row-paid" : "row-unpaid")}>
                                         {/* 1. Order ID */}
                                         <td className="col-order-id">
                                             <div className="order-id-wrapper">

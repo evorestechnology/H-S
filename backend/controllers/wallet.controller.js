@@ -33,24 +33,30 @@ const computeOrderMfgPayment = (order) => {
     return 0;
   }
 
+  // Fast path: if order has an authoritative mfgPayment already stored on the order record
+  if (typeof order.mfgPayment === 'number' && order.mfgPayment > 0) {
+    return Number(order.mfgPayment.toFixed(2));
+  }
+
   // Calculate base manufacturing payment from items
   let baseMfg = 0;
   if (Array.isArray(order.items) && order.items.length > 0) {
     for (const it of order.items) {
-      const itColorAssets = resolveColorAssets(it.product || {}, it.color);
-      const matched = itColorAssets.matchedColor;
-      const colorMfgPrice = (matched && typeof matched.manufacturePrice === 'number' && matched.manufacturePrice > 0)
-        ? matched.manufacturePrice
-        : null;
-      const colorBreakdownTotal = (matched && (typeof matched.baseCost === 'number' || typeof matched.printingCost === 'number'))
-        ? ((Number(matched.baseCost) || 0) + (Number(matched.printingCost) || 0) + (Number(matched.shippingCost) || 0) + (Number(matched.additionalCost) || 0))
-        : 0;
-      const targetColorMfg = colorMfgPrice || (colorBreakdownTotal > 0 ? colorBreakdownTotal : null);
-
-      const unitMfg = targetColorMfg
-        || ((typeof it.product?.manufacturePrice === 'number' && it.product.manufacturePrice > 0)
-          ? it.product.manufacturePrice
-          : 0);
+      let unitMfg = 0;
+      if (it.product && Array.isArray(it.product.colors)) {
+        const itColorAssets = resolveColorAssets(it.product, it.color);
+        const matched = itColorAssets.matchedColor;
+        const colorMfgPrice = (matched && typeof matched.manufacturePrice === 'number' && matched.manufacturePrice > 0)
+          ? matched.manufacturePrice
+          : null;
+        const colorBreakdownTotal = (matched && (typeof matched.baseCost === 'number' || typeof matched.printingCost === 'number'))
+          ? ((Number(matched.baseCost) || 0) + (Number(matched.printingCost) || 0) + (Number(matched.shippingCost) || 0) + (Number(matched.additionalCost) || 0))
+          : 0;
+        unitMfg = colorMfgPrice || (colorBreakdownTotal > 0 ? colorBreakdownTotal : null) || 0;
+      }
+      if (!unitMfg && typeof it.product?.manufacturePrice === 'number' && it.product.manufacturePrice > 0) {
+        unitMfg = it.product.manufacturePrice;
+      }
       baseMfg += unitMfg * (it.quantity || 1);
     }
   }
@@ -61,11 +67,6 @@ const computeOrderMfgPayment = (order) => {
   if (baseMfg > 0) {
     // Adjustment is strictly per-order (+₹100 once), NEVER per-item
     return Number((baseMfg + adjustment).toFixed(2));
-  }
-
-  // Fallback to order.mfgPayment if items could not be loaded
-  if (typeof order.mfgPayment === 'number' && order.mfgPayment > 0) {
-    return Number(order.mfgPayment.toFixed(2));
   }
 
   return 0;
@@ -123,9 +124,7 @@ export const getMfgWalletMetrics = async (req, res) => {
               select: {
                 id: true,
                 price: true,
-                manufacturePrice: true,
-                colors: true,
-                priceBreakdown: true
+                manufacturePrice: true
               }
             }
           }
@@ -234,9 +233,7 @@ export const getMfgWalletEarnings = async (req, res) => {
               select: {
                 id: true,
                 price: true,
-                manufacturePrice: true,
-                colors: true,
-                priceBreakdown: true
+                manufacturePrice: true
               }
             }
           }
@@ -260,7 +257,7 @@ export const getMfgWalletEarnings = async (req, res) => {
       const isAdjusted = Boolean(adjStatus === 'Approved' && order.priceAdjustmentAmount && order.priceAdjustmentAmount > 0);
 
       return {
-        id: `REC-${100 + idx + 1}`,
+        id: `REC-${order.id}`,
         orderId: order.id,
         orderedDate: order.createdAt
           ? new Date(order.createdAt).toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' })
@@ -286,7 +283,7 @@ export const getMfgWalletEarnings = async (req, res) => {
     });
 
     const adjustmentEarnings = adjustments.map((adjustment, idx) => ({
-      id: `ADJ-${adjustment.id.slice(0, 8).toUpperCase()}`,
+      id: `ADJ-${adjustment.id}`,
       orderId: 'Other adjustment',
       orderedDate: adjustment.createdAt
         ? new Date(adjustment.createdAt).toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' })
@@ -450,9 +447,7 @@ export const getAdminWalletTransactions = async (req, res) => {
               select: {
                 id: true,
                 price: true,
-                manufacturePrice: true,
-                colors: true,
-                priceBreakdown: true
+                manufacturePrice: true
               }
             }
           }
@@ -497,7 +492,7 @@ export const getAdminWalletTransactions = async (req, res) => {
       const isAdjusted = Boolean(adjStatus === 'Approved' && order.priceAdjustmentAmount && order.priceAdjustmentAmount > 0);
 
       return {
-        id: `TXN-${order.id.slice(0, 8).toUpperCase()}`,
+        id: `TXN-${order.id}`,
         orderId: order.id,
         createdAt: order.createdAt,
         customerName: order.user?.fullName || order.user?.email || 'Customer',
@@ -527,7 +522,7 @@ export const getAdminWalletTransactions = async (req, res) => {
       const isRefunded = refStatus === 'Refunded';
 
       return {
-        id: `REF-${order.id.slice(0, 8).toUpperCase()}`,
+        id: `REF-${order.id}`,
         orderId: order.id,
         createdAt: order.refundedAt || order.cancelledAt || order.createdAt,
         customerName: order.user?.fullName || order.user?.email || 'Customer',
@@ -553,7 +548,7 @@ export const getAdminWalletTransactions = async (req, res) => {
     });
 
     const adjustmentTransactions = adjustments.map(adjustment => ({
-      id: `ADJ-${adjustment.id.slice(0, 8).toUpperCase()}`,
+      id: `ADJ-${adjustment.id}`,
       orderId: 'Other adjustment',
       createdAt: adjustment.createdAt,
       customerName: 'Manufacturer adjustment',

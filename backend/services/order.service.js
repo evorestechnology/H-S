@@ -560,10 +560,10 @@ export const formatOrderForUi = (order, isDetail = false) => {
     ? Number(order.priceAdjustmentAmount)
     : 0;
 
-  if (computedItemsMfgTotal > 0) {
-    resolvedMfgPayment = Number((computedItemsMfgTotal + adjAmt).toFixed(2));
-  } else if (typeof order.mfgPayment === 'number' && order.mfgPayment > 0) {
+  if (typeof order.mfgPayment === 'number' && order.mfgPayment > 0) {
     resolvedMfgPayment = order.mfgPayment;
+  } else if (computedItemsMfgTotal > 0) {
+    resolvedMfgPayment = Number((computedItemsMfgTotal + adjAmt).toFixed(2));
   } else {
     resolvedMfgPayment = Number(((catalogMfgPrice || 0) + adjAmt).toFixed(2));
   }
@@ -1193,10 +1193,7 @@ export const getOrdersForUser = async (user, options = {}) => {
               coverPhoto: true,
               category: true,
               inStock: true,
-              stock: true,
-              priceBreakdown: true,
-              manufactureSpec: true,
-              colors: true
+              stock: true
             }
           }
         }
@@ -1225,6 +1222,9 @@ export const getOrdersForUser = async (user, options = {}) => {
   if (hasPagination) {
     queryArgs.skip = skip;
     queryArgs.take = limit;
+  } else {
+    // Prevent unpaginated queries from fetching and transferring heavy order sets
+    queryArgs.take = 100;
   }
 
   const [orders, total] = await Promise.all([

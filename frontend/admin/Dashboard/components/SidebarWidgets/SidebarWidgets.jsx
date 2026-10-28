@@ -49,7 +49,7 @@ export const RecentActivityWidget = ({ activities, isLoading }) => {
     return (<div className="widget-card">
             <h3 className="widget-title">Recent Activity</h3>
             <div className="timeline">
-                {isLoading ? (Array.from({ length: 4 }).map((_, i) => <div key={i} className="timeline-skeleton"/>)) : activities.length === 0 ? (<div className="widget-empty">No recent platform activity logged.</div>) : (activities.map((activity) => (<div key={activity.id} className="timeline-item">
+                {isLoading ? (Array.from({ length: 4 }).map((_, i) => <div key={i} className="timeline-skeleton"/>)) : activities.length === 0 ? (<div className="widget-empty">No recent platform activity logged.</div>) : (activities.map((activity, index) => (<div key={activity.id ? `${activity.id}-${index}` : `act-${index}`} className="timeline-item">
                             <div className="timeline-dot"></div>
                             <div className="timeline-content">
                                 <p className="timeline-message">{activity.message}</p>
@@ -80,7 +80,7 @@ export const NotificationsWidget = ({ notifications, isLoading }) => {
                 {notifications.filter(n => !n.isRead).length > 0 && (<span className="notification-badge">{notifications.filter(n => !n.isRead).length} new</span>)}
             </div>
             <div className="notification-list">
-                {isLoading ? (Array.from({ length: 3 }).map((_, i) => <div key={i} className="notification-skeleton"/>)) : notifications.length === 0 ? (<div className="widget-empty">No active notifications. System healthy.</div>) : (notifications.map(notif => (<div key={notif.id} className={`notification-item ${!notif.isRead ? 'unread' : ''}`} onClick={() => handleNotificationClick(notif)} title="Click to view details" style={{ cursor: "pointer" }}>
+                {isLoading ? (Array.from({ length: 3 }).map((_, i) => <div key={i} className="notification-skeleton"/>)) : notifications.length === 0 ? (<div className="widget-empty">No active notifications. System healthy.</div>) : (notifications.map((notif, index) => (<div key={notif.id ? `${notif.id}-${index}` : `notif-${index}`} className={`notification-item ${!notif.isRead ? 'unread' : ''}`} onClick={() => handleNotificationClick(notif)} title="Click to view details" style={{ cursor: "pointer" }}>
                             <div className={`notification-indicator ${notif.type}`}></div>
                             <div className="notification-content">
                                 <p>{notif.message}</p>
