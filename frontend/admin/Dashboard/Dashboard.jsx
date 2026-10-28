@@ -32,7 +32,9 @@ const Dashboard = () => {
         }
         return DEFAULT_REFRESH_INTERVAL_MS;
     });
-    const fetchData = useCallback(async (isInitial = false, activePeriod = period) => {
+    const [fetchError, setFetchError] = useState(null);
+
+    const fetchData = useCallback(async (isInitial = false, activePeriod = period, isRetry = false) => {
         if (isInitial) {
             setIsLoading(true);
         }
@@ -42,10 +44,19 @@ const Dashboard = () => {
         try {
             const result = await getDashboardData(activePeriod);
             setData(result);
+            setFetchError(null);
             setLastUpdated(new Date());
         }
         catch (error) {
             console.error("Failed to load dashboard data:", error);
+            // Auto-retry once after 2.5s if Render container was cold/sleeping (502/503)
+            if (!isRetry && (error.status === 502 || error.status === 503 || error.code === 'ERR_NETWORK')) {
+                setTimeout(() => {
+                    fetchData(isInitial, activePeriod, true);
+                }, 2500);
+                return;
+            }
+            setFetchError(error.message || 'Server is waking up');
         }
         finally {
             if (isInitial) {
@@ -121,6 +132,39 @@ const Dashboard = () => {
     }, [refreshInterval, fetchData, period]);
     return (<div className="dashboard-page">
             <DashboardHeader search={search} onSearchChange={setSearch} onRefresh={() => fetchData(false, period)} isRefreshing={isRefreshing} refreshInterval={refreshInterval} onRefreshIntervalChange={handleRefreshIntervalChange} lastUpdated={lastUpdated}/>
+
+            {fetchError && !data && (
+                <div style={{
+                    padding: '12px 16px',
+                    margin: '12px 0 20px 0',
+                    backgroundColor: '#FEF2F2',
+                    border: '1px solid #FCA5A5',
+                    borderRadius: '8px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    fontSize: '13px',
+                    color: '#991B1B'
+                }}>
+                    <span>Server connection is warming up ({fetchError}). Data will appear shortly.</span>
+                    <button
+                        type="button"
+                        onClick={() => fetchData(true, period)}
+                        style={{
+                            background: '#DC2626',
+                            color: '#fff',
+                            border: 'none',
+                            padding: '6px 14px',
+                            borderRadius: '4px',
+                            cursor: 'pointer',
+                            fontSize: '12px',
+                            fontWeight: '600'
+                        }}
+                    >
+                        Retry Now
+                    </button>
+                </div>
+            )}
 
             <SummaryMetrics summary={data?.summary || null} isLoading={isLoading}/>
 

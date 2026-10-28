@@ -12,6 +12,14 @@ const calcGrowth = (current, previous) => {
   return Number(growth.toFixed(1));
 };
 
+// In-memory cache for dashboard analytics to prevent heavy re-computation on Render free tier
+const DASHBOARD_CACHE_TTL_MS = 30 * 1000; // 30 seconds TTL
+const dashboardStatsCache = new Map();
+
+export const invalidateDashboardCache = () => {
+  dashboardStatsCache.clear();
+};
+
 // @desc    Get complete real-time dashboard analytics from database
 // @route   GET /api/dashboard/stats
 // @access  Private/Admin
@@ -19,9 +27,21 @@ export const getDashboardStats = async (req, res) => {
   try {
     const period = req.query.period || '7d';
 
-    // Fetch independent dashboard datasets concurrently to eliminate roundtrip latency
+    // Serve cached response if available within TTL window
+    const nowTime = Date.now();
+    const cached = dashboardStatsCache.get(period);
+    if (cached && (nowTime - cached.timestamp < DASHBOARD_CACHE_TTL_MS)) {
+      return res.status(200).json({
+        success: true,
+        message: 'Dashboard statistics retrieved from cache',
+        data: cached.data,
+        ...cached.data
+      });
+    }
+
+    // Fetch independent dashboard datasets concurrently with lean projections
     const [orders, users, totalUsersCount, drops, products, manufacturerAdjustments] = await Promise.all([
-      // 1. Fetch Orders with strictly needed fields (exclude heavy images, specs, priceBreakdowns)
+      // 1. Fetch Orders with strictly needed fields (exclude heavy colors base64 trees)
       prisma.order.findMany({
         select: {
           id: true,
@@ -40,6 +60,9 @@ export const getDashboardStats = async (req, res) => {
           priceAdjustmentReason: true,
           cancelRequested: true,
           cancelReason: true,
+          couponCode: true,
+          couponDiscount: true,
+          couponApplied: true,
           user: { select: { id: true, fullName: true, email: true } },
           items: {
             select: {
@@ -53,14 +76,14 @@ export const getDashboardStats = async (req, res) => {
                   id: true,
                   name: true,
                   price: true,
-                  manufacturePrice: true,
-                  colors: true
+                  manufacturePrice: true
                 }
               }
             }
           }
         },
-        orderBy: { createdAt: 'desc' }
+        orderBy: { createdAt: 'desc' },
+        take: 200
       }),
 
       // 2. Fetch Users (minimal fields only)
@@ -73,13 +96,13 @@ export const getDashboardStats = async (req, res) => {
           status: true
         },
         orderBy: { createdAt: 'desc' },
-        take: 50
+        take: 30
       }),
 
       // 3. User Count
       prisma.user.count(),
 
-      // 4. Fetch Drops (exclude full nested product specs and image trees)
+      // 4. Fetch Drops (lean projection for latest drops widget)
       prisma.drop.findMany({
         select: {
           id: true,
@@ -93,10 +116,12 @@ export const getDashboardStats = async (req, res) => {
             select: {
               id: true,
               coverPhoto: true
-            }
+            },
+            take: 1
           }
         },
-        orderBy: { createdAt: 'desc' }
+        orderBy: { createdAt: 'desc' },
+        take: 10
       }),
 
       // 5. Fetch Products (lean projection: stock, name, coverPhoto, category, updatedAt)
@@ -109,12 +134,14 @@ export const getDashboardStats = async (req, res) => {
           category: true,
           updatedAt: true
         },
-        orderBy: { stock: 'asc' }
+        orderBy: { stock: 'asc' },
+        take: 50
       }),
       prisma.manufacturerAdjustment.findMany({
         where: { status: 'APPROVED' },
         select: { id: true, amount: true, createdAt: true, reason: true, paymentStatus: true, manufacturer: { select: { fullName: true, companyName: true } } },
-        orderBy: { createdAt: 'desc' }
+        orderBy: { createdAt: 'desc' },
+        take: 50
       })
     ]);
 
@@ -168,17 +195,9 @@ export const getDashboardStats = async (req, res) => {
       let mfgPay = Number(order.mfgPayment) || 0;
       if (mfgPay === 0 && Array.isArray(order.items) && order.items.length > 0) {
         mfgPay = order.items.reduce((acc, it) => {
-          const itColorAssets = resolveColorAssets(it.product || {}, it.color);
-          const matched = itColorAssets.matchedColor;
-          const colorMfgPrice = (matched && typeof matched.manufacturePrice === 'number' && matched.manufacturePrice > 0)
-            ? matched.manufacturePrice
-            : null;
-          const colorBreakdownTotal = (matched && (typeof matched.baseCost === 'number' || typeof matched.printingCost === 'number'))
-            ? ((Number(matched.baseCost) || 0) + (Number(matched.printingCost) || 0) + (Number(matched.shippingCost) || 0) + (Number(matched.additionalCost) || 0))
+          const unitMfg = typeof it.product?.manufacturePrice === 'number' && it.product.manufacturePrice > 0
+            ? it.product.manufacturePrice
             : 0;
-          const unitMfg = colorMfgPrice
-            || (colorBreakdownTotal > 0 ? colorBreakdownTotal : null)
-            || (typeof it.product?.manufacturePrice === 'number' && it.product.manufacturePrice > 0 ? it.product.manufacturePrice : 0);
           return acc + (unitMfg * (it.quantity || 1));
         }, 0);
       }
@@ -594,6 +613,11 @@ export const getDashboardStats = async (req, res) => {
       activityFeed: finalActivityFeed,
       notifications: finalNotifications
     };
+
+    dashboardStatsCache.set(period, {
+      timestamp: Date.now(),
+      data: dashboardData
+    });
 
     return res.status(200).json({
       success: true,

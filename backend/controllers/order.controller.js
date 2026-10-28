@@ -1,5 +1,6 @@
 import * as orderService from '../services/order.service.js';
 import { prisma } from '../lib/prisma.js';
+import { invalidateDashboardCache } from './dashboard.controller.js';
 
 // @desc    Create new order (supports direct Admin/Staff order creation & customer checkout)
 // @route   POST /api/orders, POST /api/orders/checkout
@@ -52,6 +53,9 @@ export const createOrder = async (req, res) => {
         couponCode
       );
     }
+
+    // Invalidate dashboard stats cache so real-time metrics update
+    invalidateDashboardCache();
 
     return res.status(201).json({
       success: true,

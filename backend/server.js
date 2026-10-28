@@ -113,9 +113,19 @@ app.get('/api/health', async (req, res) => {
   }
 });
 
-// Serve frontend build in production
+// Serve frontend build in production with high-performance caching headers
 const distPath = path.resolve(__dirname, '../dist');
-app.use(express.static(distPath));
+app.use(express.static(distPath, {
+  maxAge: '1y',
+  immutable: true,
+  setHeaders: (res, filePath) => {
+    if (filePath.endsWith('.html')) {
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+    }
+  }
+}));
 
 app.disable('x-powered-by');
 
@@ -123,7 +133,16 @@ app.use((req, res, next) => {
   if (req.path.startsWith('/api')) {
     return res.status(404).json({ success: false, message: `Route ${req.method} ${req.path} not found` });
   }
+
+  // If a specific asset was requested but not found in dist, return 404 rather than index.html
+  if (req.path.startsWith('/assets/')) {
+    return res.status(404).send('Asset not found');
+  }
+
   const indexPath = path.join(distPath, 'index.html');
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
   res.sendFile(indexPath, (err) => {
     if (err) {
       res.status(200).send('H&S Monolith Backend is running! Build frontend with `npm run build`.');
