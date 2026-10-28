@@ -101,26 +101,6 @@ const AdminLogin = () => {
                     </h1>
                 </div>
 
-                {/* Quick Autofill Helper */}
-                <div className="mb-6 p-3 bg-neutral-950 border border-neutral-800 text-xs text-neutral-400 flex items-center justify-between font-mono">
-                    <div>
-                        <strong>Demo {activeRole === "admin" ? "Admin" : "Mfg"}:</strong>{" "}
-                        <span>{activeRole === "admin" ? "admin@hiandshi.shop" : "manufacturer@hiandshi.shop"}</span>
-                    </div>
-                    <button type="button" onClick={() => {
-            if (activeRole === "admin") {
-                setEmail("admin@hiandshi.shop");
-                setPassword("Admin@123456");
-            }
-            else {
-                setEmail("manufacturer@hiandshi.shop");
-                setPassword("Mfg@123456");
-            }
-        }} className="px-2 py-1 bg-white text-black font-bold uppercase hover:bg-neutral-200 transition-colors text-[10px]">
-                        Auto Fill
-                    </button>
-                </div>
-
                 {errorMessage && (<div className="mb-4 p-3 bg-red-950/50 border border-red-800 text-red-400 text-xs flex items-center gap-2 font-mono">
                         <AlertCircle size={16}/>
                         <span>{errorMessage}</span>
@@ -136,7 +116,7 @@ const AdminLogin = () => {
                         <label className="block text-xs font-mono uppercase text-neutral-400 mb-1">Email Address</label>
                         <div className="relative">
                             <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500"/>
-                            <input type="email" className="w-full pl-10 pr-4 py-3 bg-neutral-950 border border-neutral-800 text-xs font-mono text-white placeholder-neutral-600 focus:outline-none focus:border-neutral-500" placeholder={activeRole === "admin" ? "admin@hiandshi.shop" : "manufacturer@hiandshi.shop"} value={email} onChange={(e) => setEmail(e.target.value)} required/>
+                            <input type="email" className="w-full pl-10 pr-4 py-3 bg-neutral-950 border border-neutral-800 text-xs font-mono text-white placeholder-neutral-600 focus:outline-none focus:border-neutral-500" placeholder={activeRole === "admin" ? "Enter admin email" : "Enter manufacturer email"} value={email} onChange={(e) => setEmail(e.target.value)} required/>
                         </div>
                     </div>
 
