@@ -29,38 +29,28 @@ const ProductItemCard = ({ order, itemObj, index, isExpanded, onToggle, handleDo
         details?.mfgProductName ||
         `H&S ${itemObj.name} (Ref: MFG-${order.id}-${index + 1})`;
 
-    // Track active color (allows inspecting any catalog color variation directly in View Order)
-    const [selectedColorName, setSelectedColorName] = useState(itemObj.color || "Standard");
-
-    React.useEffect(() => {
-        setSelectedColorName(itemObj.color || "Standard");
-    }, [itemObj.color]);
+    // The ordered color for this item - only this color's assets must be shown
+    const orderedColor = itemObj.color || "Standard";
 
     const availableColorsList = details?.availableColors || [];
     const activeColorObj = useMemo(() => {
         if (!availableColorsList.length) return null;
-        const normSelected = (selectedColorName || "").trim().toLowerCase();
+        const normOrdered = (orderedColor || "").trim().toLowerCase();
         return availableColorsList.find(c => {
             if (!c) return false;
             const cName = (c.name || "").trim().toLowerCase();
             const cCode = (c.code || "").trim().toLowerCase();
-            return cName === normSelected || cCode === normSelected || (cName && normSelected && (cName.includes(normSelected) || normSelected.includes(cName)));
+            return cName === normOrdered || cCode === normOrdered || (cName && normOrdered && (cName.includes(normOrdered) || normOrdered.includes(cName)));
         }) || availableColorsList[0];
-    }, [availableColorsList, selectedColorName]);
+    }, [availableColorsList, orderedColor]);
 
-    const isOrderedColorSelected = useMemo(() => {
-        const normSelected = (selectedColorName || "").trim().toLowerCase();
-        const normOrdered = (itemObj.color || "").trim().toLowerCase();
-        return normSelected === normOrdered || (normSelected && normOrdered && (normSelected.includes(normOrdered) || normOrdered.includes(normSelected)));
-    }, [selectedColorName, itemObj.color]);
+    const activeColorCode = activeColorObj?.code || activeColorObj?.colorCode || activeColorObj?.hexCode || details?.colorCode || null;
+    const activeFrontView = details?.frontViewUrl || activeColorObj?.frontView || activeColorObj?.frontImage || activeColorObj?.image || activeColorObj?.modelPhoto1 || (Array.isArray(activeColorObj?.modelPhotos) && activeColorObj.modelPhotos[0]) || null;
+    const activeBackView = details?.backViewUrl || activeColorObj?.backView || activeColorObj?.backImage || activeColorObj?.modelPhoto2 || (Array.isArray(activeColorObj?.modelPhotos) && activeColorObj.modelPhotos[1]) || null;
+    const activePrintWeave = details?.printWeaveUrl || activeColorObj?.printWeave || null;
+    const activeBackWeave = details?.backWeaveUrl || activeColorObj?.backWeave || null;
 
-    const activeColorCode = activeColorObj?.code || activeColorObj?.colorCode || activeColorObj?.hexCode || (isOrderedColorSelected ? details?.colorCode : null);
-    const activeFrontView = (isOrderedColorSelected ? details?.frontViewUrl : null) || activeColorObj?.frontView || activeColorObj?.frontImage || activeColorObj?.image || activeColorObj?.modelPhoto1 || (Array.isArray(activeColorObj?.modelPhotos) && activeColorObj.modelPhotos[0]) || details?.frontViewUrl || null;
-    const activeBackView = (isOrderedColorSelected ? details?.backViewUrl : null) || activeColorObj?.backView || activeColorObj?.backImage || activeColorObj?.modelPhoto2 || (Array.isArray(activeColorObj?.modelPhotos) && activeColorObj.modelPhotos[1]) || details?.backViewUrl || null;
-    const activePrintWeave = (isOrderedColorSelected ? details?.printWeaveUrl : null) || activeColorObj?.printWeave || details?.printWeaveUrl || null;
-    const activeBackWeave = (isOrderedColorSelected ? details?.backWeaveUrl : null) || activeColorObj?.backWeave || details?.backWeaveUrl || null;
-
-    const isLightGarment = isLightGarmentColor(selectedColorName, activeColorCode);
+    const isLightGarment = isLightGarmentColor(orderedColor, activeColorCode);
     const recommendedNeckLogo = isLightGarment ? "black" : "white";
     const recommendedNeckLogoFileName = isLightGarment ? NECK_LOGO_BLACK.fileName : NECK_LOGO_WHITE.fileName;
 
@@ -86,40 +76,6 @@ const ProductItemCard = ({ order, itemObj, index, isExpanded, onToggle, handleDo
             : null);
 
     const configuredPlacements = useMemo(() => {
-        // If ordered color is selected and backend resolved placements
-        if (isOrderedColorSelected && Array.isArray(details?.printPlacements) && details.printPlacements.length > 0) {
-            return details.printPlacements.map((p, pIdx) => {
-                const pos = p.printPosition || (pIdx === 0 ? printPositionDisplay : "Back Center");
-                const fallbackMockup = pos.toLowerCase().includes("back") ? activeBackView : activeFrontView;
-                return {
-                    index: p.placementIndex || pIdx + 1,
-                    name: p.name || `Print Placement ${pIdx + 1}`,
-                    position: pos,
-                    type: p.printType || printTypeDisplay,
-                    specs: p.specs || (pIdx === 0 ? frontPrintSpecDisplay : null),
-                    designFile: p.designFile || (pIdx === 0 ? designFileSource : null),
-                    mockup: p.mockup || fallbackMockup
-                };
-            });
-        }
-
-        // If inspecting another color and it has printSpecs
-        if (activeColorObj && Array.isArray(activeColorObj.printSpecs) && activeColorObj.printSpecs.length > 0) {
-            return activeColorObj.printSpecs.map((spec, sIdx) => {
-                const pos = spec.placement || spec.position || (sIdx === 0 ? "Front Center" : "Back Center");
-                const fallbackMockup = pos.toLowerCase().includes("back") ? activeBackView : activeFrontView;
-                return {
-                    index: sIdx + 1,
-                    name: spec.name || (spec.technique === "DTF Print" ? `DTF Design ${sIdx + 1}` : `Print Placement ${sIdx + 1}`),
-                    position: pos,
-                    type: spec.technique || "DTF Print",
-                    specs: spec.dimensions || (typeof spec.specs === "string" ? spec.specs : null),
-                    designFile: spec.designFile || activeColorObj.designFile || null,
-                    mockup: spec.mockup || fallbackMockup
-                };
-            });
-        }
-
         if (Array.isArray(details?.printPlacements) && details.printPlacements.length > 0) {
             return details.printPlacements.map((p, pIdx) => {
                 const pos = p.printPosition || (pIdx === 0 ? printPositionDisplay : "Back Center");
@@ -136,6 +92,22 @@ const ProductItemCard = ({ order, itemObj, index, isExpanded, onToggle, handleDo
             });
         }
 
+        if (activeColorObj && Array.isArray(activeColorObj.printSpecs) && activeColorObj.printSpecs.length > 0) {
+            return activeColorObj.printSpecs.map((spec, sIdx) => {
+                const pos = spec.placement || spec.position || (sIdx === 0 ? "Front Center" : "Back Center");
+                const fallbackMockup = pos.toLowerCase().includes("back") ? activeBackView : activeFrontView;
+                return {
+                    index: sIdx + 1,
+                    name: spec.name || (spec.technique === "DTF Print" ? `DTF Design ${sIdx + 1}` : `Print Placement ${sIdx + 1}`),
+                    position: pos,
+                    type: spec.technique || "DTF Print",
+                    specs: spec.dimensions || (typeof spec.specs === "string" ? spec.specs : null),
+                    designFile: spec.designFile || activeColorObj.designFile || null,
+                    mockup: spec.mockup || fallbackMockup
+                };
+            });
+        }
+
         return [
             {
                 index: 1,
@@ -147,7 +119,7 @@ const ProductItemCard = ({ order, itemObj, index, isExpanded, onToggle, handleDo
                 mockup: activeFrontView
             }
         ];
-    }, [isOrderedColorSelected, details, activeColorObj, activeFrontView, activeBackView, printPositionDisplay, printTypeDisplay, frontPrintSpecDisplay, designFileSource]);
+    }, [details, activeColorObj, activeFrontView, activeBackView, printPositionDisplay, printTypeDisplay, frontPrintSpecDisplay, designFileSource]);
 
     // Financial calculations per item (Zero hardcoded multipliers, strict catalog resolution)
     const baseCost = typeof details?.costBreakdown?.baseCost === "number"
@@ -237,10 +209,7 @@ const ProductItemCard = ({ order, itemObj, index, isExpanded, onToggle, handleDo
                     backgroundColor: activeColorCode,
                     border: "1px solid rgba(255,255,255,0.4)"
                 }}/>)}
-                                    Color: <strong>{selectedColorName}</strong>
-                                    {selectedColorName.toLowerCase() !== (itemObj.color || "").toLowerCase() && (
-                                        <span style={{ color: "#F59E0B", fontSize: "10px", marginLeft: "4px" }}>(Ordered: {itemObj.color})</span>
-                                    )}
+                                    Color: <strong>{orderedColor}</strong>
                                 </span>
                                 <span className="banner-badge-pill">
                                     Unit Customer Price: <strong>₹{(itemObj.price || 0).toFixed(2)}</strong>
@@ -248,40 +217,6 @@ const ProductItemCard = ({ order, itemObj, index, isExpanded, onToggle, handleDo
                             </div>
                         </div>
                     </div>
-
-                    {/* Color Variations Switcher (Inspect other catalog colors) */}
-                    {availableColorsList.length > 1 && (
-                        <div className="view-order-color-picker-row">
-                            <span className="color-picker-label">Inspect Catalog Color:</span>
-                            <div className="color-picker-chips">
-                                {availableColorsList.map((col, cIdx) => {
-                                    const colName = col.name || col.colorName || `Color ${cIdx + 1}`;
-                                    const isSelected = (selectedColorName || "").toLowerCase() === colName.toLowerCase();
-                                    const isOrderedColor = (itemObj.color || "").toLowerCase() === colName.toLowerCase();
-                                    return (
-                                        <button
-                                            key={colName + cIdx}
-                                            type="button"
-                                            className={`btn-color-chip ${isSelected ? "active" : ""}`}
-                                            onClick={() => setSelectedColorName(colName)}
-                                            title={`View assets configured for ${colName}`}
-                                        >
-                                            {(col.code || col.colorCode) && (
-                                                <span
-                                                    className="chip-dot"
-                                                    style={{ backgroundColor: col.code || col.colorCode }}
-                                                />
-                                            )}
-                                            <span>{colName}</span>
-                                            {isOrderedColor && (
-                                                <span className="chip-ordered-badge">Ordered</span>
-                                            )}
-                                        </button>
-                                    );
-                                })}
-                            </div>
-                        </div>
-                    )}
 
                     {/* Front & Back Views Grid */}
                     <div className="views-card-grid">
@@ -304,7 +239,7 @@ const ProductItemCard = ({ order, itemObj, index, isExpanded, onToggle, handleDo
                                         <div className="mockup-empty-placeholder">
                                             <Package size={32} style={{ opacity: 0.4 }} />
                                             <p>No Front View Uploaded</p>
-                                            <span>No front view mockup configured for {selectedColorName}</span>
+                                            <span>No front view mockup configured for {orderedColor}</span>
                                         </div>
                                     )}
                                 </div>
@@ -330,7 +265,7 @@ const ProductItemCard = ({ order, itemObj, index, isExpanded, onToggle, handleDo
                                         <div className="mockup-empty-placeholder">
                                             <Package size={32} style={{ opacity: 0.4 }} />
                                             <p>No Back View Uploaded</p>
-                                            <span>No back view mockup configured for {selectedColorName}</span>
+                                            <span>No back view mockup configured for {orderedColor}</span>
                                         </div>
                                     )}
                                 </div>
@@ -345,7 +280,7 @@ const ProductItemCard = ({ order, itemObj, index, isExpanded, onToggle, handleDo
                                 <Layers size={18} className="header-blue-icon" /> Weave Specifications
                             </h3>
                             <span style={{ fontSize: "12px", color: "#94A3B8" }}>
-                                Manufacturer fabric weave assets for {selectedColorName}
+                                Manufacturer fabric weave assets for {orderedColor}
                             </span>
                         </div>
 
@@ -358,7 +293,7 @@ const ProductItemCard = ({ order, itemObj, index, isExpanded, onToggle, handleDo
                                         <button
                                             type="button"
                                             className="btn-card-download"
-                                            onClick={() => handleDownloadDesignFile(`Item${formattedIndex}_PrintWeave`, activePrintWeave, selectedColorName)}
+                                            onClick={() => handleDownloadDesignFile(`Item${formattedIndex}_PrintWeave`, activePrintWeave, orderedColor)}
                                             title="Download Print Weave Asset"
                                         >
                                             <Download size={12} />
@@ -391,7 +326,7 @@ const ProductItemCard = ({ order, itemObj, index, isExpanded, onToggle, handleDo
                                         <button
                                             type="button"
                                             className="btn-card-download"
-                                            onClick={() => handleDownloadDesignFile(`Item${formattedIndex}_BackWeave`, activeBackWeave, selectedColorName)}
+                                            onClick={() => handleDownloadDesignFile(`Item${formattedIndex}_BackWeave`, activeBackWeave, orderedColor)}
                                             title="Download Back Weave Asset"
                                         >
                                             <Download size={12} />
@@ -441,11 +376,11 @@ const ProductItemCard = ({ order, itemObj, index, isExpanded, onToggle, handleDo
                                             {placement.specs && (<p>Specs: <span style={{ color: "#94A3B8" }}>{placement.specs}</span></p>)}
                                         </div>
                                         <div className="placement-actions-group">
-                                            {isArtworkFile && (<button type="button" className="btn-download-design" onClick={() => handleDownloadDesignFile(`Item${formattedIndex}_${placement.name}_Artwork`, placement.designFile, selectedColorName)} title="Download High-Res Print Artwork File">
+                                            {isArtworkFile && (<button type="button" className="btn-download-design" onClick={() => handleDownloadDesignFile(`Item${formattedIndex}_${placement.name}_Artwork`, placement.designFile, orderedColor)} title="Download High-Res Print Artwork File">
                                                     <Download size={13}/>
                                                     <span>Print Artwork File [Download]</span>
                                                 </button>)}
-                                            {mockupImg && (<button type="button" className="btn-download-mockup" onClick={() => handleDownloadDesignFile(`Item${formattedIndex}_${placement.name}_Mockup`, mockupImg, selectedColorName)} title="Download Placement Mockup Preview">
+                                            {mockupImg && (<button type="button" className="btn-download-mockup" onClick={() => handleDownloadDesignFile(`Item${formattedIndex}_${placement.name}_Mockup`, mockupImg, orderedColor)} title="Download Placement Mockup Preview">
                                                 <Download size={13}/>
                                                 <span>Mockup Preview [Download]</span>
                                             </button>)}
@@ -460,7 +395,7 @@ const ProductItemCard = ({ order, itemObj, index, isExpanded, onToggle, handleDo
                                                     <span className="preview-card-title">
                                                         <Tag size={13} className="text-blue-600"/> Print Artwork File
                                                     </span>
-                                                    <button type="button" className="btn-card-download" onClick={() => handleDownloadDesignFile(`Item${formattedIndex}_${placement.name}_Artwork`, placement.designFile, selectedColorName)} title="Download High-Res Print Artwork File">
+                                                    <button type="button" className="btn-card-download" onClick={() => handleDownloadDesignFile(`Item${formattedIndex}_${placement.name}_Artwork`, placement.designFile, orderedColor)} title="Download High-Res Print Artwork File">
                                                         <Download size={12}/>
                                                         <span>Download Artwork</span>
                                                     </button>
@@ -471,7 +406,7 @@ const ProductItemCard = ({ order, itemObj, index, isExpanded, onToggle, handleDo
                             border: isLightGarment ? "1px solid #CBD5E1" : undefined
                         }}>
                                                     <span className="mockup-watermark-tag" style={isLightGarment ? { color: "#0F172A", backgroundColor: "rgba(0, 0, 0, 0.08)" } : undefined}>
-                                                        {(selectedColorName || "Garment").toUpperCase()} ARTWORK
+                                                        {(orderedColor || "Garment").toUpperCase()} ARTWORK
                                                     </span>
                                                     <img src={placement.designFile} alt={`${placement.name} Artwork`} className="mockup-preview-image" style={{ objectFit: "contain" }}/>
                                                 </div>
@@ -483,7 +418,7 @@ const ProductItemCard = ({ order, itemObj, index, isExpanded, onToggle, handleDo
                                                 <span className="preview-card-title">
                                                     <Eye size={13} className="text-emerald-600"/> Mockup Preview ({placement.position})
                                                 </span>
-                                                {mockupImg && (<button type="button" className="btn-card-download mockup-type" onClick={() => handleDownloadDesignFile(`Item${formattedIndex}_${placement.name}_Mockup`, mockupImg, selectedColorName)} title="Download Placement Mockup Preview">
+                                                {mockupImg && (<button type="button" className="btn-card-download mockup-type" onClick={() => handleDownloadDesignFile(`Item${formattedIndex}_${placement.name}_Mockup`, mockupImg, orderedColor)} title="Download Placement Mockup Preview">
                                                     <Download size={12}/>
                                                     <span>Download Mockup</span>
                                                 </button>)}
@@ -515,7 +450,7 @@ const ProductItemCard = ({ order, itemObj, index, isExpanded, onToggle, handleDo
                             <p>
                                 Brand assets for inner collar tag printing. &bull;{" "}
                                 <span style={{ color: "#F59E0B", fontWeight: 700 }}>
-                                    {isLightGarment ? "Light Garment" : "Dark Garment"} ({selectedColorName || "Standard"}): {recommendedNeckLogo.toUpperCase()} LOGO ({recommendedNeckLogoFileName})
+                                    {isLightGarment ? "Light Garment" : "Dark Garment"} ({orderedColor || "Standard"}): {recommendedNeckLogo.toUpperCase()} LOGO ({recommendedNeckLogoFileName})
                                 </span>
                             </p>
                         </div>
