@@ -91,7 +91,14 @@ export const getAllOrders = async (req, res) => {
     const page = hasPage ? Math.max(1, parseInt(req.query.page, 10) || 1) : (hasLimit ? 1 : undefined);
     const limit = (hasPage || hasLimit) ? Math.min(50, Math.max(1, parseInt(req.query.limit, 10) || 20)) : undefined;
 
-    const result = await orderService.getOrdersForUser(req.user, { page, limit });
+    let result;
+    try {
+      result = await orderService.getOrdersForUser(req.user, { page, limit });
+    } catch (dbErr) {
+      console.warn('Initial getOrdersForUser query failed, retrying after 600ms:', dbErr.message);
+      await new Promise(resolve => setTimeout(resolve, 600));
+      result = await orderService.getOrdersForUser(req.user, { page, limit });
+    }
 
     const formattedOrders = Array.isArray(result) ? result : result.orders;
     const count = formattedOrders.length;

@@ -1,8 +1,8 @@
 import { useState } from "react";
 import "./OrdersTable.css";
-import { ExternalLink, CheckCircle2, XCircle, Eye, Truck, Clock, CreditCard, Tag, Copy, Check, MapPin, Receipt } from "lucide-react";
+import { ExternalLink, CheckCircle2, XCircle, Eye, Truck, Clock, CreditCard, Tag, Copy, Check, MapPin, Receipt, Loader2 } from "lucide-react";
 import ShippingAddressModal, { copyToClipboard } from "../ShippingAddressModal/ShippingAddressModal";
-const OrdersTable = ({ orders, onMoveToShipping, onUpdateTracking, onMoveToCompleted, onInitiateCancel, onManageRefund, onAcceptCancelRequest, onRejectCancelRequest, onViewCancelReason, onViewOrderDetails, onViewPriceAdjRequest, onMarkAsPaid }) => {
+const OrdersTable = ({ orders, loadingDetailsOrderId, onMoveToShipping, onUpdateTracking, onMoveToCompleted, onInitiateCancel, onManageRefund, onAcceptCancelRequest, onRejectCancelRequest, onViewCancelReason, onViewOrderDetails, onViewPriceAdjRequest, onMarkAsPaid }) => {
     const [selectedAddressOrder, setSelectedAddressOrder] = useState(null);
     const [copiedOrderId, setCopiedOrderId] = useState(null);
     const handleQuickCopy = async (address, orderId) => {
@@ -187,9 +187,24 @@ const OrdersTable = ({ orders, onMoveToShipping, onUpdateTracking, onMoveToCompl
 
                                 {/* VIEW ORDER Column with Eye Icon button */}
                                 <td className="col-view-order-cell">
-                                    <button type="button" className="btn-view-order-details" title="View MFG Product Specs, Front/Back View & Neck Tag Artwork" onClick={() => onViewOrderDetails(item)}>
-                                        <Eye size={14}/>
-                                        <span>View Order</span>
+                                    <button
+                                        type="button"
+                                        className="btn-view-order-details"
+                                        title="View MFG Product Specs, Front/Back View & Neck Tag Artwork"
+                                        disabled={loadingDetailsOrderId === item.id}
+                                        onClick={() => onViewOrderDetails(item)}
+                                    >
+                                        {loadingDetailsOrderId === item.id ? (
+                                            <>
+                                                <Loader2 size={13} className="spin animate-spin" />
+                                                <span>Loading...</span>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Eye size={14}/>
+                                                <span>View Order</span>
+                                            </>
+                                        )}
                                     </button>
                                 </td>
 

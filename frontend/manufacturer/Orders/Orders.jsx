@@ -30,22 +30,25 @@ const Orders = () => {
     const [selectedOrderForViewReason, setSelectedOrderForViewReason] = useState(null);
     // State for viewing product artwork & manufacturing tech pack details
     const [selectedOrderForViewDetails, setSelectedOrderForViewDetails] = useState(null);
-    // State for price adjustment request modal
-    const [selectedOrderForPriceAdj, setSelectedOrderForPriceAdj] = useState(null);
+    const [selectedOrderForViewPriceAdj, setSelectedOrderForViewPriceAdj] = useState(null);
+    const [loadingDetailsOrderId, setLoadingDetailsOrderId] = useState(null);
     const [isSyncing, setIsSyncing] = useState(false);
+    const lastFetchTimeRef = useRef(0);
     useEffect(() => {
         loadOrdersData(true);
-        // Auto-polling interval: Sync with backend every 30 seconds if tab is visible and not already fetching
+        // Auto-polling interval: Sync with backend every 45 seconds if tab is visible and not already fetching
         const pollInterval = setInterval(() => {
             if (document.visibilityState === "visible" && !isFetchingRef.current) {
                 loadOrdersData(false);
             }
-        }, 30000);
+        }, 45000);
         const handleFocus = () => {
-            if (!isFetchingRef.current) loadOrdersData(false);
+            if (!isFetchingRef.current && Date.now() - lastFetchTimeRef.current > 30000) {
+                loadOrdersData(false);
+            }
         };
         const handleVisibilityChange = () => {
-            if (document.visibilityState === "visible" && !isFetchingRef.current) {
+            if (document.visibilityState === "visible" && !isFetchingRef.current && Date.now() - lastFetchTimeRef.current > 30000) {
                 loadOrdersData(false);
             }
         };
@@ -83,6 +86,7 @@ const Orders = () => {
             setIsSyncing(true);
         try {
             const response = await getOrders();
+            lastFetchTimeRef.current = Date.now();
             if (response && Array.isArray(response.orders)) {
                 setOrders(response.orders);
                 saveOrdersToStorage(response.orders);
@@ -128,14 +132,15 @@ const Orders = () => {
     const paginatedOrders = filteredOrders.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
     // Transition 1: Move from In Progress to Shipping (Shipper Name mandatory, tracking ID/link optional)
     const handleOpenViewDetails = async (order) => {
-        setSelectedOrderForViewDetails(order);
+        setLoadingDetailsOrderId(order.id);
         try {
             const fullOrder = await getOrderDetails(order.id);
-            if (fullOrder && fullOrder.id === order.id) {
-                setSelectedOrderForViewDetails(fullOrder);
-            }
+            setSelectedOrderForViewDetails(fullOrder || order);
         } catch (err) {
             console.warn("Could not load full order details:", err);
+            setSelectedOrderForViewDetails(order);
+        } finally {
+            setLoadingDetailsOrderId(null);
         }
     };
     const handleOpenShippingModal = (order) => {
@@ -372,7 +377,7 @@ const Orders = () => {
 
             {isLoading && orders.length === 0 ? (<div style={{ textAlign: "center", padding: "40px", color: "#888" }}>
                     Loading manufacturer orders...
-                </div>) : (<OrdersTable orders={paginatedOrders} onMoveToShipping={handleOpenShippingModal} onUpdateTracking={(order) => setSelectedOrderForTrackingUpdate(order)} onMoveToCompleted={handleMoveToCompleted} onInitiateCancel={handleInitiateCancel} onRequestPriceAdj={(order) => setSelectedOrderForPriceAdj(order)} onViewCancelReason={(order) => setSelectedOrderForViewReason(order)} onViewOrderDetails={handleOpenViewDetails}/>)}
+                </div>) : (<OrdersTable orders={paginatedOrders} loadingDetailsOrderId={loadingDetailsOrderId} onMoveToShipping={handleOpenShippingModal} onUpdateTracking={(order) => setSelectedOrderForTrackingUpdate(order)} onMoveToCompleted={handleMoveToCompleted} onInitiateCancel={handleInitiateCancel} onRequestPriceAdj={(order) => setSelectedOrderForPriceAdj(order)} onViewCancelReason={(order) => setSelectedOrderForViewReason(order)} onViewOrderDetails={handleOpenViewDetails}/>)}
 
             <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage}/>
 

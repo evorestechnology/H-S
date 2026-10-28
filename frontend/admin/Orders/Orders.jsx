@@ -38,7 +38,9 @@ const Orders = () => {
     const [selectedOrderForViewDetails, setSelectedOrderForViewDetails] = useState(null);
     // State for reviewing price adjustment request
     const [selectedOrderForViewPriceAdj, setSelectedOrderForViewPriceAdj] = useState(null);
+    const [loadingDetailsOrderId, setLoadingDetailsOrderId] = useState(null);
     const [isSyncing, setIsSyncing] = useState(false);
+    const lastFetchTimeRef = useRef(0);
     const currentUser = getPortalUser("admin");
     const isAdmin = isUserInRole(currentUser, ["ADMIN", "ADMINISTRATOR"]);
     useEffect(() => {
@@ -51,17 +53,19 @@ const Orders = () => {
             setSearch(orderIdParam);
         }
         loadOrdersData(true);
-        // Auto-polling interval: Sync with backend every 30 seconds if tab is visible and not already fetching
+        // Auto-polling interval: Sync with backend every 45 seconds if tab is visible and not already fetching
         const pollInterval = setInterval(() => {
             if (document.visibilityState === "visible" && !isFetchingRef.current) {
                 loadOrdersData(false);
             }
-        }, 30000);
+        }, 45000);
         const handleFocus = () => {
-            if (!isFetchingRef.current) loadOrdersData(false);
+            if (!isFetchingRef.current && Date.now() - lastFetchTimeRef.current > 30000) {
+                loadOrdersData(false);
+            }
         };
         const handleVisibilityChange = () => {
-            if (document.visibilityState === "visible" && !isFetchingRef.current) {
+            if (document.visibilityState === "visible" && !isFetchingRef.current && Date.now() - lastFetchTimeRef.current > 30000) {
                 loadOrdersData(false);
             }
         };
@@ -109,6 +113,7 @@ const Orders = () => {
             setIsSyncing(true);
         try {
             const response = await getOrders();
+            lastFetchTimeRef.current = Date.now();
             if (response && Array.isArray(response.orders)) {
                 setOrders(response.orders);
                 const orderIdParam = searchParams.get("orderId");
@@ -119,7 +124,7 @@ const Orders = () => {
                             setSelectedOrderForViewPriceAdj(matched);
                         }
                         else {
-                            setSelectedOrderForViewDetails(matched);
+                            handleOpenViewDetails(matched);
                         }
                     }
                 }
@@ -163,14 +168,15 @@ const Orders = () => {
     const totalPages = Math.max(1, Math.ceil(filteredOrders.length / PAGE_SIZE));
     const paginatedOrders = filteredOrders.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
     const handleOpenViewDetails = async (order) => {
-        setSelectedOrderForViewDetails(order);
+        setLoadingDetailsOrderId(order.id);
         try {
             const fullOrder = await getOrderDetails(order.id);
-            if (fullOrder && fullOrder.id === order.id) {
-                setSelectedOrderForViewDetails(fullOrder);
-            }
+            setSelectedOrderForViewDetails(fullOrder || order);
         } catch (err) {
             console.warn("Could not load full order details:", err);
+            setSelectedOrderForViewDetails(order);
+        } finally {
+            setLoadingDetailsOrderId(null);
         }
     };
     // Transition 1: Move from In Progress to Shipping (Shipper Name mandatory, tracking ID/link optional)
@@ -530,7 +536,7 @@ const Orders = () => {
 
             {isLoading && orders.length === 0 ? (<div style={{ textAlign: "center", padding: "40px", color: "#888" }}>
                     Loading orders from server...
-                </div>) : (<OrdersTable orders={paginatedOrders} onMoveToShipping={handleOpenShippingModal} onUpdateTracking={(order) => setSelectedOrderForTrackingUpdate(order)} onMoveToCompleted={handleMoveToCompleted} onInitiateCancel={handleInitiateCancel} onManageRefund={(order) => setSelectedOrderForRefund(order)} onAcceptCancelRequest={handleAcceptCancelRequest} onRejectCancelRequest={handleRejectCancelRequest} onViewCancelReason={(order) => setSelectedOrderForViewReason(order)} onViewOrderDetails={handleOpenViewDetails} onViewPriceAdjRequest={(order) => setSelectedOrderForViewPriceAdj(order)} onMarkAsPaid={handleMarkAsPaid}/>)}
+                </div>) : (<OrdersTable orders={paginatedOrders} loadingDetailsOrderId={loadingDetailsOrderId} onMoveToShipping={handleOpenShippingModal} onUpdateTracking={(order) => setSelectedOrderForTrackingUpdate(order)} onMoveToCompleted={handleMoveToCompleted} onInitiateCancel={handleInitiateCancel} onManageRefund={(order) => setSelectedOrderForRefund(order)} onAcceptCancelRequest={handleAcceptCancelRequest} onRejectCancelRequest={handleRejectCancelRequest} onViewCancelReason={(order) => setSelectedOrderForViewReason(order)} onViewOrderDetails={handleOpenViewDetails} onViewPriceAdjRequest={(order) => setSelectedOrderForViewPriceAdj(order)} onMarkAsPaid={handleMarkAsPaid}/>)}
 
             <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage}/>
 

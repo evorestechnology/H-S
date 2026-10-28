@@ -43,7 +43,7 @@ if (dbUrl.includes('postgresql://') || dbUrl.includes('postgres://')) {
 
   if (dbUrl.includes('pooler.supabase.com') || dbUrl.includes('pgbouncer=true')) {
     if (!dbUrl.includes('connection_limit')) {
-      dbUrl += (dbUrl.includes('?') ? '&' : '?') + 'connection_limit=10&pool_timeout=20';
+      dbUrl += (dbUrl.includes('?') ? '&' : '?') + 'connection_limit=15&pool_timeout=60';
     }
   }
   if (!dbUrl.includes('connect_timeout')) {
