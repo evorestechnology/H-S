@@ -43,7 +43,10 @@ export const getTaxSettingsHelper = async (client = prisma) => {
 
 export const getShippingSettingsHelper = async (client = prisma) => {
   try {
-    const shipRow = await client.setting.findUnique({ where: { key: 'shipping' } });
+    const shipRow = await client.setting.findFirst({
+      where: { key: { in: ['shipping', 'shippingSettings'] } },
+      orderBy: { updatedAt: 'desc' }
+    });
     if (shipRow && shipRow.value) {
       const parsed = typeof shipRow.value === 'string' ? JSON.parse(shipRow.value) : shipRow.value;
       return { ...defaultShippingSettings, ...parsed };
@@ -63,7 +66,7 @@ export const getSettings = async (req, res) => {
 
     const taxRow = await prisma.$queryRawUnsafe(`SELECT "value" FROM "Setting" WHERE "key" = 'tax'`);
     const storeRow = await prisma.$queryRawUnsafe(`SELECT "value" FROM "Setting" WHERE "key" = 'store'`);
-    const shipRow = await prisma.$queryRawUnsafe(`SELECT "value" FROM "Setting" WHERE "key" = 'shipping'`);
+    const shipRow = await prisma.$queryRawUnsafe(`SELECT "value" FROM "Setting" WHERE "key" IN ('shipping', 'shippingSettings') ORDER BY "updatedAt" DESC LIMIT 1`);
 
     const taxSettings = taxRow.length > 0 && taxRow[0].value
       ? (typeof taxRow[0].value === 'string' ? JSON.parse(taxRow[0].value) : taxRow[0].value)
@@ -88,18 +91,42 @@ export const getSettings = async (req, res) => {
   }
 };
 
-// @desc    Get public settings (Tax & Shipping rules for frontend checkout)
+// @desc    Get public settings (Tax, Shipping rules & Category weights for frontend checkout)
 // @route   GET /api/settings/public
 // @access  Public
 export const getPublicSettings = async (req, res) => {
   try {
     const taxSettings = await getTaxSettingsHelper();
     const shippingSettings = await getShippingSettingsHelper();
+    
+    let categories = [];
+    try {
+      categories = await prisma.category.findMany({
+        where: { isActive: true },
+        select: { id: true, name: true, weightPerPiece: true, conversionRule: true }
+      });
+    } catch (catErr) {
+      console.warn('Could not load categories in getPublicSettings:', catErr.message);
+    }
+
+    const categoryWeights = {};
+    (categories || []).forEach(c => {
+      if (!c.name) return;
+      const lower = c.name.toLowerCase().trim();
+      const weight = Number(c.weightPerPiece) || 0.5;
+      categoryWeights[lower] = weight;
+      if (lower.endsWith('s')) {
+        categoryWeights[lower.slice(0, -1)] = weight;
+      }
+    });
+
     res.json({
       success: true,
       data: {
         taxSettings,
-        shippingSettings
+        shippingSettings,
+        categories,
+        categoryWeights
       }
     });
   } catch (error) {

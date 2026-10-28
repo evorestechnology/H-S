@@ -107,6 +107,19 @@ export default function CheckoutPage() {
     currency: 'INR (₹)'
   });
 
+  const [categoryRules, setCategoryRules] = useState([]);
+  const [categoryWeights, setCategoryWeights] = useState({
+    'hoodies': 1.0,
+    'hoodie': 1.0,
+    't-shirts': 0.5,
+    't-shirt': 0.5,
+    'pants': 1.0,
+    'pant': 1.0,
+    'shorts': 0.333,
+    'short': 0.333,
+    'accessories': 0.250
+  });
+
   useEffect(() => {
     const fetchTaxSettings = async () => {
       try {
@@ -116,6 +129,12 @@ export default function CheckoutPage() {
         }
         if (res.data?.data?.shippingSettings) {
           setShippingSettings(res.data.data.shippingSettings);
+        }
+        if (res.data?.data?.categories) {
+          setCategoryRules(res.data.data.categories);
+        }
+        if (res.data?.data?.categoryWeights) {
+          setCategoryWeights(prev => ({ ...prev, ...res.data.data.categoryWeights }));
         }
       } catch (error) {
         console.error('Error fetching tax settings:', error);
@@ -201,8 +220,46 @@ export default function CheckoutPage() {
   if (isIndianDestination) {
     shipping = Number(shippingSettings?.domesticFlatRate) || 0;
   } else {
-    // International shipping logic based on admin settings
-    const totalWeightKg = cartItems.reduce((sum, item) => sum + (0.5 * item.quantity), 0);
+    // International shipping logic based on admin settings & category weight matrix
+    const getItemUnitWeight = (item) => {
+      const rawCat = (item.category || '').toLowerCase().trim();
+      const rawName = (item.name || '').toLowerCase().trim();
+
+      // 1. Direct match on item.category in weight dictionary
+      if (rawCat && categoryWeights[rawCat] !== undefined) {
+        return Number(categoryWeights[rawCat]);
+      }
+      if (rawCat && rawCat.endsWith('s') && categoryWeights[rawCat.slice(0, -1)] !== undefined) {
+        return Number(categoryWeights[rawCat.slice(0, -1)]);
+      }
+
+      // 2. Check category rules array
+      const matchedRule = (categoryRules || []).find(r => {
+        const rName = (r.name || r.categoryName || '').toLowerCase().trim();
+        return rName && (rName === rawCat || (rawCat && rName.replace(/s$/, '') === rawCat.replace(/s$/, '')));
+      });
+      if (matchedRule && typeof matchedRule.weightPerPiece === 'number') {
+        return matchedRule.weightPerPiece;
+      }
+
+      // 3. Fallback heuristic from name or category string
+      if (rawCat.includes('hoodie') || rawName.includes('hoodie')) {
+        return categoryWeights['hoodies'] ?? categoryWeights['hoodie'] ?? 1.0;
+      }
+      if (rawCat.includes('pant') || rawName.includes('pant')) {
+        return categoryWeights['pants'] ?? categoryWeights['pant'] ?? 1.0;
+      }
+      if (rawCat.includes('short') || rawName.includes('short')) {
+        return categoryWeights['shorts'] ?? categoryWeights['short'] ?? 0.333;
+      }
+
+      return 0.5;
+    };
+
+    const totalWeightKg = cartItems.reduce((sum, item) => {
+      const unitWeight = getItemUnitWeight(item);
+      return sum + (unitWeight * (item.quantity || 1));
+    }, 0);
     const blockStepKg = Number(shippingSettings?.blockStepKg) || 5;
     const ratePerBlock = Number(shippingSettings?.ratePerBlock) || 5000;
     const blocks = Math.ceil(totalWeightKg / blockStepKg);

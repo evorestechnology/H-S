@@ -31,20 +31,34 @@ export const calculateOrderShipping = (items = [], country = "United States", bl
     // Create lookup map from rules
     const rulesMap = new Map();
     safeRules.forEach((rule) => {
-        if (rule && typeof rule.categoryName === "string") {
-            rulesMap.set(rule.categoryName.toLowerCase().trim(), rule);
+        const catName = rule && (rule.categoryName || rule.name);
+        if (typeof catName === "string" && catName.trim()) {
+            const clean = catName.toLowerCase().trim();
+            rulesMap.set(clean, rule);
+            if (clean.endsWith("s")) {
+                rulesMap.set(clean.slice(0, -1), rule);
+            }
         }
     });
     safeItems.forEach((item) => {
         if (!item)
             return;
-        const rawType = typeof item.type === "string" ? item.type.trim() : "Standard Item";
+        const rawType = typeof (item.category || item.type || item.name) === "string" ? (item.category || item.type || item.name).trim() : "Standard Item";
         const key = rawType.toLowerCase();
-        const matchedRule = rulesMap.get(key);
+        let matchedRule = rulesMap.get(key);
+        if (!matchedRule && key.endsWith("s")) {
+            matchedRule = rulesMap.get(key.slice(0, -1));
+        }
+        let fallbackWeight = 0.5;
+        if (!matchedRule) {
+            if (key.includes("hoodie")) fallbackWeight = 1.0;
+            else if (key.includes("pant")) fallbackWeight = 1.0;
+            else if (key.includes("short")) fallbackWeight = 0.333;
+        }
         const unitWeight = matchedRule && typeof matchedRule.weightPerPiece === "number" && !isNaN(matchedRule.weightPerPiece) && matchedRule.weightPerPiece >= 0
             ? matchedRule.weightPerPiece
-            : 0.5;
-        const name = matchedRule ? matchedRule.categoryName : rawType;
+            : fallbackWeight;
+        const name = matchedRule ? (matchedRule.categoryName || matchedRule.name || rawType) : rawType;
         const quantity = Math.max(0, Math.floor(Number(item.quantity) || 0));
         const itemTotalWeight = roundToDecimals(quantity * unitWeight, 3);
         accumulatedWeightKg += itemTotalWeight;

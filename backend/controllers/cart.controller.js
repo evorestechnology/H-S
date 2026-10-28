@@ -8,7 +8,8 @@ const CART_PRODUCT_SELECT = {
   coverPhoto: true,
   images: true,
   stock: true,
-  inStock: true
+  inStock: true,
+  category: true
 };
 
 // Helper to get or create a cart for a user with lean product projection

@@ -30,6 +30,7 @@ export const formatCartItems = (cartData) => {
       id: item.productId, // Map productId back to id for UI
       itemId: item.id, // The unique cartItem ID
       name: product.name || 'Product',
+      category: product.category || item.category || 'T-Shirts',
       price: typeof product.price === 'number' ? product.price : (Number(product.price) || 0),
       images: imgList,
       coverPhoto: cover,
@@ -130,6 +131,7 @@ export const useCartStore = create((set, get) => ({
             id: product.id,
             itemId: `local-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
             name: product.name || 'Product',
+            category: product.category || 'T-Shirts',
             price: typeof product.price === 'number' ? product.price : (Number(product.price) || 0),
             images: imgList,
             coverPhoto: cover,

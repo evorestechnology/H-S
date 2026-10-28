@@ -951,7 +951,10 @@ export const calculateAuthoritativeShipping = async (items, country = 'India', c
   const isDomestic = (country || 'India').trim().toLowerCase() === 'india';
   if (isDomestic) return 0;
 
-  const shipSettingRow = await client.setting.findUnique({ where: { key: 'shipping' } });
+  const shipSettingRow = await client.setting.findFirst({
+    where: { key: { in: ['shipping', 'shippingSettings'] } },
+    orderBy: { updatedAt: 'desc' }
+  });
   const shipConfig = shipSettingRow?.value || { blockStepKg: 5, ratePerBlock: 5000 };
   const blockStepKg = Number(shipConfig.blockStepKg) || 5;
   const ratePerBlock = Number(shipConfig.ratePerBlock) || 5000;
@@ -959,14 +962,35 @@ export const calculateAuthoritativeShipping = async (items, country = 'India', c
   const categories = await client.category.findMany();
   const weightMap = {};
   categories.forEach(c => {
-    weightMap[c.name.toLowerCase()] = c.weightPerPiece;
+    if (!c.name) return;
+    const lower = c.name.toLowerCase().trim();
+    const weight = Number(c.weightPerPiece) || 0.500;
+    weightMap[lower] = weight;
+    if (lower.endsWith('s')) {
+      weightMap[lower.slice(0, -1)] = weight;
+    }
   });
 
   let totalWeightKg = 0;
   for (const it of items) {
-    const catKey = (it.category || '').toLowerCase();
-    const unitWeight = weightMap[catKey] || 0.500;
-    totalWeightKg += unitWeight * (it.quantity || 1);
+    const rawCat = (it.category || '').toLowerCase().trim();
+    const rawName = (it.name || '').toLowerCase().trim();
+    let unitWeight = weightMap[rawCat];
+    if (unitWeight === undefined && rawCat.endsWith('s')) {
+      unitWeight = weightMap[rawCat.slice(0, -1)];
+    }
+    if (unitWeight === undefined) {
+      if (rawCat.includes('hoodie') || rawName.includes('hoodie')) {
+        unitWeight = weightMap['hoodies'] ?? weightMap['hoodie'] ?? 1.0;
+      } else if (rawCat.includes('pant') || rawName.includes('pant')) {
+        unitWeight = weightMap['pants'] ?? weightMap['pant'] ?? 1.0;
+      } else if (rawCat.includes('short') || rawName.includes('short')) {
+        unitWeight = weightMap['shorts'] ?? weightMap['short'] ?? 0.333;
+      } else {
+        unitWeight = 0.500;
+      }
+    }
+    totalWeightKg += (Number(unitWeight) || 0.500) * (Number(it.quantity) || 1);
   }
 
   if (totalWeightKg <= 0) return 0;
@@ -1002,7 +1026,7 @@ export const createCheckoutOrder = async (orderItems, shippingAddress, paymentMe
   const [products, coupon, shipSettingRow, categories, taxSettings] = await Promise.all([
     prisma.product.findMany({ where: { id: { in: productIds } } }),
     cleanCouponCode ? prisma.coupon.findUnique({ where: { code: cleanCouponCode } }) : Promise.resolve(null),
-    isDomestic ? Promise.resolve(null) : prisma.setting.findUnique({ where: { key: 'shipping' } }),
+    isDomestic ? Promise.resolve(null) : prisma.setting.findFirst({ where: { key: { in: ['shipping', 'shippingSettings'] } }, orderBy: { updatedAt: 'desc' } }),
     isDomestic ? Promise.resolve([]) : prisma.category.findMany(),
     getTaxSettingsHelper(prisma)
   ]);
@@ -1057,6 +1081,7 @@ export const createCheckoutOrder = async (orderItems, shippingAddress, paymentMe
 
     itemsForShipping.push({
       category: product.category,
+      name: product.name,
       quantity: qty
     });
   }
@@ -1092,14 +1117,35 @@ export const createCheckoutOrder = async (orderItems, shippingAddress, paymentMe
     const ratePerBlock = Number(shipConfig.ratePerBlock) || 5000;
     const weightMap = {};
     (categories || []).forEach(c => {
-      weightMap[c.name.toLowerCase()] = c.weightPerPiece;
+      if (!c.name) return;
+      const lower = c.name.toLowerCase().trim();
+      const weight = Number(c.weightPerPiece) || 0.500;
+      weightMap[lower] = weight;
+      if (lower.endsWith('s')) {
+        weightMap[lower.slice(0, -1)] = weight;
+      }
     });
 
     let totalWeightKg = 0;
     for (const it of itemsForShipping) {
-      const catKey = (it.category || '').toLowerCase();
-      const unitWeight = weightMap[catKey] || 0.500;
-      totalWeightKg += unitWeight * (it.quantity || 1);
+      const rawCat = (it.category || '').toLowerCase().trim();
+      const rawName = (it.name || '').toLowerCase().trim();
+      let unitWeight = weightMap[rawCat];
+      if (unitWeight === undefined && rawCat.endsWith('s')) {
+        unitWeight = weightMap[rawCat.slice(0, -1)];
+      }
+      if (unitWeight === undefined) {
+        if (rawCat.includes('hoodie') || rawName.includes('hoodie')) {
+          unitWeight = weightMap['hoodies'] ?? weightMap['hoodie'] ?? 1.0;
+        } else if (rawCat.includes('pant') || rawName.includes('pant')) {
+          unitWeight = weightMap['pants'] ?? weightMap['pant'] ?? 1.0;
+        } else if (rawCat.includes('short') || rawName.includes('short')) {
+          unitWeight = weightMap['shorts'] ?? weightMap['short'] ?? 0.333;
+        } else {
+          unitWeight = 0.500;
+        }
+      }
+      totalWeightKg += (Number(unitWeight) || 0.500) * (Number(it.quantity) || 1);
     }
 
     if (totalWeightKg > 0) {
