@@ -76,40 +76,6 @@ const ProductItemCard = ({ order, itemObj, index, isExpanded, onToggle, handleDo
             : null);
 
     const configuredPlacements = useMemo(() => {
-        // If ordered color is selected and backend resolved placements
-        if (isOrderedColorSelected && Array.isArray(details?.printPlacements) && details.printPlacements.length > 0) {
-            return details.printPlacements.map((p, pIdx) => {
-                const pos = p.printPosition || (pIdx === 0 ? printPositionDisplay : "Back Center");
-                const fallbackMockup = pos.toLowerCase().includes("back") ? activeBackView : activeFrontView;
-                return {
-                    index: p.placementIndex || pIdx + 1,
-                    name: p.name || `Print Placement ${pIdx + 1}`,
-                    position: pos,
-                    type: p.printType || printTypeDisplay,
-                    specs: p.specs || (pIdx === 0 ? frontPrintSpecDisplay : null),
-                    designFile: p.designFile || (pIdx === 0 ? designFileSource : null),
-                    mockup: p.mockup || fallbackMockup
-                };
-            });
-        }
-
-        // If inspecting another color and it has printSpecs
-        if (activeColorObj && Array.isArray(activeColorObj.printSpecs) && activeColorObj.printSpecs.length > 0) {
-            return activeColorObj.printSpecs.map((spec, sIdx) => {
-                const pos = spec.placement || spec.position || (sIdx === 0 ? "Front Center" : "Back Center");
-                const fallbackMockup = pos.toLowerCase().includes("back") ? activeBackView : activeFrontView;
-                return {
-                    index: sIdx + 1,
-                    name: spec.name || (spec.technique === "DTF Print" ? `DTF Design ${sIdx + 1}` : `Print Placement ${sIdx + 1}`),
-                    position: pos,
-                    type: spec.technique || "DTF Print",
-                    specs: spec.dimensions || (typeof spec.specs === "string" ? spec.specs : null),
-                    designFile: spec.designFile || activeColorObj.designFile || null,
-                    mockup: spec.mockup || fallbackMockup
-                };
-            });
-        }
-
         if (Array.isArray(details?.printPlacements) && details.printPlacements.length > 0) {
             return details.printPlacements.map((p, pIdx) => {
                 const pos = p.printPosition || (pIdx === 0 ? printPositionDisplay : "Back Center");
@@ -126,6 +92,22 @@ const ProductItemCard = ({ order, itemObj, index, isExpanded, onToggle, handleDo
             });
         }
 
+        if (activeColorObj && Array.isArray(activeColorObj.printSpecs) && activeColorObj.printSpecs.length > 0) {
+            return activeColorObj.printSpecs.map((spec, sIdx) => {
+                const pos = spec.placement || spec.position || (sIdx === 0 ? "Front Center" : "Back Center");
+                const fallbackMockup = pos.toLowerCase().includes("back") ? activeBackView : activeFrontView;
+                return {
+                    index: sIdx + 1,
+                    name: spec.name || (spec.technique === "DTF Print" ? `DTF Design ${sIdx + 1}` : `Print Placement ${sIdx + 1}`),
+                    position: pos,
+                    type: spec.technique || "DTF Print",
+                    specs: spec.dimensions || (typeof spec.specs === "string" ? spec.specs : null),
+                    designFile: spec.designFile || activeColorObj.designFile || null,
+                    mockup: spec.mockup || fallbackMockup
+                };
+            });
+        }
+
         return [
             {
                 index: 1,
@@ -137,7 +119,7 @@ const ProductItemCard = ({ order, itemObj, index, isExpanded, onToggle, handleDo
                 mockup: activeFrontView
             }
         ];
-    }, [isOrderedColorSelected, details, activeColorObj, activeFrontView, activeBackView, printPositionDisplay, printTypeDisplay, frontPrintSpecDisplay, designFileSource]);
+    }, [details, activeColorObj, activeFrontView, activeBackView, printPositionDisplay, printTypeDisplay, frontPrintSpecDisplay, designFileSource]);
 
     // Financial calculations per item (Zero hardcoded multipliers, strict catalog resolution)
     const baseCost = typeof details?.costBreakdown?.baseCost === "number"
