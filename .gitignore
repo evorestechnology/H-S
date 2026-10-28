@@ -25,3 +25,7 @@ pnpm-debug.log*
 *.db-journal
 *.db-shm
 *.db-wal
+
+# Database backup archives
+backups/db/*.json.gz
+backups/db/*.json

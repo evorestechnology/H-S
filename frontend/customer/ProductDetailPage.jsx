@@ -271,29 +271,6 @@ export default function ProductDetailPage() {
         <span className="text-foreground font-bold">{product.name}</span>
       </nav>
 
-      {/* Front & Back & Cover Quick View Switcher Bar */}
-      {/* {galleryItems.length > 1 && (
-        <div className="flex flex-wrap items-center gap-2 mb-4 sm:mb-5">
-          <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground mr-1">Product Views:</span>
-          {galleryItems.map((item, idx) => {
-            const isSelected = activeViewIndex === idx;
-            return (
-              <button
-                key={idx}
-                type="button"
-                onClick={() => handleSelectView(idx)}
-                className={`px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider transition-all border ${
-                  isSelected 
-                    ? 'bg-black text-white border-black shadow-md' 
-                    : 'bg-muted/40 text-foreground border-border hover:bg-muted'
-                }`}
-              >
-                {item.label}
-              </button>
-            );
-          })}
-        </div>
-      )} */}
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-8 xl:gap-10 items-start relative">
         
@@ -386,25 +363,23 @@ export default function ProductDetailPage() {
             </div>
           )}
 
-          {/* Mobile View Toggle Buttons Strip */}
+          {/* Mobile View Minimalist Dots Indicator (text labels removed) */}
           {galleryItems.length > 1 && (
-            <div className="flex lg:hidden gap-2 mt-4 overflow-x-auto no-scrollbar pb-2">
-              {galleryItems.map((item, idx) => {
+            <div className="flex lg:hidden justify-center items-center gap-2 mt-3 pb-2">
+              {galleryItems.map((_, idx) => {
                 const isSelected = activeViewIndex === idx;
                 return (
                   <button
                     key={idx}
                     type="button"
                     onClick={() => handleSelectView(idx)}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-bold uppercase tracking-wider transition-all flex-shrink-0 ${
+                    className={`h-2 rounded-full transition-all duration-300 ${
                       isSelected 
-                        ? 'bg-black text-white border-black shadow-sm' 
-                        : 'bg-muted/40 text-foreground border-border'
+                        ? 'bg-black dark:bg-white w-6' 
+                        : 'bg-neutral-300 dark:bg-neutral-700 w-2 hover:bg-neutral-400'
                     }`}
-                  >
-                    <span className="w-1.5 h-1.5 rounded-full bg-current"></span>
-                    {item.label}
-                  </button>
+                    aria-label={`Go to image ${idx + 1}`}
+                  />
                 );
               })}
             </div>
