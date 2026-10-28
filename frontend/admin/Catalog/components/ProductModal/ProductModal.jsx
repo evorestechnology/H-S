@@ -765,6 +765,18 @@ const ProductModal = ({ open, product, onClose, onSubmit, onDelete }) => {
                                                         <ImageDropZone label="Back View" value={color.backView} onChange={(val) => handleColorChange(idx, "backView", val)} placeholder="Drag & drop back view"/>
                                                     </div>
 
+                                                    {/* Weave Specifications (Print Weave & Back Weave) */}
+                                                    <div className="views-section-label mt-16">
+                                                        <span className="views-label-text">Weave Specifications</span>
+                                                        <span className="views-audience-badge badge-both">
+                                                            Visible to Manufacture (View Order)
+                                                        </span>
+                                                    </div>
+                                                    <div className="color-views-grid color-views-grid-2">
+                                                        <ImageDropZone label="Print Weave (Front)" value={color.printWeave || ""} onChange={(val) => handleColorChange(idx, "printWeave", val)} optional placeholder="Drag & drop print/front weave asset"/>
+                                                        <ImageDropZone label="Back Weave" value={color.backWeave || ""} onChange={(val) => handleColorChange(idx, "backWeave", val)} optional placeholder="Drag & drop back weave asset"/>
+                                                    </div>
+
                                                     {/* Model Photos */}
                                                     <div className="views-section-label mt-16">
                                                         <span className="views-label-text">Model Photos</span>
@@ -825,18 +837,6 @@ const ProductModal = ({ open, product, onClose, onSubmit, onDelete }) => {
                                                                     <button type="button" className="btn btn-secondary btn-sm mt-8 mb-16" onClick={() => handleAddPrintSpec(idx)}>
                                                                         <Plus size={14}/> Add Another Print Position
                                                                     </button>
-                                                                </div>
-
-                                                                {/* ── Weave Specifications (Print Weave & Back Weave) ── */}
-                                                                <div className="views-section-label mt-16 mb-8">
-                                                                    <span className="views-label-text">Weave Specifications</span>
-                                                                    <span className="views-audience-badge badge-both">
-                                                                        Manufacture Asset
-                                                                    </span>
-                                                                </div>
-                                                                <div className="color-views-grid color-views-grid-2 mb-16">
-                                                                    <ImageDropZone label="Print Weave (Front)" value={color.printWeave || ""} onChange={(val) => handleColorChange(idx, "printWeave", val)} optional placeholder="Drag & drop print/front weave asset"/>
-                                                                    <ImageDropZone label="Back Weave" value={color.backWeave || ""} onChange={(val) => handleColorChange(idx, "backWeave", val)} optional placeholder="Drag & drop back weave asset"/>
                                                                 </div>
 
                                                                 {/* ── Per-Color Price Breakdown: Manufacture Price & User Price ── */}

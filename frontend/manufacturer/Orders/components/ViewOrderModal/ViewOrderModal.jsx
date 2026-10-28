@@ -44,11 +44,11 @@ const ProductItemCard = ({ order, itemObj, index, isExpanded, onToggle, handleDo
 
     const isOrderedColorSelected = (selectedColorName || "").toLowerCase() === (itemObj.color || "").toLowerCase();
 
-    const activeColorCode = activeColorObj?.colorCode || (isOrderedColorSelected ? details?.colorCode : null);
-    const activeFrontView = activeColorObj?.frontImage || (isOrderedColorSelected ? details?.frontViewUrl : null);
-    const activeBackView = activeColorObj?.backImage || (isOrderedColorSelected ? details?.backViewUrl : null);
-    const activePrintWeave = activeColorObj?.printWeave || (isOrderedColorSelected ? details?.printWeaveUrl : null);
-    const activeBackWeave = activeColorObj?.backWeave || (isOrderedColorSelected ? details?.backWeaveUrl : null);
+    const activeColorCode = activeColorObj?.code || activeColorObj?.hexCode || activeColorObj?.colorCode || (isOrderedColorSelected ? details?.colorCode : null);
+    const activeFrontView = (isOrderedColorSelected ? details?.frontViewUrl : null) || activeColorObj?.frontView || activeColorObj?.frontImage || activeColorObj?.modelPhoto1 || (Array.isArray(activeColorObj?.modelPhotos) && activeColorObj.modelPhotos[0]) || null;
+    const activeBackView = (isOrderedColorSelected ? details?.backViewUrl : null) || activeColorObj?.backView || activeColorObj?.backImage || activeColorObj?.modelPhoto2 || (Array.isArray(activeColorObj?.modelPhotos) && activeColorObj.modelPhotos[1]) || null;
+    const activePrintWeave = (isOrderedColorSelected ? details?.printWeaveUrl : null) || activeColorObj?.printWeave || null;
+    const activeBackWeave = (isOrderedColorSelected ? details?.backWeaveUrl : null) || activeColorObj?.backWeave || null;
 
     const isLightGarment = isLightGarmentColor(selectedColorName, activeColorCode);
     const recommendedNeckLogo = isLightGarment ? "black" : "white";

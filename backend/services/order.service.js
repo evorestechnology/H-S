@@ -1798,7 +1798,21 @@ export const getOrderById = async (id) => {
     include: {
       items: {
         include: {
-          product: true
+          product: {
+            select: {
+              id: true,
+              name: true,
+              manufactureName: true,
+              price: true,
+              manufacturePrice: true,
+              coverPhoto: true,
+              category: true,
+              inStock: true,
+              stock: true,
+              colors: true,
+              manufactureSpec: true
+            }
+          }
         }
       },
       user: {
