@@ -17,6 +17,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Minus, Plus, Trash2, MapPin, Info, CheckCircle, Tag, X, Sparkles, AlertCircle } from 'lucide-react';
 import { axiosInstance } from '../shared/lib/axios';
 import { motion, AnimatePresence } from 'framer-motion';
+import { load as loadCashfree } from '@cashfreepayments/cashfree-js';
 
 export default function CheckoutPage() {
   const { cartItems, clearCart, updateQuantity, incrementQuantity, decrementQuantity, removeFromCart } = useCartStore();
@@ -370,64 +371,85 @@ export default function CheckoutPage() {
           });
           const sessionData = sessionRes.data?.data;
 
-          if (sessionData?.isAlreadyPaid || sessionData?.mode === 'SIMULATED') {
-            clearCart();
-            setIsProcessing(false);
-            setCreatedOrderId(newOrderId);
-            setShowSuccess(true);
-            setTimeout(() => {
-              navigate(`/track/${newOrderId}?cashfree_order_id=${newOrderId}`);
-            }, 1500);
-            return;
-          }
-
           if (sessionData && sessionData.payment_session_id) {
-            clearCart();
-            setIsProcessing(false);
-
             const cfMode = (sessionData.mode || import.meta.env.VITE_CASHFREE_ENV || 'sandbox').toLowerCase() === 'production'
               ? 'production'
               : 'sandbox';
 
-            const triggerCashfreeCheckout = (CashfreeFn) => {
+            let cashfreeInstance = null;
+            try {
+              cashfreeInstance = await loadCashfree({ mode: cfMode });
+            } catch (loadErr) {
+              console.warn('loadCashfree failed, checking window.Cashfree:', loadErr);
+              if (window.Cashfree) {
+                cashfreeInstance = window.Cashfree({ mode: cfMode });
+              }
+            }
+
+            if (!cashfreeInstance && window.Cashfree) {
+              cashfreeInstance = window.Cashfree({ mode: cfMode });
+            }
+
+            if (!cashfreeInstance) {
+              throw new Error('Could not initialize Cashfree SDK. Please check your internet connection.');
+            }
+
+            // Launch the real Cashfree Payment Gateway interface in a popup modal
+            cashfreeInstance.checkout({
+              paymentSessionId: sessionData.payment_session_id,
+              redirectTarget: "_modal"
+            }).then(async (result) => {
+              console.log('[Cashfree] Checkout interaction completed:', result);
+              if (result.error) {
+                console.warn('[Cashfree] Customer cancelled or error occurred in modal:', result.error);
+                try {
+                  await axiosInstance.post('/orders/cashfree/verify', {
+                    orderId: newOrderId,
+                    userDropped: true,
+                    reason: result.error?.message || 'Payment cancelled by customer'
+                  });
+                } catch (vErr) {
+                  console.error('Verify drop error:', vErr);
+                }
+                clearCart();
+                setIsProcessing(false);
+                navigate(`/track/${newOrderId}?status=failed`);
+              } else if (result.redirect) {
+                console.log('[Cashfree] Modal initiated browser redirection');
+              } else {
+                // Payment flow concluded inside modal, verify with backend
+                try {
+                  await axiosInstance.post('/orders/cashfree/verify', { orderId: newOrderId });
+                } catch (vErr) {
+                  console.error('Verify error:', vErr);
+                }
+                clearCart();
+                setIsProcessing(false);
+                navigate(`/track/${newOrderId}?cashfree_order_id=${newOrderId}`);
+              }
+            }).catch(async (modalErr) => {
+              console.warn('[Cashfree] Modal checkout error, falling back to full-page redirect:', modalErr);
               try {
-                const cashfree = CashfreeFn({ mode: cfMode });
-                cashfree.checkout({
+                cashfreeInstance.checkout({
                   paymentSessionId: sessionData.payment_session_id,
                   redirectTarget: "_self"
                 });
-              } catch (sdkErr) {
-                console.error('Failed to trigger Cashfree SDK checkout:', sdkErr);
+              } catch (selfErr) {
+                console.error('[Cashfree] Redirect failed:', selfErr);
+                clearCart();
+                setIsProcessing(false);
                 navigate(`/track/${newOrderId}`);
               }
-            };
+            });
 
-            if (window.Cashfree) {
-              triggerCashfreeCheckout(window.Cashfree);
-              return;
-            } else {
-              // Dynamically inject script if not yet ready
-              const script = document.createElement('script');
-              script.src = 'https://sdk.cashfree.com/js/v3/cashfree.js';
-              script.async = true;
-              script.onload = () => {
-                if (window.Cashfree) {
-                  triggerCashfreeCheckout(window.Cashfree);
-                } else {
-                  navigate(`/track/${newOrderId}`);
-                }
-              };
-              script.onerror = () => {
-                navigate(`/track/${newOrderId}`);
-              };
-              document.body.appendChild(script);
-              return;
-            }
+            return;
+          } else {
+            throw new Error(sessionData?.message || 'Failed to create Cashfree payment session');
           }
         } catch (cfErr) {
           console.error('Cashfree session creation error:', cfErr);
           const detailMsg = cfErr.response?.data?.details ? ` (${cfErr.response.data.details})` : '';
-          alert((cfErr.response?.data?.message || 'Error initializing Cashfree payment session') + detailMsg);
+          alert((cfErr.response?.data?.message || cfErr.message || 'Error initializing Cashfree payment session') + detailMsg);
           setIsProcessing(false);
           return;
         }

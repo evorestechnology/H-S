@@ -9,6 +9,7 @@ import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, Check, Package, MapPin, ExternalLink, Clock, AlertTriangle, Download, Eye, FileText, RotateCcw, ShieldCheck } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { axiosInstance } from '../shared/lib/axios';
+import { load as loadCashfree } from '@cashfreepayments/cashfree-js';
 
 const formatOrderDate = (dateVal) => {
   if (!dateVal) return new Date().toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata' });
@@ -73,6 +74,58 @@ export default function TrackingDetailPage() {
       alert(err.response?.data?.message || 'Could not cancel order. Please try again.');
     } finally {
       setIsCancelling(false);
+    }
+  };
+
+  const [isRetryingPayment, setIsRetryingPayment] = useState(false);
+
+  const handleRetryCashfreePayment = async () => {
+    if (!order?.id) return;
+    setIsRetryingPayment(true);
+    try {
+      const sessionRes = await axiosInstance.post('/orders/cashfree/create-session', {
+        orderId: order.id,
+        returnUrl: `${window.location.origin}/track/${order.id}?cashfree_order_id={order_id}`
+      });
+      const sessionData = sessionRes.data?.data;
+      if (sessionData && sessionData.payment_session_id) {
+        const cfMode = (sessionData.mode || 'sandbox').toLowerCase() === 'production' ? 'production' : 'sandbox';
+        let cashfree = null;
+        try {
+          cashfree = await loadCashfree({ mode: cfMode });
+        } catch (e) {
+          if (window.Cashfree) cashfree = window.Cashfree({ mode: cfMode });
+        }
+        if (!cashfree && window.Cashfree) cashfree = window.Cashfree({ mode: cfMode });
+        if (!cashfree) throw new Error('Cashfree SDK failed to initialize');
+
+        cashfree.checkout({
+          paymentSessionId: sessionData.payment_session_id,
+          redirectTarget: "_modal"
+        }).then(async (result) => {
+          if (result.error) {
+            await axiosInstance.post('/orders/cashfree/verify', {
+              orderId: order.id,
+              userDropped: true,
+              reason: result.error?.message || 'Payment cancelled by customer'
+            });
+          } else {
+            await axiosInstance.post('/orders/cashfree/verify', { orderId: order.id });
+          }
+          const res = await axiosInstance.get(`/orders/${order.id}`);
+          setOrder(res.data.data || res.data.order || res.data);
+        }).catch(async () => {
+          cashfree.checkout({
+            paymentSessionId: sessionData.payment_session_id,
+            redirectTarget: "_self"
+          });
+        });
+      }
+    } catch (err) {
+      console.error('Error initiating Cashfree payment retry:', err);
+      alert(err.response?.data?.message || err.message || 'Failed to initialize payment gateway');
+    } finally {
+      setIsRetryingPayment(false);
     }
   };
 
@@ -251,6 +304,17 @@ export default function TrackingDetailPage() {
           </div>
         </div>
         <div className="flex items-center gap-3">
+          {order.paymentStatus === 'PENDING' && !isCancelled && (
+            <button
+              type="button"
+              disabled={isRetryingPayment}
+              onClick={handleRetryCashfreePayment}
+              className="text-xs font-bold uppercase tracking-widest bg-black text-white hover:bg-neutral-800 px-4 py-2 transition-colors rounded-sm flex items-center gap-1.5 shadow-sm"
+            >
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+              {isRetryingPayment ? 'Opening Gateway...' : 'Pay with Cashfree'}
+            </button>
+          )}
           {!isCancelled && order.status === 'IN_PROGRESS' && (
             <button
               type="button"

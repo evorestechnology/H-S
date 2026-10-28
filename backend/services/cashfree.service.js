@@ -37,16 +37,9 @@ export const createCashfreeOrderSession = async (order, customer, options = {}) 
   const { appId, secretKey, mode, baseUrl } = getCashfreeConfig();
 
   if (!appId || !secretKey) {
-    // Return mock payment session for testing when credentials are not yet configured in env
-    return {
-      success: true,
-      mode: 'SIMULATED',
-      payment_session_id: `session_sim_${order.id}_${Date.now()}`,
-      order_id: order.id,
-      order_amount: order.totalPrice,
-      order_currency: 'INR',
-      message: 'Cashfree credentials not configured; operating in simulated sandbox mode.'
-    };
+    const err = new Error('Cashfree credentials (CASHFREE_APP_ID / CASHFREE_SECRET_KEY) are not configured.');
+    err.status = 500;
+    throw err;
   }
 
   let clientUrl = options.clientOrigin
@@ -124,17 +117,6 @@ export const createCashfreeOrderSession = async (order, customer, options = {}) 
     data = await response.json().catch(() => ({}));
   } catch (netErr) {
     console.error('[Cashfree] Network error/timeout calling Cashfree:', netErr.message);
-    if (mode === 'SANDBOX') {
-      return {
-        success: true,
-        mode: 'SIMULATED',
-        payment_session_id: `session_sim_${order.id}_${Date.now()}`,
-        order_id: order.id,
-        order_amount: order.totalPrice,
-        order_currency: 'INR',
-        message: 'Cashfree sandbox timed out; operating in simulated mode for testing.'
-      };
-    }
     const err = new Error('Cashfree payment gateway is temporarily unreachable. Please try again.');
     err.status = 503;
     throw err;
@@ -223,19 +205,6 @@ export const createCashfreeOrderSession = async (order, customer, options = {}) 
 
   if (!response.ok) {
     console.error('[Cashfree] API Error:', response.status, data);
-    // If in sandbox mode and credentials failed or server error occurred, gracefully provide simulated test session
-    if (mode === 'SANDBOX' && (response.status === 401 || response.status >= 500)) {
-      console.warn('[Cashfree] Sandbox error encountered. Falling back to simulated session for development/testing.');
-      return {
-        success: true,
-        mode: 'SIMULATED',
-        payment_session_id: `session_sim_${order.id}_${Date.now()}`,
-        order_id: order.id,
-        order_amount: order.totalPrice,
-        order_currency: 'INR',
-        message: 'Cashfree sandbox unavailable; operating in simulated mode for testing.'
-      };
-    }
     const errorMsg = data.message || (data.code ? `Cashfree Error: ${data.code}` : 'Failed to create Cashfree order session');
     const err = new Error(errorMsg);
     err.status = response.status;
@@ -256,25 +225,14 @@ export const createCashfreeOrderSession = async (order, customer, options = {}) 
 /**
  * Server-side verification of payment status with Cashfree REST API.
  */
-export const verifyCashfreeOrder = async (orderId) => {
+export const verifyCashfreeOrder = async (orderId, options = {}) => {
   const { appId, secretKey, mode, baseUrl } = getCashfreeConfig();
   const cleanDbOrderId = orderId.replace(/-A\d+$/, '');
 
   if (!appId || !secretKey) {
-    // If running without live Cashfree keys, update order status as SUCCESSFUL for testing
-    const updated = await prisma.order.update({
-      where: { id: cleanDbOrderId },
-      data: {
-        paymentStatus: 'SUCCESSFUL',
-        transactionId: `cf_sim_${Date.now()}`
-      }
-    });
-    return {
-      success: true,
-      mode: 'SIMULATED',
-      paymentStatus: 'SUCCESSFUL',
-      order: updated
-    };
+    const err = new Error('Cashfree credentials are not configured.');
+    err.status = 500;
+    throw err;
   }
 
   // Attempt fetch using the supplied orderId or clean database ID
@@ -357,11 +315,16 @@ export const verifyCashfreeOrder = async (orderId) => {
     }
   } else {
     const failedPayment = paymentsList.find(p => ['FAILED', 'USER_DROPPED', 'CANCELLED', 'VOID'].includes(p.payment_status));
-    isFailed = Boolean(failedPayment) || ['EXPIRED', 'TERMINATED', 'CANCELLED'].includes(data.order_status);
+    isFailed = Boolean(failedPayment) 
+      || ['EXPIRED', 'TERMINATED', 'CANCELLED'].includes(data.order_status)
+      || Boolean(options.userDropped);
 
     if (isFailed) {
       newPaymentStatus = 'FAILED';
-      failReason = failedPayment?.error_details?.error_description || failedPayment?.payment_message || (data.order_status === 'EXPIRED' ? 'Payment session expired' : 'Payment was declined or cancelled at checkout');
+      failReason = options.reason 
+        || failedPayment?.error_details?.error_description 
+        || failedPayment?.payment_message 
+        || (options.userDropped ? 'Payment was cancelled or closed at checkout' : (data.order_status === 'EXPIRED' ? 'Payment session expired' : 'Payment was declined or cancelled at checkout'));
       if (failedPayment?.cf_payment_id) {
         finalTxId = String(failedPayment.cf_payment_id);
       }
@@ -380,7 +343,17 @@ export const verifyCashfreeOrder = async (orderId) => {
     transactionId: finalTxId
   };
 
-  // If payment failed or order was cancelled, ensure order status is marked as CANCELED
+  // If payment succeeded, ensure order status is active IN_PROGRESS
+  if (isPaid && newPaymentStatus === 'SUCCESSFUL') {
+    if (existingOrder && existingOrder.status === 'CANCELED') {
+      orderUpdatePayload.status = 'IN_PROGRESS';
+      orderUpdatePayload.cancelReason = null;
+      orderUpdatePayload.cancelledAt = null;
+      orderUpdatePayload.cancelledByRole = null;
+    }
+  }
+
+  // If payment failed or user dropped, ensure order status is marked as CANCELED
   if (isFailed || newPaymentStatus === 'FAILED' || newPaymentStatus === 'NOT_SUCCESSFUL') {
     if (!existingOrder || existingOrder.status !== 'DELIVERED') {
       orderUpdatePayload.status = 'CANCELED';

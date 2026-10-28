@@ -48,12 +48,12 @@ export const createPaymentSession = async (req, res) => {
 // @access  Private (Customer / Admin)
 export const verifyPayment = async (req, res) => {
   try {
-    const { orderId } = req.body;
+    const { orderId, userDropped, reason } = req.body;
     if (!orderId) {
       return res.status(400).json({ success: false, message: 'orderId is required' });
     }
 
-    const verification = await cashfreeService.verifyCashfreeOrder(orderId);
+    const verification = await cashfreeService.verifyCashfreeOrder(orderId, { userDropped, reason });
 
     return res.status(200).json({
       success: true,
