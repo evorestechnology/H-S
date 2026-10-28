@@ -107,95 +107,135 @@ export const createCashfreeOrderSession = async (order, customer, options = {}) 
     }
   };
 
-  const response = await fetch(`${baseUrl}/orders`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-version': '2023-08-01',
-      'x-client-id': appId,
-      'x-client-secret': secretKey
-    },
-    body: JSON.stringify(payload)
-  });
-
-  const data = await response.json();
-
-  // If order already exists in Cashfree (HTTP 409 conflict on retry)
-  if (response.status === 409 || data.code === 'order_already_exists') {
-    console.log(`[Cashfree] Order ${order.id} already exists. Querying existing session...`);
-    const getRes = await fetch(`${baseUrl}/orders/${order.id}`, {
-      method: 'GET',
+  let response;
+  let data = {};
+  try {
+    response = await fetch(`${baseUrl}/orders`, {
+      method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'x-api-version': '2023-08-01',
         'x-client-id': appId,
         'x-client-secret': secretKey
-      }
+      },
+      body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(10000)
     });
+    data = await response.json().catch(() => ({}));
+  } catch (netErr) {
+    console.error('[Cashfree] Network error/timeout calling Cashfree:', netErr.message);
+    if (mode === 'SANDBOX') {
+      return {
+        success: true,
+        mode: 'SIMULATED',
+        payment_session_id: `session_sim_${order.id}_${Date.now()}`,
+        order_id: order.id,
+        order_amount: order.totalPrice,
+        order_currency: 'INR',
+        message: 'Cashfree sandbox timed out; operating in simulated mode for testing.'
+      };
+    }
+    const err = new Error('Cashfree payment gateway is temporarily unreachable. Please try again.');
+    err.status = 503;
+    throw err;
+  }
 
-    if (getRes.ok) {
-      const existingData = await getRes.json();
-      if (existingData.order_status === 'ACTIVE' && existingData.payment_session_id) {
-        return {
-          success: true,
-          mode,
-          payment_session_id: existingData.payment_session_id,
-          order_id: existingData.order_id,
-          order_amount: existingData.order_amount,
-          order_currency: existingData.order_currency
-        };
-      }
-      if (existingData.order_status === 'PAID') {
-        await prisma.order.update({
-          where: { id: order.id },
-          data: {
-            paymentStatus: 'SUCCESSFUL',
-            transactionId: existingData.cf_order_id ? String(existingData.cf_order_id) : undefined
-          }
-        });
-        return {
-          success: true,
-          mode,
-          isAlreadyPaid: true,
-          order_id: existingData.order_id,
-          message: 'Order has already been paid successfully.'
-        };
-      }
-
-      // If existing order session is expired or inactive, retry with attempt suffix
-      const attemptOrderId = `${order.id}-A${Date.now().toString().slice(-4)}`;
-      const retryResponse = await fetch(`${baseUrl}/orders`, {
-        method: 'POST',
+  // If order already exists in Cashfree (HTTP 409 conflict on retry)
+  if (response.status === 409 || data.code === 'order_already_exists') {
+    console.log(`[Cashfree] Order ${order.id} already exists. Querying existing session...`);
+    try {
+      const getRes = await fetch(`${baseUrl}/orders/${order.id}`, {
+        method: 'GET',
         headers: {
           'Content-Type': 'application/json',
           'x-api-version': '2023-08-01',
           'x-client-id': appId,
           'x-client-secret': secretKey
         },
-        body: JSON.stringify({
-          ...payload,
-          order_id: attemptOrderId,
-          order_meta: {
-            return_url: finalReturnUrl
-          }
-        })
+        signal: AbortSignal.timeout(10000)
       });
 
-      if (retryResponse.ok) {
-        const retryData = await retryResponse.json();
-        return {
-          success: true,
-          mode,
-          payment_session_id: retryData.payment_session_id,
-          order_id: retryData.order_id,
-          order_amount: retryData.order_amount,
-          order_currency: retryData.order_currency
-        };
+      if (getRes.ok) {
+        const existingData = await getRes.json().catch(() => ({}));
+        if (existingData.order_status === 'ACTIVE' && existingData.payment_session_id) {
+          return {
+            success: true,
+            mode,
+            payment_session_id: existingData.payment_session_id,
+            order_id: existingData.order_id,
+            order_amount: existingData.order_amount,
+            order_currency: existingData.order_currency
+          };
+        }
+        if (existingData.order_status === 'PAID') {
+          await prisma.order.update({
+            where: { id: order.id },
+            data: {
+              paymentStatus: 'SUCCESSFUL',
+              transactionId: existingData.cf_order_id ? String(existingData.cf_order_id) : undefined
+            }
+          });
+          return {
+            success: true,
+            mode,
+            isAlreadyPaid: true,
+            order_id: existingData.order_id,
+            message: 'Order has already been paid successfully.'
+          };
+        }
+
+        // If existing order session is expired or inactive, retry with attempt suffix
+        const attemptOrderId = `${order.id}-A${Date.now().toString().slice(-4)}`;
+        const retryResponse = await fetch(`${baseUrl}/orders`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-version': '2023-08-01',
+            'x-client-id': appId,
+            'x-client-secret': secretKey
+          },
+          body: JSON.stringify({
+            ...payload,
+            order_id: attemptOrderId,
+            order_meta: {
+              return_url: finalReturnUrl
+            }
+          }),
+          signal: AbortSignal.timeout(10000)
+        });
+
+        if (retryResponse.ok) {
+          const retryData = await retryResponse.json().catch(() => ({}));
+          return {
+            success: true,
+            mode,
+            payment_session_id: retryData.payment_session_id,
+            order_id: retryData.order_id,
+            order_amount: retryData.order_amount,
+            order_currency: retryData.order_currency
+          };
+        }
       }
+    } catch (retryErr) {
+      console.warn('[Cashfree] Retry lookup error:', retryErr.message);
     }
   }
 
   if (!response.ok) {
+    console.error('[Cashfree] API Error:', response.status, data);
+    // If in sandbox mode and credentials failed or server error occurred, gracefully provide simulated test session
+    if (mode === 'SANDBOX' && (response.status === 401 || response.status >= 500)) {
+      console.warn('[Cashfree] Sandbox error encountered. Falling back to simulated session for development/testing.');
+      return {
+        success: true,
+        mode: 'SIMULATED',
+        payment_session_id: `session_sim_${order.id}_${Date.now()}`,
+        order_id: order.id,
+        order_amount: order.totalPrice,
+        order_currency: 'INR',
+        message: 'Cashfree sandbox unavailable; operating in simulated mode for testing.'
+      };
+    }
     const errorMsg = data.message || (data.code ? `Cashfree Error: ${data.code}` : 'Failed to create Cashfree order session');
     const err = new Error(errorMsg);
     err.status = response.status;

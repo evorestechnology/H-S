@@ -313,14 +313,14 @@ export default function CheckoutPage() {
           });
           const sessionData = sessionRes.data?.data;
 
-          if (sessionData?.isAlreadyPaid) {
+          if (sessionData?.isAlreadyPaid || sessionData?.mode === 'SIMULATED') {
             clearCart();
             setIsProcessing(false);
             setCreatedOrderId(newOrderId);
             setShowSuccess(true);
             setTimeout(() => {
-              navigate(`/track/${newOrderId}`);
-            }, 2000);
+              navigate(`/track/${newOrderId}?cashfree_order_id=${newOrderId}`);
+            }, 1500);
             return;
           }
 

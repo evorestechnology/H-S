@@ -40,13 +40,13 @@ export const invalidateProductCache = (productId = null) => {
   listCache.clear();
 };
 
-// Helper to sanitize color variant for catalog list responses
+// Helper to sanitize color variant for catalog responses (exclude heavy Base64 modelPhotos array)
 const sanitizeColorForList = (color) => {
   if (!color || typeof color !== 'object') return color;
   return {
-    ...color,
     name: color.name || '',
     code: color.code || null,
+    isAvailable: color.isAvailable !== false,
     userPrice: color.userPrice ?? color.sellingPrice ?? null,
     sellingPrice: color.sellingPrice ?? color.userPrice ?? null,
     manufacturePrice: color.manufacturePrice ?? null,

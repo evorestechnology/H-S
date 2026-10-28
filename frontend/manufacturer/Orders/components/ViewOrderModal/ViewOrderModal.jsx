@@ -39,16 +39,26 @@ const ProductItemCard = ({ order, itemObj, index, isExpanded, onToggle, handleDo
     const availableColorsList = details?.availableColors || [];
     const activeColorObj = useMemo(() => {
         if (!availableColorsList.length) return null;
-        return availableColorsList.find(c => (c.name || "").toLowerCase() === (selectedColorName || "").toLowerCase()) || availableColorsList[0];
+        const normSelected = (selectedColorName || "").trim().toLowerCase();
+        return availableColorsList.find(c => {
+            if (!c) return false;
+            const cName = (c.name || "").trim().toLowerCase();
+            const cCode = (c.code || "").trim().toLowerCase();
+            return cName === normSelected || cCode === normSelected || (cName && normSelected && (cName.includes(normSelected) || normSelected.includes(cName)));
+        }) || availableColorsList[0];
     }, [availableColorsList, selectedColorName]);
 
-    const isOrderedColorSelected = (selectedColorName || "").toLowerCase() === (itemObj.color || "").toLowerCase();
+    const isOrderedColorSelected = useMemo(() => {
+        const normSelected = (selectedColorName || "").trim().toLowerCase();
+        const normOrdered = (itemObj.color || "").trim().toLowerCase();
+        return normSelected === normOrdered || (normSelected && normOrdered && (normSelected.includes(normOrdered) || normOrdered.includes(normSelected)));
+    }, [selectedColorName, itemObj.color]);
 
-    const activeColorCode = activeColorObj?.code || activeColorObj?.hexCode || activeColorObj?.colorCode || (isOrderedColorSelected ? details?.colorCode : null);
-    const activeFrontView = (isOrderedColorSelected ? details?.frontViewUrl : null) || activeColorObj?.frontView || activeColorObj?.frontImage || activeColorObj?.modelPhoto1 || (Array.isArray(activeColorObj?.modelPhotos) && activeColorObj.modelPhotos[0]) || null;
-    const activeBackView = (isOrderedColorSelected ? details?.backViewUrl : null) || activeColorObj?.backView || activeColorObj?.backImage || activeColorObj?.modelPhoto2 || (Array.isArray(activeColorObj?.modelPhotos) && activeColorObj.modelPhotos[1]) || null;
-    const activePrintWeave = (isOrderedColorSelected ? details?.printWeaveUrl : null) || activeColorObj?.printWeave || null;
-    const activeBackWeave = (isOrderedColorSelected ? details?.backWeaveUrl : null) || activeColorObj?.backWeave || null;
+    const activeColorCode = activeColorObj?.code || activeColorObj?.colorCode || activeColorObj?.hexCode || (isOrderedColorSelected ? details?.colorCode : null);
+    const activeFrontView = (isOrderedColorSelected ? details?.frontViewUrl : null) || activeColorObj?.frontView || activeColorObj?.frontImage || activeColorObj?.image || activeColorObj?.modelPhoto1 || (Array.isArray(activeColorObj?.modelPhotos) && activeColorObj.modelPhotos[0]) || details?.frontViewUrl || null;
+    const activeBackView = (isOrderedColorSelected ? details?.backViewUrl : null) || activeColorObj?.backView || activeColorObj?.backImage || activeColorObj?.modelPhoto2 || (Array.isArray(activeColorObj?.modelPhotos) && activeColorObj.modelPhotos[1]) || details?.backViewUrl || null;
+    const activePrintWeave = (isOrderedColorSelected ? details?.printWeaveUrl : null) || activeColorObj?.printWeave || details?.printWeaveUrl || null;
+    const activeBackWeave = (isOrderedColorSelected ? details?.backWeaveUrl : null) || activeColorObj?.backWeave || details?.backWeaveUrl || null;
 
     const isLightGarment = isLightGarmentColor(selectedColorName, activeColorCode);
     const recommendedNeckLogo = isLightGarment ? "black" : "white";
@@ -253,10 +263,10 @@ const ProductItemCard = ({ order, itemObj, index, isExpanded, onToggle, handleDo
                                             onClick={() => setSelectedColorName(colName)}
                                             title={`View assets configured for ${colName}`}
                                         >
-                                            {col.colorCode && (
+                                            {(col.code || col.colorCode) && (
                                                 <span
                                                     className="chip-dot"
-                                                    style={{ backgroundColor: col.colorCode }}
+                                                    style={{ backgroundColor: col.code || col.colorCode }}
                                                 />
                                             )}
                                             <span>{colName}</span>

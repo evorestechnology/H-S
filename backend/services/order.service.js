@@ -330,6 +330,25 @@ export const resolveColorAssets = (product, orderColor) => {
   };
 };
 
+// Helper to sanitize color variations for detail view without heavy base64 modelPhotos array
+const sanitizeAvailableColor = (c) => {
+  if (!c || typeof c !== 'object') return c;
+  return {
+    name: c.name || '',
+    code: c.code || null,
+    isAvailable: c.isAvailable !== false,
+    frontView: c.frontView || c.image || null,
+    backView: c.backView || null,
+    mockup: c.mockup || null,
+    designFile: c.designFile || null,
+    printWeave: c.printWeave || null,
+    backWeave: c.backWeave || null,
+    printSpecs: Array.isArray(c.printSpecs) ? c.printSpecs : (c.printSpecs ? [c.printSpecs] : null),
+    userPrice: c.userPrice ?? c.sellingPrice ?? null,
+    manufacturePrice: c.manufacturePrice ?? null
+  };
+};
+
 export const formatOrderForUi = (order, isDetail = false) => {
   const firstItem = order.items?.[0] || {};
   const product = firstItem.product || {};
@@ -498,8 +517,8 @@ export const formatOrderForUi = (order, isDetail = false) => {
         backViewUrl: itBack,
         printWeaveUrl: itColorAssets.printWeave || null,
         backWeaveUrl: itColorAssets.backWeave || null,
-        availableColors: Array.isArray(itProduct.colors) ? itProduct.colors : [],
-        productImages: Array.isArray(itProduct.images) ? itProduct.images : (itProduct.coverPhoto ? [itProduct.coverPhoto] : []),
+        availableColors: isDetail && Array.isArray(itProduct.colors) ? itProduct.colors.map(sanitizeAvailableColor) : [],
+        productImages: isDetail ? (Array.isArray(itProduct.images) ? itProduct.images : (itProduct.coverPhoto ? [itProduct.coverPhoto] : [])) : [],
         coverPhoto: itProduct.coverPhoto || itFront || null,
         neckLogoUrl: itColorAssets.isLight ? '/Black Neck Logo.jpeg' : '/White Neck Logo.jpeg',
         designFile: resolvedItemDesignFile,
@@ -543,8 +562,8 @@ export const formatOrderForUi = (order, isDetail = false) => {
         manufacturePrice: itProduct.manufacturePrice || null,
         manufactureName: itProduct.manufactureName || null,
         coverPhoto: itProduct.coverPhoto || itFront || null,
-        colors: Array.isArray(itProduct.colors) ? itProduct.colors : [],
-        images: Array.isArray(itProduct.images) ? itProduct.images : []
+        colors: isDetail && Array.isArray(itProduct.colors) ? itProduct.colors.map(sanitizeAvailableColor) : [],
+        images: isDetail ? (Array.isArray(itProduct.images) ? itProduct.images : []) : []
       }
     };
   });
@@ -651,8 +670,8 @@ export const formatOrderForUi = (order, isDetail = false) => {
       backViewUrl: backImg,
       printWeaveUrl: colorAssets.printWeave || null,
       backWeaveUrl: colorAssets.backWeave || null,
-      availableColors: Array.isArray(product.colors) ? product.colors : [],
-      productImages: Array.isArray(product.images) ? product.images : (product.coverPhoto ? [product.coverPhoto] : []),
+      availableColors: isDetail && Array.isArray(product.colors) ? product.colors.map(sanitizeAvailableColor) : [],
+      productImages: isDetail ? (Array.isArray(product.images) ? product.images : (product.coverPhoto ? [product.coverPhoto] : [])) : [],
       coverPhoto: product.coverPhoto || frontImg || null,
       neckLogoUrl: colorAssets.isLight ? '/Black Neck Logo.jpeg' : '/White Neck Logo.jpeg',
       designFile: resolvedTopDesignFile,
@@ -1133,7 +1152,17 @@ export const createCheckoutOrder = async (orderItems, shippingAddress, paymentMe
       },
       include: {
         items: {
-          include: { product: true }
+          include: {
+            product: {
+              select: {
+                id: true,
+                name: true,
+                price: true,
+                coverPhoto: true,
+                category: true
+              }
+            }
+          }
         },
         user: {
           select: {
