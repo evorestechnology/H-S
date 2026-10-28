@@ -40,6 +40,19 @@ export default function TrackOrderPage() {
     fetchOrders();
   }, []);
 
+  const handleCancelOrder = async (orderId) => {
+    if (!window.confirm(`Are you sure you want to cancel Order #${orderId}?`)) return;
+    try {
+      await axiosInstance.patch(`/orders/${orderId}/cancel`, {
+        cancelReason: 'Cancelled by customer'
+      });
+      setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: 'CANCELED', cancelReason: 'Cancelled by customer' } : o));
+    } catch (err) {
+      console.error('Failed to cancel order:', err);
+      alert(err.response?.data?.message || 'Could not cancel order.');
+    }
+  };
+
   return (
     <div className="pt-16 sm:pt-18 md:pt-20 pb-16 sm:pb-20 max-w-5xl mx-auto px-4 sm:px-6 min-h-[100dvh]">
       <h1 className="font-heading text-2xl sm:text-4xl uppercase font-bold mb-8 sm:mb-12 text-center border-b border-border pb-6">Order History</h1>
@@ -85,7 +98,8 @@ export default function TrackOrderPage() {
             Loading Orders...
           </div>
         ) : orders.length > 0 ? orders.map(order => {
-          const isCancelled = order.status === 'CANCELED' || order.status === 'Cancelled';
+          const isPaymentFailed = (order.paymentStatus || '').toUpperCase() === 'FAILED' || (order.paymentStatus || '').toUpperCase() === 'NOT_SUCCESSFUL';
+          const isCancelled = order.status === 'CANCELED' || order.status === 'Cancelled' || isPaymentFailed;
           const refundStatus = order.refundStatus || (isCancelled ? 'Refund Pending' : null);
           const isRefunded = refundStatus === 'Refunded';
 
@@ -115,13 +129,14 @@ export default function TrackOrderPage() {
                   </div>
                 )}
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className={`px-3 py-1 text-[10px] font-black uppercase tracking-widest ${
+                  <span className={`px-3 py-1 text-[10px] font-black uppercase tracking-widest rounded-sm ${
+                      isCancelled ? 'bg-red-100 text-red-800 border border-red-300' :
                       order.status === 'DELIVERED' ? 'bg-green-100 text-green-800' :
                       order.status === 'SHIPPING' ? 'bg-blue-100 text-blue-800' :
                       order.status === 'IN_PROGRESS' ? 'bg-yellow-100 text-yellow-800' :
                       'bg-red-100 text-red-800'
                   }`}>
-                    {order.status.replace('_', ' ')}
+                    {isCancelled ? 'ORDER CANCELLED' : order.status.replace('_', ' ')}
                   </span>
 
                   {/* Payment Status Badge */}
@@ -170,14 +185,25 @@ export default function TrackOrderPage() {
                   <p className="font-bold uppercase tracking-widest text-xs sm:text-sm break-all">{order.id}</p>
                 </div>
                 <div className="h-10 w-px bg-border hidden md:block"></div>
-                <Link to={`/track/${order.id}`} className="text-[10px] font-bold uppercase tracking-widest border border-black px-4 py-2 hover:bg-black hover:text-white transition-colors whitespace-nowrap flex-shrink-0">
-                  Track Order
-                </Link>
+                <div className="flex items-center gap-2">
+                  {!isCancelled && order.status === 'IN_PROGRESS' && (
+                    <button 
+                      type="button"
+                      onClick={() => handleCancelOrder(order.id)}
+                      className="text-[10px] font-bold uppercase tracking-widest border border-rose-300 text-rose-700 px-3 py-2 hover:bg-rose-50 transition-colors whitespace-nowrap flex-shrink-0"
+                    >
+                      Cancel Order
+                    </button>
+                  )}
+                  <Link to={`/track/${order.id}`} className="text-[10px] font-bold uppercase tracking-widest border border-black px-4 py-2 hover:bg-black hover:text-white transition-colors whitespace-nowrap flex-shrink-0">
+                    Track Order
+                  </Link>
+                </div>
               </div>
             </div>
 
             {/* Unpaid / Pending Payment Alert Banner for customer */}
-            {(!order.paymentStatus || (order.paymentStatus !== 'SUCCESSFUL' && order.paymentStatus !== 'PAID')) && (
+            {!isCancelled && (!order.paymentStatus || (order.paymentStatus !== 'SUCCESSFUL' && order.paymentStatus !== 'PAID')) && (
               <div className="bg-amber-50/90 border-b border-amber-200/90 px-6 py-2.5 flex items-center justify-between gap-4">
                 <div className="flex items-center gap-2 text-xs text-amber-900 font-medium">
                   <Clock className="w-4 h-4 text-amber-600 flex-shrink-0" />

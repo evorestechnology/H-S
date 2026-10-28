@@ -309,22 +309,99 @@ export const verifyCashfreeOrder = async (orderId) => {
     throw err;
   }
 
-  const isPaid = data.order_status === 'PAID';
-  const newPaymentStatus = isPaid ? 'SUCCESSFUL' : (data.order_status === 'ACTIVE' ? 'PENDING' : 'NOT_SUCCESSFUL');
+  // Query payments list for explicit payment status and decline/failure reasons
+  let payments = [];
+  try {
+    const payRes = await fetch(`${baseUrl}/orders/${orderId}/payments`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-version': '2023-08-01',
+        'x-client-id': appId,
+        'x-client-secret': secretKey
+      }
+    });
+    if (payRes.ok) {
+      payments = await payRes.json().catch(() => []);
+    } else if (orderId !== cleanDbOrderId) {
+      const payResClean = await fetch(`${baseUrl}/orders/${cleanDbOrderId}/payments`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-version': '2023-08-01',
+          'x-client-id': appId,
+          'x-client-secret': secretKey
+        }
+      });
+      if (payResClean.ok) {
+        payments = await payResClean.json().catch(() => []);
+      }
+    }
+  } catch (payErr) {
+    console.warn('[Cashfree] Could not fetch payments list:', payErr.message);
+  }
+
+  const paymentsList = Array.isArray(payments) ? payments : [];
+  const successPayment = paymentsList.find(p => p.payment_status === 'SUCCESS');
+  const isPaid = data.order_status === 'PAID' || Boolean(successPayment);
+
+  let newPaymentStatus = 'PENDING';
+  let isFailed = false;
+  let failReason = null;
+  let finalTxId = data.cf_order_id ? String(data.cf_order_id) : undefined;
+
+  if (isPaid) {
+    newPaymentStatus = 'SUCCESSFUL';
+    if (successPayment?.cf_payment_id) {
+      finalTxId = String(successPayment.cf_payment_id);
+    }
+  } else {
+    const failedPayment = paymentsList.find(p => ['FAILED', 'USER_DROPPED', 'CANCELLED', 'VOID'].includes(p.payment_status));
+    isFailed = Boolean(failedPayment) || ['EXPIRED', 'TERMINATED', 'CANCELLED'].includes(data.order_status);
+
+    if (isFailed) {
+      newPaymentStatus = 'FAILED';
+      failReason = failedPayment?.error_details?.error_description || failedPayment?.payment_message || (data.order_status === 'EXPIRED' ? 'Payment session expired' : 'Payment was declined or cancelled at checkout');
+      if (failedPayment?.cf_payment_id) {
+        finalTxId = String(failedPayment.cf_payment_id);
+      }
+    } else {
+      newPaymentStatus = data.order_status === 'ACTIVE' ? 'PENDING' : 'NOT_SUCCESSFUL';
+    }
+  }
+
+  const existingOrder = await prisma.order.findUnique({
+    where: { id: cleanDbOrderId },
+    select: { status: true, cancelReason: true }
+  });
+
+  const orderUpdatePayload = {
+    paymentStatus: newPaymentStatus,
+    transactionId: finalTxId
+  };
+
+  // If payment failed or order was cancelled, ensure order status is marked as CANCELED
+  if (isFailed || newPaymentStatus === 'FAILED' || newPaymentStatus === 'NOT_SUCCESSFUL') {
+    if (!existingOrder || existingOrder.status !== 'DELIVERED') {
+      orderUpdatePayload.status = 'CANCELED';
+      orderUpdatePayload.cancelReason = failReason || existingOrder?.cancelReason || 'Payment failed or cancelled at checkout';
+      orderUpdatePayload.cancelledAt = new Date();
+      orderUpdatePayload.cancelledByRole = 'CUSTOMER';
+    }
+  }
 
   const updatedOrder = await prisma.order.update({
     where: { id: cleanDbOrderId },
-    data: {
-      paymentStatus: newPaymentStatus,
-      transactionId: data.cf_order_id ? String(data.cf_order_id) : undefined
-    }
+    data: orderUpdatePayload
   });
 
   return {
     success: true,
     mode,
     paymentStatus: newPaymentStatus,
+    isFailed,
     cashfreeData: data,
+    payments: paymentsList,
     order: updatedOrder
   };
 };

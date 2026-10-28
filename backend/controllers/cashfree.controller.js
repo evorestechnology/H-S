@@ -99,6 +99,29 @@ export const handleWebhook = async (req, res) => {
           transactionId: data?.payment?.cf_payment_id ? String(data.payment.cf_payment_id) : undefined
         }
       });
+    } else if ((type === 'PAYMENT_FAILED_WEBHOOK' || type === 'PAYMENT_USER_DROPPED_WEBHOOK') && orderId) {
+      const failReason = data?.payment?.error_details?.error_description 
+        || data?.payment?.payment_message 
+        || (type === 'PAYMENT_USER_DROPPED_WEBHOOK' ? 'Payment was cancelled or dropped by customer at checkout' : 'Payment failed at gateway');
+      
+      const existing = await prisma.order.findUnique({
+        where: { id: orderId },
+        select: { status: true }
+      });
+
+      if (!existing || existing.status !== 'DELIVERED') {
+        await prisma.order.update({
+          where: { id: orderId },
+          data: {
+            paymentStatus: 'FAILED',
+            status: 'CANCELED',
+            cancelReason: failReason,
+            cancelledAt: new Date(),
+            cancelledByRole: 'CUSTOMER',
+            transactionId: data?.payment?.cf_payment_id ? String(data.payment.cf_payment_id) : undefined
+          }
+        });
+      }
     }
 
     return res.status(200).json({ success: true, message: 'Webhook processed successfully' });

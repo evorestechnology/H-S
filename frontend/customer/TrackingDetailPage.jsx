@@ -48,6 +48,34 @@ export default function TrackingDetailPage() {
     if (orderId) fetchOrder();
   }, [orderId]);
 
+  const [isCancelling, setIsCancelling] = useState(false);
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [cancelReasonText, setCancelReasonText] = useState('Cancelled by customer');
+
+  const handleCancelOrder = async () => {
+    if (!order?.id) return;
+    setIsCancelling(true);
+    try {
+      const res = await axiosInstance.patch(`/orders/${order.id}/cancel`, {
+        cancelReason: cancelReasonText || 'Cancelled by customer'
+      });
+      if (res.data?.success || res.status === 200) {
+        setOrder(prev => ({
+          ...prev,
+          status: 'CANCELED',
+          cancelReason: cancelReasonText || 'Cancelled by customer',
+          cancelledAt: new Date().toISOString()
+        }));
+        setShowCancelModal(false);
+      }
+    } catch (err) {
+      console.error('Failed to cancel order:', err);
+      alert(err.response?.data?.message || 'Could not cancel order. Please try again.');
+    } finally {
+      setIsCancelling(false);
+    }
+  };
+
   if (loading) {
     return <div className="pt-32 text-center text-muted-foreground uppercase tracking-widest font-bold text-sm">Loading Tracking Data...</div>;
   }
@@ -66,12 +94,67 @@ export default function TrackingDetailPage() {
     }
   }
 
-  const isCancelled = order.status === 'CANCELED' || order.status === 'Cancelled';
+  const isPaymentFailed = (order.paymentStatus || '').toUpperCase() === 'FAILED' || (order.paymentStatus || '').toUpperCase() === 'NOT_SUCCESSFUL';
+  const isCancelled = order.status === 'CANCELED' || order.status === 'Cancelled' || isPaymentFailed;
   const refundStatus = order.refundStatus || (isCancelled ? 'Refund Pending' : null);
   const isRefunded = refundStatus === 'Refunded';
 
   return (
     <div className="pt-16 sm:pt-18 md:pt-20 pb-16 sm:pb-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 min-h-[100dvh]">
+      {/* Customer Cancel Confirmation Modal */}
+      {showCancelModal && (
+        <div 
+          className="fixed inset-0 w-full h-[100dvh] z-50 bg-black/80 flex items-center justify-center p-4 backdrop-blur-sm"
+          onClick={() => setShowCancelModal(false)}
+        >
+          <div className="bg-white max-w-md w-full p-6 rounded-lg shadow-2xl relative" onClick={e => e.stopPropagation()}>
+            <div className="flex justify-between items-center mb-4 pb-2 border-b">
+              <span className="font-bold text-sm uppercase tracking-widest flex items-center gap-2 text-rose-700">
+                <AlertTriangle className="w-4 h-4 text-rose-600" /> Cancel Order #{order.id}
+              </span>
+              <button 
+                type="button" 
+                onClick={() => setShowCancelModal(false)} 
+                className="text-gray-500 hover:text-black font-bold text-sm"
+              >
+                ✕
+              </button>
+            </div>
+            <p className="text-xs text-muted-foreground leading-relaxed mb-4">
+              Are you sure you want to cancel this order? Once cancelled, the order processing will immediately stop.
+            </p>
+            <div className="mb-4">
+              <label className="block text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-1">
+                Reason for Cancellation
+              </label>
+              <textarea
+                value={cancelReasonText}
+                onChange={e => setCancelReasonText(e.target.value)}
+                placeholder="Enter cancellation reason..."
+                className="w-full border border-border rounded p-2.5 text-xs focus:outline-none focus:ring-1 focus:ring-black resize-none h-20"
+              />
+            </div>
+            <div className="flex justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowCancelModal(false)}
+                className="px-4 py-2 border border-border text-xs font-bold uppercase tracking-wider hover:bg-neutral-100 transition-colors"
+              >
+                Keep Order
+              </button>
+              <button
+                type="button"
+                disabled={isCancelling}
+                onClick={handleCancelOrder}
+                className="px-4 py-2 bg-rose-600 text-white text-xs font-bold uppercase tracking-wider hover:bg-rose-700 transition-colors disabled:opacity-50"
+              >
+                {isCancelling ? 'Cancelling...' : 'Confirm Cancellation'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Optional image preview modal */}
       {previewImage && (
         <div 
@@ -113,7 +196,7 @@ export default function TrackingDetailPage() {
         </Link>
       </div>
 
-      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end mb-8 border-b border-border pb-6 gap-2">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end mb-8 border-b border-border pb-6 gap-4">
         <div>
           <h1 className="font-heading text-2xl sm:text-3xl uppercase font-bold tracking-tight">Order Tracking</h1>
           <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -143,9 +226,17 @@ export default function TrackingDetailPage() {
                 );
               }
             })()}
-            {isCancelled && (
-              <span className="px-2.5 py-1 bg-red-100 text-red-800 text-[10px] font-black uppercase tracking-widest rounded-sm">
+            {isCancelled ? (
+              <span className="px-2.5 py-1 bg-red-100 text-red-800 text-[10px] font-black uppercase tracking-widest rounded-sm border border-red-300">
                 ORDER CANCELLED
+              </span>
+            ) : (
+              <span className={`px-2.5 py-1 text-[10px] font-black uppercase tracking-widest rounded-sm ${
+                order.status === 'DELIVERED' ? 'bg-green-100 text-green-800' :
+                order.status === 'SHIPPING' ? 'bg-blue-100 text-blue-800' :
+                'bg-yellow-100 text-yellow-800'
+              }`}>
+                {order.status.replace('_', ' ')}
               </span>
             )}
             {isCancelled && refundStatus && (
@@ -159,7 +250,18 @@ export default function TrackingDetailPage() {
             )}
           </div>
         </div>
-        <p className="text-sm font-bold uppercase tracking-widest text-muted-foreground hidden sm:block">Order #{order.id}</p>
+        <div className="flex items-center gap-3">
+          {!isCancelled && order.status === 'IN_PROGRESS' && (
+            <button
+              type="button"
+              onClick={() => setShowCancelModal(true)}
+              className="text-xs font-bold uppercase tracking-widest border border-rose-300 text-rose-700 hover:bg-rose-50 px-4 py-2 transition-colors rounded-sm"
+            >
+              Cancel Order
+            </button>
+          )}
+          <p className="text-sm font-bold uppercase tracking-widest text-muted-foreground hidden sm:block">Order #{order.id}</p>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
