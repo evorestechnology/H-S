@@ -80,18 +80,28 @@ export default function Navbar() {
 
   // Debounced search
   const performSearch = useCallback(async (query) => {
-    if (!query.trim() || query.trim().length < 2) {
+    const trimmed = query.trim();
+    if (!trimmed || trimmed.length < 2) {
       setSearchResults([]);
       return;
     }
     setIsSearching(true);
     try {
       const apiBase = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || '/api';
-      const res = await fetch(`${apiBase}/products?search=${encodeURIComponent(query.trim())}&limit=6`);
+      const res = await fetch(`${apiBase}/products?search=${encodeURIComponent(trimmed)}&limit=6`);
       if (res.ok) {
         const data = await res.json();
         const items = Array.isArray(data) ? data : (data.products || data.data || []);
-        setSearchResults(items.slice(0, 6));
+        const q = trimmed.toLowerCase();
+        const tokens = q.split(/\s+/).filter(Boolean);
+        const filtered = items.filter(p => {
+          const name = (p.name || '').toLowerCase();
+          const cat = (p.category || '').toLowerCase();
+          const desc = (p.description || '').toLowerCase();
+          const combined = `${name} ${cat} ${desc}`;
+          return combined.includes(q) || tokens.every(t => combined.includes(t));
+        });
+        setSearchResults((filtered.length > 0 ? filtered : items).slice(0, 6));
       }
     } catch {
       setSearchResults([]);
@@ -108,9 +118,10 @@ export default function Navbar() {
   }, [searchQuery, performSearch]);
 
   const handleSearchSubmit = (e) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      navigate(`/category/all?search=${encodeURIComponent(searchQuery.trim())}`);
+    e?.preventDefault?.();
+    const query = searchQuery.trim();
+    if (query) {
+      navigate(`/category/all?search=${encodeURIComponent(query)}`);
       setIsSearchOpen(false);
       setSearchQuery('');
       setSearchResults([]);

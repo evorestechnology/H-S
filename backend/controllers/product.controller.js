@@ -78,7 +78,7 @@ export const getProducts = async (req, res) => {
     if (cachedList && (Date.now() - cachedList.timestamp < CACHE_TTL_MS)) {
       return res.json(cachedList.data);
     }
-    const { category, isBestSeller, dropId, inStock, page: pageQuery, limit: limitQuery } = req.query;
+    const { category, isBestSeller, dropId, inStock, search, q, page: pageQuery, limit: limitQuery } = req.query;
 
     const hasPage = pageQuery !== undefined;
     const hasLimit = limitQuery !== undefined;
@@ -88,23 +88,43 @@ export const getProducts = async (req, res) => {
     const limit = Math.min(50, Math.max(1, parseInt(limitQuery, 10) || 20));
     const skip = (page - 1) * limit;
 
+    const searchTerm = (search || q || '').trim();
+
     // Build filter dynamically
-    const filter = {};
-    if (category && category !== 'All Categories') filter.category = { equals: category, mode: 'insensitive' };
-    if (isBestSeller === 'true') filter.isBestSeller = true;
-    if (dropId) filter.dropId = dropId;
-    if (inStock !== undefined) filter.inStock = inStock === 'true';
+    const andConditions = [];
+
+    if (category && category !== 'All Categories' && category.toLowerCase() !== 'all') {
+      andConditions.push({ category: { equals: category, mode: 'insensitive' } });
+    }
+    if (isBestSeller === 'true') andConditions.push({ isBestSeller: true });
+    if (dropId) andConditions.push({ dropId });
+    if (inStock !== undefined) andConditions.push({ inStock: inStock === 'true' });
 
     // Hide products that belong to a Draft/Inactive drop from the public frontend
     // But ALLOW products that don't belong to any drop at all!
     if (req.query.all !== 'true') {
-      filter.OR = [
-        { dropId: null },
-        { drop: { status: 'Live' } },
-        { drop: { status: 'live' } },
-        { drop: { isActive: true } }
-      ];
+      andConditions.push({
+        OR: [
+          { dropId: null },
+          { drop: { status: 'Live' } },
+          { drop: { status: 'live' } },
+          { drop: { isActive: true } }
+        ]
+      });
     }
+
+    if (searchTerm) {
+      andConditions.push({
+        OR: [
+          { name: { contains: searchTerm, mode: 'insensitive' } },
+          { description: { contains: searchTerm, mode: 'insensitive' } },
+          { category: { contains: searchTerm, mode: 'insensitive' } },
+          { fit: { contains: searchTerm, mode: 'insensitive' } }
+        ]
+      });
+    }
+
+    const filter = andConditions.length > 0 ? { AND: andConditions } : {};
 
     const queryArgs = {
       where: filter,
