@@ -216,15 +216,18 @@ export const forgotPassword = async (req, res) => {
       }
     });
 
-    // Send OTP email
-    await sendOtpEmail(user.email, user.fullName || 'Customer', otp);
+    // Send OTP email (non-blocking failure)
+    const emailResult = await sendOtpEmail(user.email, user.fullName || 'Customer', otp);
+    if (!emailResult?.success && emailResult?.error) {
+      console.warn(`[ForgotPassword] Email delivery failed (${emailResult.error}) for ${user.email}`);
+    }
 
     return res.status(200).json({
       success: true,
       message: 'OTP sent to your email address. It is valid for 10 minutes.'
     });
   } catch (error) {
-    console.error('Error in forgotPassword controller:', error.message);
+    console.error('Error in forgotPassword controller:', error);
     return res.status(500).json({
       success: false,
       message: 'Unable to process the request right now. Please try again.'
