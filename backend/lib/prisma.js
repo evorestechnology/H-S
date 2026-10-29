@@ -30,9 +30,10 @@ if (dbUrl.includes('postgresql://') || dbUrl.includes('postgres://')) {
       const poolerUser = user.includes('.') ? user : `${user}.${ref}`;
       const region = process.env.SUPABASE_REGION || 'ap-south-1';
       const poolerHost = process.env.SUPABASE_POOLER_HOST || `aws-0-${region}.pooler.supabase.com`;
-      const pgbouncer = path.includes('pgbouncer=true') ? '' : (path.includes('?') ? '&pgbouncer=true' : '?pgbouncer=true');
-      dbUrl = `postgresql://${poolerUser}:${pass}@${poolerHost}:6543/${path}${pgbouncer}`;
-      console.log(`[Database] Transformed direct Supabase IPv6 URL to IPv4 connection pooler (${poolerHost}:6543)`);
+      const poolerPort = process.env.SUPABASE_POOLER_PORT || '5432';
+      const cleanPath = path.replace(/[?&]pgbouncer=true/, '');
+      dbUrl = `postgresql://${poolerUser}:${pass}@${poolerHost}:${poolerPort}/${cleanPath}`;
+      console.log(`[Database] Transformed direct Supabase IPv6 URL to IPv4 connection pooler (${poolerHost}:${poolerPort})`);
     }
   }
 
