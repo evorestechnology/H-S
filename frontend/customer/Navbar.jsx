@@ -224,7 +224,7 @@ export default function Navbar() {
           {/* Right: Search, Profile Dropdown, Wishlist & Desktop Home */}
           <div className="flex-1 flex justify-end items-center gap-1" ref={profileRef}>
             {/* Search */}
-            <div ref={searchRef} className="relative">
+            <div ref={searchRef} className="static md:relative">
               <button
                 className="p-2 hover:bg-muted rounded-full transition-colors flex items-center justify-center"
                 onClick={() => {
@@ -244,7 +244,7 @@ export default function Navbar() {
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.95, y: 10 }}
                     transition={{ duration: 0.2 }}
-                    className="absolute top-full right-0 mt-4 w-[min(380px,calc(100vw-2rem))] bg-white border border-border shadow-2xl z-50"
+                    className="absolute top-full left-3 right-3 sm:left-auto sm:right-6 md:right-0 mt-2 sm:mt-3 md:mt-4 w-auto sm:w-[380px] bg-white border border-border shadow-2xl z-50 origin-top"
                   >
                     <form onSubmit={handleSearchSubmit} className="flex items-center border-b border-border">
                       <Search className="w-4 h-4 ml-4 text-muted-foreground flex-shrink-0" />
@@ -255,13 +255,23 @@ export default function Navbar() {
                         onChange={(e) => setSearchQuery(e.target.value)}
                         onKeyDown={handleSearchKeyDown}
                         placeholder="Search products..."
-                        className="flex-1 px-3 py-4 text-sm focus:outline-none bg-transparent uppercase tracking-widest placeholder:normal-case placeholder:tracking-normal"
+                        className="flex-1 px-3 py-4 text-sm focus:outline-none bg-transparent uppercase tracking-widest placeholder:normal-case placeholder:tracking-normal min-w-0"
                       />
-                      {searchQuery && (
+                      {searchQuery ? (
                         <button
                           type="button"
                           onClick={() => { setSearchQuery(''); setSearchResults([]); searchInputRef.current?.focus(); }}
-                          className="p-2 mr-2 text-muted-foreground hover:text-foreground transition-colors"
+                          className="p-2 mr-2 text-muted-foreground hover:text-foreground transition-colors flex-shrink-0"
+                          aria-label="Clear search"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => { setIsSearchOpen(false); }}
+                          className="p-2 mr-2 text-muted-foreground hover:text-foreground transition-colors flex-shrink-0 md:hidden"
+                          aria-label="Close search"
                         >
                           <X className="w-4 h-4" />
                         </button>
@@ -284,7 +294,7 @@ export default function Navbar() {
                       )}
 
                       {!isSearching && searchResults.length > 0 && (
-                        <div className="py-2 max-h-72 overflow-y-auto">
+                        <div className="py-2 max-h-[50vh] sm:max-h-72 overflow-y-auto">
                           {searchResults.map((product) => (
                             <Link
                               key={product.id}

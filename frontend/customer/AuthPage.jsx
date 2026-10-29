@@ -541,7 +541,7 @@ export default function AuthPage() {
         <img 
           src="/auth-side-logo.jpeg" 
           alt="H&S Black Neck Logo" 
-          onError={(e) => { e.currentTarget.src = '/Black Neck Logo.jpeg'; }}
+          onError={(e) => { e.currentTarget.src = '/Black Neck Logo.png'; }}
           className="w-full max-w-xl xl:max-w-2xl max-h-[85dvh] object-contain select-none" 
         />
       </div>

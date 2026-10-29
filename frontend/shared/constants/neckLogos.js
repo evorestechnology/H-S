@@ -1,24 +1,24 @@
-import neckLogoBlackUrl from '../../assets/neck-logos/Black Neck Logo.jpeg';
-import neckLogoWhiteUrl from '../../assets/neck-logos/White Neck Logo.jpeg';
-import neckLogoBlackDataUri from '../../assets/neck-logos/Black Neck Logo.jpeg?inline';
-import neckLogoWhiteDataUri from '../../assets/neck-logos/White Neck Logo.jpeg?inline';
+import neckLogoBlackUrl from '../../assets/neck-logos/Black Neck Logo.png';
+import neckLogoWhiteUrl from '../../assets/neck-logos/White Neck Logo.png';
+import neckLogoBlackDataUri from '../../assets/neck-logos/Black Neck Logo.png?inline';
+import neckLogoWhiteDataUri from '../../assets/neck-logos/White Neck Logo.png?inline';
 import { downloadFileWithFallback } from '../utils/downloadUtils';
 
 export const NECK_LOGO_BLACK = {
     color: 'black',
     label: 'Black Logo',
-    fileName: 'Black Neck Logo.jpeg',
+    fileName: 'Black Neck Logo.png',
     dataUri: neckLogoBlackDataUri,
-    publicUrl: '/Black Neck Logo.jpeg',
+    publicUrl: '/Black Neck Logo.png',
     assetUrl: neckLogoBlackUrl,
 };
 
 export const NECK_LOGO_WHITE = {
     color: 'white',
     label: 'White Logo',
-    fileName: 'White Neck Logo.jpeg',
+    fileName: 'White Neck Logo.png',
     dataUri: neckLogoWhiteDataUri,
-    publicUrl: '/White Neck Logo.jpeg',
+    publicUrl: '/White Neck Logo.png',
     assetUrl: neckLogoWhiteUrl,
 };
 
@@ -85,6 +85,8 @@ export const downloadHardcodedNeckLogo = async (color) => {
         encodeURI(`/${asset.fileName}`),
         `/${asset.fileName}`,
         encodeURI(`/assests/neckband logo/${asset.fileName}`),
+        encodeURI(`/assests/neckband logo/neck logo ${key}.png`),
+        encodeURI(`/assets/neck-logos/neck-logo-${key}.png`),
         asset.dataUri
     ];
     await downloadFileWithFallback(candidateUrls, asset.dataUri, asset.fileName);
