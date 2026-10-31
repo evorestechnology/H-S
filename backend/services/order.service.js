@@ -949,13 +949,16 @@ export const createDirectOrder = async (orderData, creatorUserId) => {
  */
 export const calculateAuthoritativeShipping = async (items, country = 'India', client = prisma) => {
   const isDomestic = (country || 'India').trim().toLowerCase() === 'india';
-  if (isDomestic) return 0;
 
   const shipSettingRow = await client.setting.findFirst({
     where: { key: { in: ['shipping', 'shippingSettings'] } },
     orderBy: { updatedAt: 'desc' }
   });
-  const shipConfig = shipSettingRow?.value || { blockStepKg: 5, ratePerBlock: 5000 };
+  const shipConfig = shipSettingRow?.value || { blockStepKg: 5, ratePerBlock: 5000, domesticFlatRate: 0 };
+  const domesticFlatRate = Number(shipConfig.domesticFlatRate) || 0;
+
+  if (isDomestic) return domesticFlatRate;
+
   const blockStepKg = Number(shipConfig.blockStepKg) || 5;
   const ratePerBlock = Number(shipConfig.ratePerBlock) || 5000;
 
@@ -1026,7 +1029,7 @@ export const createCheckoutOrder = async (orderItems, shippingAddress, paymentMe
   const [products, coupon, shipSettingRow, categories, taxSettings] = await Promise.all([
     prisma.product.findMany({ where: { id: { in: productIds } } }),
     cleanCouponCode ? prisma.coupon.findUnique({ where: { code: cleanCouponCode } }) : Promise.resolve(null),
-    isDomestic ? Promise.resolve(null) : prisma.setting.findFirst({ where: { key: { in: ['shipping', 'shippingSettings'] } }, orderBy: { updatedAt: 'desc' } }),
+    prisma.setting.findFirst({ where: { key: { in: ['shipping', 'shippingSettings'] } }, orderBy: { updatedAt: 'desc' } }),
     isDomestic ? Promise.resolve([]) : prisma.category.findMany(),
     getTaxSettingsHelper(prisma)
   ]);
@@ -1111,8 +1114,10 @@ export const createCheckoutOrder = async (orderItems, shippingAddress, paymentMe
 
   // Authoritative Shipping Calculation (in-memory)
   let shippingPrice = 0;
-  if (!isDomestic && itemsForShipping.length > 0) {
-    const shipConfig = shipSettingRow?.value || { blockStepKg: 5, ratePerBlock: 5000 };
+  const shipConfig = shipSettingRow?.value || { blockStepKg: 5, ratePerBlock: 5000, domesticFlatRate: 0 };
+  if (isDomestic) {
+    shippingPrice = Number(shipConfig.domesticFlatRate) || 0;
+  } else if (itemsForShipping.length > 0) {
     const blockStepKg = Number(shipConfig.blockStepKg) || 5;
     const ratePerBlock = Number(shipConfig.ratePerBlock) || 5000;
     const weightMap = {};

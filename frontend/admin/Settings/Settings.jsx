@@ -12,6 +12,7 @@ const Settings = () => {
     const [activeTab, setActiveTab] = useState("gst");
     const [blockStepKg, setBlockStepKg] = useState(0);
     const [ratePerBlock, setRatePerBlock] = useState(0);
+    const [domesticFlatRate, setDomesticFlatRate] = useState(0);
     const [taxSettings, setTaxSettings] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [loadError, setLoadError] = useState(null);
@@ -28,6 +29,7 @@ const Settings = () => {
             if (data.shippingSettings) {
                 setBlockStepKg(data.shippingSettings.blockStepKg);
                 setRatePerBlock(data.shippingSettings.ratePerBlock);
+                setDomesticFlatRate(Number(data.shippingSettings.domesticFlatRate) || 0);
             }
         }
         catch (err) {
@@ -60,7 +62,7 @@ const Settings = () => {
         e.preventDefault();
         try {
             setSaveError(null);
-            await updateShippingSettings({ blockStepKg, ratePerBlock });
+            await updateShippingSettings({ blockStepKg, ratePerBlock, domesticFlatRate });
             setSavedSuccess(true);
             setTimeout(() => setSavedSuccess(false), 3000);
         }
@@ -101,8 +103,8 @@ const Settings = () => {
                     {activeTab === "categories" && (<CategorySettingsCard />)}
 
                     {activeTab === "shipping" && (<div className="settings-content-grid">
-                            <ShippingSettingsCard blockStepKg={blockStepKg} setBlockStepKg={setBlockStepKg} ratePerBlock={ratePerBlock} setRatePerBlock={setRatePerBlock} onSave={handleSaveShipping}/>
-                            <ShippingSimulatorCard blockStepKg={blockStepKg} ratePerBlock={ratePerBlock}/>
+                            <ShippingSettingsCard blockStepKg={blockStepKg} setBlockStepKg={setBlockStepKg} ratePerBlock={ratePerBlock} setRatePerBlock={setRatePerBlock} domesticFlatRate={domesticFlatRate} setDomesticFlatRate={setDomesticFlatRate} onSave={handleSaveShipping}/>
+                            <ShippingSimulatorCard blockStepKg={blockStepKg} ratePerBlock={ratePerBlock} domesticFlatRate={domesticFlatRate}/>
                         </div>)}
                 </>)}
         </div>);

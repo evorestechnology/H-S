@@ -18,6 +18,7 @@ import { Minus, Plus, Trash2, MapPin, Info, CheckCircle, Tag, X, Sparkles, Alert
 import { axiosInstance } from '../shared/lib/axios';
 import { motion, AnimatePresence } from 'framer-motion';
 import { load as loadCashfree } from '@cashfreepayments/cashfree-js';
+import { COUNTRIES } from '../data/countries';
 
 export default function CheckoutPage() {
   const { cartItems, clearCart, updateQuantity, incrementQuantity, decrementQuantity, removeFromCart } = useCartStore();
@@ -620,21 +621,31 @@ export default function CheckoutPage() {
                     <input type="text" placeholder="Apartment (optional)" value={newAddress.apt} onChange={e => setNewAddress({...newAddress, apt: e.target.value})} className="w-full p-3 border border-border focus:outline-none focus:border-foreground col-span-2" />
                     <input required={!selectedAddress} type="text" placeholder="City" value={newAddress.city} onChange={e => setNewAddress({...newAddress, city: e.target.value})} className="w-full p-3 border border-border focus:outline-none focus:border-foreground" />
                     <input required={!selectedAddress} type="text" placeholder="Postal Code" value={newAddress.zipCode} onChange={e => setNewAddress({...newAddress, zipCode: e.target.value})} className="w-full p-3 border border-border focus:outline-none focus:border-foreground" />
-                    <select 
-                      value={newAddress.country} 
-                      onChange={e => setNewAddress({...newAddress, country: e.target.value})} 
-                      className="w-full p-3 border border-border focus:outline-none focus:border-foreground uppercase text-xs tracking-widest bg-background col-span-2"
-                    >
-                      <option value="India">India</option>
-                      <option value="United States">United States (USA)</option>
-                      <option value="United Kingdom">United Kingdom (UK)</option>
-                      <option value="Canada">Canada</option>
-                      <option value="Australia">Australia</option>
-                      <option value="Germany">Germany</option>
-                      <option value="France">France</option>
-                      <option value="UAE">United Arab Emirates (UAE)</option>
-                      <option value="Other">Other / International</option>
-                    </select>
+                    <div className="col-span-2 space-y-2">
+                      <select 
+                        value={newAddress.country || 'India'} 
+                        onChange={e => setNewAddress({...newAddress, country: e.target.value})} 
+                        className="w-full p-3 border border-border focus:outline-none focus:border-foreground uppercase text-xs tracking-widest bg-background"
+                      >
+                        <option value="India">India</option>
+                        <option disabled>──────────</option>
+                        {COUNTRIES.map(c => (
+                          <option key={c.iso} value={c.name}>{c.name}</option>
+                        ))}
+                      </select>
+
+                      {(newAddress.country || 'India').trim().toLowerCase() === 'india' ? (
+                        <p className="text-[11px] text-green-700 font-bold uppercase tracking-widest flex items-center gap-1.5">
+                          <span className="w-2 h-2 rounded-full bg-green-500 inline-block"></span>
+                          Domestic delivery (India shipping rates apply)
+                        </p>
+                      ) : (
+                        <p className="text-[11px] text-amber-700 font-bold uppercase tracking-widest flex items-center gap-1.5">
+                          <span className="w-2 h-2 rounded-full bg-amber-500 inline-block"></span>
+                          International delivery (Weight-based freight rates apply)
+                        </p>
+                      )}
+                    </div>
                     
                     {isChangingAddress && (
                       <div className="col-span-2 flex gap-4 mt-2">

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Truck, Scale, ShieldCheck, Save, Globe } from "lucide-react";
 import "./ShippingSettingsCard.css";
 import { useCategoryWeightRules, updateCategoryWeightRules } from "../../../../shared/services/categoryService";
-export const ShippingSettingsCard = ({ blockStepKg, setBlockStepKg, ratePerBlock, setRatePerBlock, onSave }) => {
+export const ShippingSettingsCard = ({ blockStepKg, setBlockStepKg, ratePerBlock, setRatePerBlock, domesticFlatRate = 0, setDomesticFlatRate, onSave }) => {
     const activeWeightRules = useCategoryWeightRules();
     const [localRules, setLocalRules] = useState(activeWeightRules);
     useEffect(() => {
@@ -30,8 +30,8 @@ export const ShippingSettingsCard = ({ blockStepKg, setBlockStepKg, ratePerBlock
                         <Truck size={20}/>
                     </div>
                     <div>
-                        <h2>International Freight &amp; Weight Shipping Rules</h2>
-                        <p>Weight-based slab calculation for international shipments outside India</p>
+                        <h2>Shipping &amp; Freight Rules</h2>
+                        <p>Configure domestic shipping for India and weight-based slabs for international destinations</p>
                     </div>
                 </div>
                 <span className="rule-badge badge-active">
@@ -41,6 +41,34 @@ export const ShippingSettingsCard = ({ blockStepKg, setBlockStepKg, ratePerBlock
             </div>
 
             <form onSubmit={handleSubmit} className="settings-form">
+                {/* Domestic (India) Shipping Rule Box */}
+                <div className="gst-rule-box">
+                    <div className="rule-box-header">
+                        <span className="rule-title">
+                            <Truck size={16} className="text-primary"/>
+                            Domestic Shipping Rule (India)
+                        </span>
+                        <span className="rule-badge badge-active">{domesticFlatRate === 0 ? "Free Delivery" : `₹${domesticFlatRate.toLocaleString("en-IN")}`}</span>
+                    </div>
+                    <p className="rule-description">
+                        Standard shipping fee applied to customer orders delivered to destinations in <strong>India</strong>. Enter 0 for Free Delivery.
+                    </p>
+
+                    <div className="settings-form-grid">
+                        <div className="form-group">
+                            <label>Domestic Shipping Rate for India (₹)</label>
+                            <input 
+                                type="number" 
+                                className="form-input" 
+                                value={domesticFlatRate} 
+                                onChange={(e) => setDomesticFlatRate && setDomesticFlatRate(Math.max(0, Number(e.target.value) || 0))} 
+                                min="0" 
+                                step="10"
+                                placeholder="0 for Free Delivery"
+                            />
+                        </div>
+                    </div>
+                </div>
                 {/* 5kg Block Rule Box */}
                 <div className="gst-rule-box">
                     <div className="rule-box-header">

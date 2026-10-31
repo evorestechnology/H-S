@@ -3,7 +3,7 @@ import { Truck, Scale } from "lucide-react";
 import { calculateOrderShipping } from "../../../utils/shipping";
 import { useCategoryWeightRules } from "../../../../shared/services/categoryService";
 import "./ShippingSimulatorCard.css";
-export const ShippingSimulatorCard = ({ blockStepKg, ratePerBlock }) => {
+export const ShippingSimulatorCard = ({ blockStepKg, ratePerBlock, domesticFlatRate = 0 }) => {
     const activeRules = useCategoryWeightRules();
     const [hoodies, setHoodies] = useState(2);
     const [tshirts, setTshirts] = useState(2);
@@ -19,7 +19,7 @@ export const ShippingSimulatorCard = ({ blockStepKg, ratePerBlock }) => {
         { type: "shorts", quantity: shorts },
         { type: "accessories", quantity: cropTops },
         { type: "tanktop", quantity: tankTops }
-    ], country, blockStepKg, ratePerBlock, activeRules);
+    ], country, blockStepKg, ratePerBlock, activeRules, domesticFlatRate);
     return (<div className="shipping-sim-card">
             <div className="shipping-sim-header">
                 <div className="flex-items-center gap-8">

@@ -19,7 +19,7 @@ const roundToDecimals = (num, decimals = 3) => {
  * @param rules Database-configured category weight rules
  * @returns Complete ShippingCalculationResult with weight breakdown and charges
  */
-export const calculateOrderShipping = (items = [], country = "United States", blockStepKg = 5, ratePerBlock = 5000, rules = []) => {
+export const calculateOrderShipping = (items = [], country = "United States", blockStepKg = 5, ratePerBlock = 5000, rules = [], domesticFlatRate = 0) => {
     const safeCountry = typeof country === "string" ? country.trim().toLowerCase() : "united states";
     const isInternational = safeCountry !== "india";
     const safeItems = Array.isArray(items) ? items : [];
@@ -77,6 +77,8 @@ export const calculateOrderShipping = (items = [], country = "United States", bl
     if (isInternational && totalWeightKg > 0) {
         blocksCharged = Math.ceil(totalWeightKg / safeBlockStep);
         totalShippingCost = blocksCharged * safeRatePerBlock;
+    } else if (!isInternational) {
+        totalShippingCost = Number(domesticFlatRate) || 0;
     }
     return {
         breakdown,

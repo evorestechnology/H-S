@@ -2,13 +2,14 @@ import { useState, useEffect } from 'react';
 import { Plus, MapPin, Check, Trash2, Edit2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { axiosInstance } from '../shared/lib/axios';
+import { COUNTRIES } from '../data/countries';
 
 export default function AddressPage() {
   const [addresses, setAddresses] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isAdding, setIsAdding] = useState(false);
   const [newAddress, setNewAddress] = useState({
-    name: '', street: '', city: '', state: '', zipCode: '', country: ''
+    name: '', street: '', city: '', state: '', zipCode: '', country: 'India'
   });
 
   const [editingId, setEditingId] = useState(null);
@@ -42,14 +43,14 @@ export default function AddressPage() {
       fetchAddresses();
       setIsAdding(false);
       setEditingId(null);
-      setNewAddress({ name: '', street: '', city: '', state: '', zipCode: '', country: '' });
+      setNewAddress({ name: '', street: '', city: '', state: '', zipCode: '', country: 'India' });
     } catch (error) {
       toast.error('Failed to save address');
     }
   };
 
   const startEditing = (addr) => {
-    setNewAddress(addr);
+    setNewAddress({ ...addr, country: addr.country || 'India' });
     setEditingId(addr.id);
     setIsAdding(true);
   };
@@ -105,11 +106,39 @@ export default function AddressPage() {
               <input required type="text" placeholder="City" value={newAddress.city} onChange={e => setNewAddress({...newAddress, city: e.target.value})} className="p-3 border border-border focus:outline-none focus:border-foreground" />
               <input required type="text" placeholder="State/Province" value={newAddress.state} onChange={e => setNewAddress({...newAddress, state: e.target.value})} className="p-3 border border-border focus:outline-none focus:border-foreground" />
               <input required type="text" placeholder="ZIP/Postal Code" value={newAddress.zipCode} onChange={e => setNewAddress({...newAddress, zipCode: e.target.value})} className="p-3 border border-border focus:outline-none focus:border-foreground" />
-              <input required type="text" placeholder="Country" value={newAddress.country} onChange={e => setNewAddress({...newAddress, country: e.target.value})} className="p-3 border border-border focus:outline-none focus:border-foreground" />
+              <div className="flex flex-col gap-1">
+                <select 
+                  required 
+                  value={newAddress.country || 'India'} 
+                  onChange={e => setNewAddress({...newAddress, country: e.target.value})} 
+                  className="p-3 border border-border focus:outline-none focus:border-foreground bg-background uppercase text-xs tracking-widest font-medium h-[46px]"
+                >
+                  <option value="India">India</option>
+                  <option disabled>──────────</option>
+                  {COUNTRIES.map(c => (
+                    <option key={c.iso} value={c.name}>{c.name}</option>
+                  ))}
+                </select>
+              </div>
             </div>
+
+            <div className="mt-3">
+              {(newAddress.country || 'India').trim().toLowerCase() === 'india' ? (
+                <p className="text-[11px] text-green-700 font-bold uppercase tracking-widest flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-green-500 inline-block"></span>
+                  Domestic destination: Standard India shipping rates will apply
+                </p>
+              ) : (
+                <p className="text-[11px] text-amber-700 font-bold uppercase tracking-widest flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-amber-500 inline-block"></span>
+                  International destination: Weight-based freight shipping rates will apply
+                </p>
+              )}
+            </div>
+
             <div className="flex gap-4 mt-6">
               <button type="submit" className="text-xs font-bold uppercase tracking-widest text-white bg-black px-6 py-3 hover:bg-black/80 transition-colors">Save Address</button>
-              <button type="button" onClick={() => { setIsAdding(false); setEditingId(null); setNewAddress({ name: '', street: '', city: '', state: '', zipCode: '', country: '' }); }} className="text-xs font-bold uppercase tracking-widest border border-border px-6 py-3 hover:bg-muted transition-colors">Cancel</button>
+              <button type="button" onClick={() => { setIsAdding(false); setEditingId(null); setNewAddress({ name: '', street: '', city: '', state: '', zipCode: '', country: 'India' }); }} className="text-xs font-bold uppercase tracking-widest border border-border px-6 py-3 hover:bg-muted transition-colors">Cancel</button>
             </div>
           </form>
         )}
