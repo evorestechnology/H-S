@@ -30,7 +30,7 @@ const Orders = () => {
     const [selectedOrderForViewReason, setSelectedOrderForViewReason] = useState(null);
     // State for viewing product artwork & manufacturing tech pack details
     const [selectedOrderForViewDetails, setSelectedOrderForViewDetails] = useState(null);
-    const [selectedOrderForViewPriceAdj, setSelectedOrderForViewPriceAdj] = useState(null);
+    const [selectedOrderForPriceAdj, setSelectedOrderForPriceAdj] = useState(null);
     const [loadingDetailsOrderId, setLoadingDetailsOrderId] = useState(null);
     const [isSyncing, setIsSyncing] = useState(false);
     const lastFetchTimeRef = useRef(0);
