@@ -2,9 +2,9 @@ import React, { useState, useRef } from "react";
 import { UploadCloud, Image as ImageIcon, Trash2, Link as LinkIcon } from "lucide-react";
 import "./ImageDropZone.css";
 import { getImageUrl } from "../../utils/imageUrl";
-const compressImage = (file, maxWidth = 1200, maxHeight = 1200, quality = 0.82) => {
+const compressImage = (file, maxWidth = 1600, maxHeight = 1600, quality = 0.85) => {
     return new Promise((resolve) => {
-        if (file.type === "image/svg+xml") {
+        if (file.type === "image/svg+xml" || file.type === "application/pdf") {
             const reader = new FileReader();
             reader.onload = (e) => resolve(e.target?.result || "");
             reader.readAsDataURL(file);
@@ -32,7 +32,14 @@ const compressImage = (file, maxWidth = 1200, maxHeight = 1200, quality = 0.82) 
                 const ctx = canvas.getContext("2d");
                 if (ctx) {
                     ctx.drawImage(img, 0, 0, width, height);
-                    resolve(canvas.toDataURL("image/jpeg", quality));
+                    // Crucial: preserve transparent PNG alpha without baking in a black background!
+                    if (file.type === "image/png") {
+                        resolve(canvas.toDataURL("image/png"));
+                    } else if (file.type === "image/webp") {
+                        resolve(canvas.toDataURL("image/webp", quality));
+                    } else {
+                        resolve(canvas.toDataURL("image/jpeg", quality));
+                    }
                 }
                 else {
                     resolve(e.target?.result || "");
@@ -44,15 +51,43 @@ const compressImage = (file, maxWidth = 1200, maxHeight = 1200, quality = 0.82) 
         reader.readAsDataURL(file);
     });
 };
-const ImageDropZone = ({ label, value, onChange, optional = false, placeholder = "Drag & drop image here or click to browse" }) => {
+const ImageDropZone = ({
+    label,
+    value,
+    onChange,
+    optional = false,
+    placeholder = "Drag & drop image here or click to browse",
+    isDesignFile = false
+}) => {
     const [isDragging, setIsDragging] = useState(false);
     const [showUrlInput, setShowUrlInput] = useState(false);
     const fileInputRef = useRef(null);
+
+    const isDesignOrArtwork = isDesignFile || /design|artwork|weave|print/i.test(label || "");
+
     const handleFile = async (file) => {
-        if (!file.type.startsWith("image/")) {
-            alert("Please select a valid image file.");
+        if (!file) return;
+        if (!file.type.startsWith("image/") && file.type !== "application/pdf") {
+            alert("Please select a valid image file (PNG, JPG, SVG, WEBP, PDF).");
             return;
         }
+        if (file.size > 25 * 1024 * 1024) {
+            alert("File size exceeds 25MB limit. Please upload a file smaller than 25MB.");
+            return;
+        }
+
+        // For print designs, artworks, and weaves: preserve 100% original transparent PNG alpha, full DPI, and vector SVG fidelity!
+        if (isDesignOrArtwork || file.type === "image/svg+xml" || file.type === "application/pdf") {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                if (e.target?.result) {
+                    onChange(e.target.result);
+                }
+            };
+            reader.readAsDataURL(file);
+            return;
+        }
+
         try {
             const compressedBase64 = await compressImage(file);
             onChange(compressedBase64);
@@ -114,7 +149,7 @@ const ImageDropZone = ({ label, value, onChange, optional = false, placeholder =
                             <img src={getImageUrl(value)} alt="Preview" onError={(e) => (e.currentTarget.style.display = "none")}/>
                         </div>)}
                 </div>) : (<div className={`image-dropzone-box ${isDragging ? "dragging" : ""} ${value ? "has-image" : ""}`} onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop} onClick={() => !value && fileInputRef.current?.click()}>
-                    <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*" style={{ display: "none" }}/>
+                    <input type="file" ref={fileInputRef} onChange={handleFileChange} accept={isDesignOrArtwork ? "image/*,.svg,.pdf" : "image/*"} style={{ display: "none" }}/>
 
                     {value ? (<div className="image-preview-container">
                             <img src={getImageUrl(value)} alt={label} className="image-preview"/>
@@ -135,7 +170,9 @@ const ImageDropZone = ({ label, value, onChange, optional = false, placeholder =
                             <span className="dropzone-text">
                                 {isDragging ? "Drop image file here" : placeholder}
                             </span>
-                            <span className="dropzone-subtext">Supports PNG, JPG, WEBP, SVG</span>
+                            <span className="dropzone-subtext">
+                                {isDesignOrArtwork ? "Supports transparent PNG, SVG, JPG, WEBP, PDF (Lossless full resolution)" : "Supports PNG, JPG, WEBP, SVG"}
+                            </span>
                         </div>)}
                 </div>)}
         </div>);

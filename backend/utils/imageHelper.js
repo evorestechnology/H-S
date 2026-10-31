@@ -15,7 +15,7 @@ export const saveBase64Image = async (dataUrl) => {
  * If it's already a URL or not a base64 string, it returns it as-is.
  */
 export const uploadBase64ToSupabase = async (val) => {
-  if (typeof val !== 'string' || !val.startsWith('data:image/')) {
+  if (typeof val !== 'string' || (!val.startsWith('data:image/') && !val.startsWith('data:application/pdf'))) {
     return val;
   }
 
@@ -26,9 +26,32 @@ export const uploadBase64ToSupabase = async (val) => {
     const header = val.substring(0, commaIdx);
     const slashIdx = header.indexOf('/');
     const semiIdx = header.indexOf(';');
-    const extension = (slashIdx !== -1 && semiIdx !== -1 && semiIdx > slashIdx)
-      ? header.substring(slashIdx + 1, semiIdx).replace('+xml', '')
-      : 'png';
+
+    let extension = 'png';
+    let contentType = 'image/png';
+
+    if (slashIdx !== -1 && semiIdx !== -1 && semiIdx > slashIdx) {
+      const mimeSub = header.substring(slashIdx + 1, semiIdx).toLowerCase();
+      if (mimeSub.includes('svg')) {
+        extension = 'svg';
+        contentType = 'image/svg+xml';
+      } else if (mimeSub.includes('pdf')) {
+        extension = 'pdf';
+        contentType = 'application/pdf';
+      } else if (mimeSub.includes('jpeg') || mimeSub.includes('jpg')) {
+        extension = 'jpg';
+        contentType = 'image/jpeg';
+      } else if (mimeSub.includes('webp')) {
+        extension = 'webp';
+        contentType = 'image/webp';
+      } else if (mimeSub.includes('png')) {
+        extension = 'png';
+        contentType = 'image/png';
+      } else {
+        extension = mimeSub.replace('+xml', '');
+        contentType = header.substring(5, semiIdx);
+      }
+    }
 
     const base64Data = val.substring(commaIdx + 1);
     const buffer = Buffer.from(base64Data, 'base64');
@@ -39,7 +62,7 @@ export const uploadBase64ToSupabase = async (val) => {
     const { data, error } = await supabase.storage
       .from('products')
       .upload(filePath, buffer, {
-        contentType: `image/${extension}`,
+        contentType,
         upsert: false
       });
 

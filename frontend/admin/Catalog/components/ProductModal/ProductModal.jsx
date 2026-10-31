@@ -773,8 +773,8 @@ const ProductModal = ({ open, product, onClose, onSubmit, onDelete }) => {
                                                         </span>
                                                     </div>
                                                     <div className="color-views-grid color-views-grid-2">
-                                                        <ImageDropZone label="Print Weave (Front)" value={color.printWeave || ""} onChange={(val) => handleColorChange(idx, "printWeave", val)} optional placeholder="Drag & drop print/front weave asset"/>
-                                                        <ImageDropZone label="Back Weave" value={color.backWeave || ""} onChange={(val) => handleColorChange(idx, "backWeave", val)} optional placeholder="Drag & drop back weave asset"/>
+                                                        <ImageDropZone label="Print Weave (Front)" value={color.printWeave || ""} onChange={(val) => handleColorChange(idx, "printWeave", val)} isDesignFile={true} optional placeholder="Drag & drop transparent print/front weave asset"/>
+                                                        <ImageDropZone label="Back Weave" value={color.backWeave || ""} onChange={(val) => handleColorChange(idx, "backWeave", val)} isDesignFile={true} optional placeholder="Drag & drop transparent back weave asset"/>
                                                     </div>
 
                                                     {/* Model Photos */}
@@ -830,7 +830,7 @@ const ProductModal = ({ open, product, onClose, onSubmit, onDelete }) => {
                                                                             </div>
 
                                                                             <div className="color-views-grid color-views-grid-2">
-                                                                                <ImageDropZone label="Design File" value={spec.designFile || ""} onChange={(val) => handlePrintSpecChange(idx, specIdx, "designFile", val)} optional placeholder="Drag & drop design file"/>
+                                                                                <ImageDropZone label="Design File" value={spec.designFile || ""} onChange={(val) => handlePrintSpecChange(idx, specIdx, "designFile", val)} isDesignFile={true} optional placeholder="Drag & drop transparent design file (PNG/SVG)"/>
                                                                                 <ImageDropZone label="Mockup Image" value={spec.mockup || ""} onChange={(val) => handlePrintSpecChange(idx, specIdx, "mockup", val)} optional placeholder="Drag & drop mockup image"/>
                                                                             </div>
                                                                         </div>))}

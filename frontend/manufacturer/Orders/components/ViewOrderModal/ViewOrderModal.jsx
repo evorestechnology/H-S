@@ -525,13 +525,33 @@ const ViewOrderModal = ({ open, order, onClose, onRequestPriceAdj }) => {
             alert(`No artwork or design file uploaded for ${assetName || "this placement"}. Please configure this asset in the Product Catalog.`);
             return;
         }
-        const ext = targetUrl.startsWith("data:image/png") ? "png" :
-            targetUrl.startsWith("data:image/jpeg") ? "jpg" :
-                targetUrl.startsWith("data:image/webp") ? "webp" :
-                    targetUrl.startsWith("data:image/svg") ? "svg" :
-                        targetUrl.includes(".pdf") ? "pdf" :
-                            targetUrl.includes(".svg") ? "svg" : "png";
-        const filename = `${order.id}_${(colorName || order.color || "Garment").replace(/\s+/g, "_")}_${assetName.replace(/\s+/g, "_")}.${ext}`;
+
+        const detectExt = (url, mimeType) => {
+            if (mimeType) {
+                if (mimeType === "image/png") return "png";
+                if (mimeType === "image/svg+xml") return "svg";
+                if (mimeType === "image/webp") return "webp";
+                if (mimeType === "application/pdf") return "pdf";
+                if (mimeType === "image/jpeg" || mimeType === "image/jpg") return "jpg";
+            }
+            if (url.startsWith("data:image/png")) return "png";
+            if (url.startsWith("data:image/svg")) return "svg";
+            if (url.startsWith("data:image/webp")) return "webp";
+            if (url.startsWith("data:application/pdf")) return "pdf";
+            if (url.startsWith("data:image/jpeg") || url.startsWith("data:image/jpg")) return "jpg";
+            const clean = url.split("?")[0].toLowerCase();
+            if (clean.endsWith(".svg")) return "svg";
+            if (clean.endsWith(".pdf")) return "pdf";
+            if (clean.endsWith(".png")) return "png";
+            if (clean.endsWith(".webp")) return "webp";
+            if (clean.endsWith(".jpg") || clean.endsWith(".jpeg")) return "jpg";
+            return "png";
+        };
+
+        const sanitize = (val) => (val || "").replace(/[^a-zA-Z0-9_-]/g, "_");
+        const ext = detectExt(targetUrl);
+        const filename = `${order.id}_${sanitize(colorName || order.color || "Garment")}_${sanitize(assetName || "Design")}.${ext}`;
+
         // If data uri or blob, trigger download directly
         if (targetUrl.startsWith("data:") || targetUrl.startsWith("blob:")) {
             const link = document.createElement("a");
@@ -542,15 +562,18 @@ const ViewOrderModal = ({ open, order, onClose, onRequestPriceAdj }) => {
             document.body.removeChild(link);
             return;
         }
-        // Try fetching as Blob so cross-origin URLs actually download directly
+
+        // Fetch as Blob so cross-origin URLs download directly with exact MIME type and transparency
         try {
             const res = await fetch(targetUrl, { mode: "cors" });
             if (res.ok) {
                 const blob = await res.blob();
+                const actualExt = detectExt(targetUrl, blob.type);
+                const finalFilename = `${order.id}_${sanitize(colorName || order.color || "Garment")}_${sanitize(assetName || "Design")}.${actualExt}`;
                 const blobUrl = window.URL.createObjectURL(blob);
                 const link = document.createElement("a");
                 link.href = blobUrl;
-                link.download = filename;
+                link.download = finalFilename;
                 document.body.appendChild(link);
                 link.click();
                 document.body.removeChild(link);
