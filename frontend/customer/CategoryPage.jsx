@@ -157,7 +157,7 @@ export default function CategoryPage() {
             >
               Sort By <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isSortOpen ? 'rotate-180' : ''}`} />
             </button>
-            <div className={`absolute right-0 top-full mt-2 w-52 bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 shadow-2xl z-50 rounded-md overflow-hidden transition-all duration-200 ${
+            <div className={`absolute right-0 top-full mt-2 w-52 bg-white border border-neutral-300 dark:border-neutral-700 shadow-2xl z-50 rounded-md overflow-hidden transition-all duration-200 ${
               isSortOpen ? 'opacity-100 visible translate-y-0 pointer-events-auto' : 'opacity-0 invisible -translate-y-1 pointer-events-none'
             }`}>
               <button type="button" onClick={() => { setSortOption('best-sellers'); setIsSortOpen(false); }} className={`w-full text-left px-4 py-3 text-xs uppercase tracking-widest hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors ${sortOption === 'best-sellers' ? 'font-bold bg-neutral-50 dark:bg-neutral-800/60' : ''}`}>Best Sellers</button>
