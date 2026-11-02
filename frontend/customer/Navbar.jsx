@@ -37,9 +37,9 @@ export default function Navbar() {
   // Handle scroll effect
   useEffect(() => {
     const handleScroll = () => {
-      setIsScrolled(window.scrollY > 50);
+      setIsScrolled(window.scrollY > 30);
     };
-    window.addEventListener('scroll', handleScroll);
+    window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
@@ -173,8 +173,8 @@ export default function Navbar() {
   ];
 
   return (
-    <header className="fixed w-full top-0 z-50">
-      <nav className={`w-full transition-all duration-300 border-b ${isScrolled ? 'bg-white/95 backdrop-blur-md py-2.5 sm:py-3 border-border shadow-xs' : 'bg-white py-3 sm:py-3.5 border-border/40'}`}>
+    <header className="fixed w-full top-0 z-40 transition-all duration-300">
+      <nav className={`relative z-20 w-full transition-all duration-300 border-b ${isScrolled ? 'bg-white/95 backdrop-blur-md py-2.5 sm:py-3 border-border shadow-xs' : 'bg-white py-3 sm:py-3.5 border-border/40'}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
         <div className="flex justify-between items-center h-full">
           
@@ -468,7 +468,7 @@ export default function Navbar() {
     </nav>
 
     {/* Stylish Announcement Banner Under Logo & Nav */}
-    <AnnouncementBanner />
+    <AnnouncementBanner isScrolled={isScrolled} />
 
       {/* Mobile Menu Overlay */}
       <AnimatePresence>

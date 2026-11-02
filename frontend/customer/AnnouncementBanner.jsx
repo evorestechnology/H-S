@@ -1,8 +1,37 @@
 import { useState } from 'react';
-import { Copy, Check, Sparkles } from 'lucide-react';
+import { Copy, Check } from 'lucide-react';
 import toast from 'react-hot-toast';
 
-export default function AnnouncementBanner() {
+function PromoItem({ couponCode, onCopy, copied }) {
+  return (
+    <div className="inline-flex items-center gap-2 sm:gap-2.5 text-[10.5px] sm:text-xs tracking-wider whitespace-nowrap px-4 sm:px-6 leading-none">
+      <span className="text-amber-400 text-xs" aria-hidden="true">✦</span>
+      <span className="text-neutral-300 font-medium">Use Cuppon</span>
+      
+      <button
+        type="button"
+        onClick={onCopy}
+        title="Click to copy coupon code WELCOME@H&S"
+        className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full font-mono font-bold text-amber-200 bg-amber-400/10 hover:bg-amber-400/25 active:scale-95 border border-amber-400/30 hover:border-amber-400/60 transition-all cursor-pointer shadow-xs normal-case group"
+      >
+        <span className="tracking-widest">{couponCode}</span>
+        {copied ? (
+          <Check className="w-3 h-3 text-emerald-400 animate-in fade-in zoom-in" />
+        ) : (
+          <Copy className="w-2.5 h-2.5 text-amber-300/70 group-hover:text-amber-100 transition-colors" />
+        )}
+      </button>
+
+      <span className="text-neutral-300 font-medium">to claim</span>
+      <span className="font-extrabold text-amber-400 tracking-wider">10% OFF</span>
+      <span className="text-neutral-300 font-medium">on your cart value</span>
+      <span className="normal-case text-xs">😉</span>
+      <span className="text-white/20 text-xs font-mono ml-2 sm:ml-4" aria-hidden="true">•</span>
+    </div>
+  );
+}
+
+export default function AnnouncementBanner({ isScrolled = false }) {
   const [copied, setCopied] = useState(false);
   const couponCode = 'WELCOME@H&S';
 
@@ -15,9 +44,9 @@ export default function AnnouncementBanner() {
       duration: 2500,
       icon: '✨',
       style: {
-        background: '#0a0a0a',
+        background: '#09090b',
         color: '#ffffff',
-        border: '1px solid rgba(255,255,255,0.15)',
+        border: '1px solid rgba(251,191,36,0.3)',
         fontSize: '12px',
         fontWeight: '600',
         letterSpacing: '0.04em',
@@ -30,40 +59,34 @@ export default function AnnouncementBanner() {
   return (
     <div 
       role="region"
-      aria-label="Promotional Offer"
-      className="w-full bg-black text-white border-b border-white/10 py-1.5 sm:py-2 px-3 sm:px-6 relative z-40 transition-all duration-300 shadow-xs"
+      aria-label="Trending Promotional Marquee Announcement"
+      className={`w-full bg-neutral-950 text-white overflow-hidden transition-all duration-300 ease-in-out relative z-10 select-none flex items-center ${
+        isScrolled 
+          ? 'h-0 opacity-0 -translate-y-full pointer-events-none border-b-0' 
+          : 'h-7 sm:h-8 opacity-100 translate-y-0 border-b border-white/10 shadow-xs'
+      }`}
     >
-      <div className="max-w-7xl mx-auto flex items-center justify-center gap-2 sm:gap-3 text-center">
-        {/* Left Stylish Accent Icon */}
-        <Sparkles className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-amber-400 flex-shrink-0 animate-pulse hidden xs:inline-block" aria-hidden="true" />
-
-        {/* Banner Text with Premium Styling */}
-        <div className="text-[10px] xs:text-[11px] sm:text-xs font-medium tracking-wider uppercase text-neutral-200 flex items-center flex-wrap justify-center gap-x-1.5 gap-y-0.5">
-          <span className="text-neutral-300">Use Cuppon</span>
-          
-          {/* Interactive Coupon Pill */}
-          <button
-            type="button"
-            onClick={handleCopy}
-            title="Click to copy coupon code WELCOME@H&S"
-            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full font-mono font-bold text-white bg-white/15 hover:bg-white/25 active:scale-95 border border-white/25 hover:border-white/40 transition-all cursor-pointer shadow-xs normal-case group"
-          >
-            <span className="tracking-widest text-[10px] xs:text-[11px] sm:text-xs text-amber-200 group-hover:text-white transition-colors">{couponCode}</span>
-            {copied ? (
-              <Check className="w-3 h-3 text-emerald-400 animate-in fade-in zoom-in" />
-            ) : (
-              <Copy className="w-2.5 h-2.5 text-neutral-400 group-hover:text-white transition-colors" />
-            )}
-          </button>
-
-          <span className="text-neutral-300">to claim</span>
-          <span className="font-extrabold text-amber-400 tracking-wider">10% OFF</span>
-          <span className="text-neutral-300">on your cart value</span>
-          <span className="normal-case text-xs">😉</span>
+      <div 
+        className="w-full overflow-hidden cursor-pointer flex items-center"
+        onClick={handleCopy}
+        title="Tap to copy coupon code WELCOME@H&S"
+      >
+        <div className="animate-marquee-smooth flex items-center">
+          {/* Track A */}
+          <div className="flex items-center flex-shrink-0">
+            <PromoItem couponCode={couponCode} onCopy={handleCopy} copied={copied} />
+            <PromoItem couponCode={couponCode} onCopy={handleCopy} copied={copied} />
+            <PromoItem couponCode={couponCode} onCopy={handleCopy} copied={copied} />
+            <PromoItem couponCode={couponCode} onCopy={handleCopy} copied={copied} />
+          </div>
+          {/* Track B (Identical for seamless infinite scroll) */}
+          <div className="flex items-center flex-shrink-0">
+            <PromoItem couponCode={couponCode} onCopy={handleCopy} copied={copied} />
+            <PromoItem couponCode={couponCode} onCopy={handleCopy} copied={copied} />
+            <PromoItem couponCode={couponCode} onCopy={handleCopy} copied={copied} />
+            <PromoItem couponCode={couponCode} onCopy={handleCopy} copied={copied} />
+          </div>
         </div>
-
-        {/* Right Stylish Accent Icon */}
-        <Sparkles className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-amber-400 flex-shrink-0 animate-pulse hidden xs:inline-block" aria-hidden="true" />
       </div>
     </div>
   );

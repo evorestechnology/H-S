@@ -258,10 +258,10 @@ export default function ProductDetailPage() {
   const allImages = lightboxList.map(item => item.url);
 
   return (
-    <div className="pt-24 sm:pt-26 md:pt-28 pb-16 sm:pb-20 max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 min-h-[100dvh]">
+    <div className="pt-28 sm:pt-32 md:pt-36 pb-16 sm:pb-20 max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 min-h-[100dvh]">
       
       {/* Breadcrumbs */}
-      <nav className="flex text-xs uppercase tracking-widest text-muted-foreground mb-3 sm:mb-4">
+      <nav className="flex flex-wrap items-center text-[10.5px] sm:text-xs uppercase tracking-widest text-muted-foreground mb-4 sm:mb-6 gap-y-1.5">
         <Link to="/" className="hover:text-foreground transition-colors">Home</Link>
         <ChevronRight className="w-4 h-4 mx-2" />
         <Link to={`/category/${product.category}`} className="hover:text-foreground transition-colors">

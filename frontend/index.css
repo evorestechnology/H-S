@@ -188,3 +188,25 @@ input[type="reset"]:not(:disabled) {
   cursor: pointer !important;
 }
 
+/* Infinite Marquee Ticker for Trending Announcement Banner */
+@keyframes marquee-scroll {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  100% {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+.animate-marquee-smooth {
+  display: flex;
+  width: max-content;
+  animation: marquee-scroll 26s linear infinite;
+  will-change: transform;
+}
+
+.animate-marquee-smooth:hover,
+.animate-marquee-smooth:active {
+  animation-play-state: paused;
+}
+

@@ -54,7 +54,7 @@ export default function TrackOrderPage() {
   };
 
   return (
-    <div className="pt-24 sm:pt-26 md:pt-28 pb-16 sm:pb-20 max-w-5xl mx-auto px-4 sm:px-6 min-h-[100dvh]">
+    <div className="pt-28 sm:pt-32 md:pt-36 pb-16 sm:pb-20 max-w-5xl mx-auto px-4 sm:px-6 min-h-[100dvh]">
       <h1 className="font-heading text-2xl sm:text-4xl uppercase font-bold mb-8 sm:mb-12 text-center border-b border-border pb-6">Order History</h1>
       
       {/* Optional image preview modal */}
