@@ -72,7 +72,7 @@ export const resolveColorAssets = (product, orderColor) => {
     isLight = false;
   }
 
-  const neckLogoFileName = isLight ? 'Black Neck Logo.jpeg' : 'White Neck Logo.jpeg';
+  const neckLogoFileName = isLight ? 'Black Neck Logo.png' : 'White Neck Logo.png';
 
   // Front View Image (prioritize color-specific front mockup, then model photo, then images)
   let frontImg = '';
@@ -520,7 +520,7 @@ export const formatOrderForUi = (order, isDetail = false) => {
         availableColors: isDetail && Array.isArray(itProduct.colors) ? itProduct.colors.map(sanitizeAvailableColor) : [],
         productImages: isDetail ? (Array.isArray(itProduct.images) ? itProduct.images : (itProduct.coverPhoto ? [itProduct.coverPhoto] : [])) : [],
         coverPhoto: itProduct.coverPhoto || itFront || null,
-        neckLogoUrl: itColorAssets.isLight ? '/Black Neck Logo.jpeg' : '/White Neck Logo.jpeg',
+        neckLogoUrl: itColorAssets.isLight ? '/Black Neck Logo.png' : '/White Neck Logo.png',
         designFile: resolvedItemDesignFile,
         printType: itColorAssets.printType,
         printPosition: itColorAssets.printPosition,
@@ -675,7 +675,7 @@ export const formatOrderForUi = (order, isDetail = false) => {
       availableColors: isDetail && Array.isArray(product.colors) ? product.colors.map(sanitizeAvailableColor) : [],
       productImages: isDetail ? (Array.isArray(product.images) ? product.images : (product.coverPhoto ? [product.coverPhoto] : [])) : [],
       coverPhoto: product.coverPhoto || frontImg || null,
-      neckLogoUrl: colorAssets.isLight ? '/Black Neck Logo.jpeg' : '/White Neck Logo.jpeg',
+      neckLogoUrl: colorAssets.isLight ? '/Black Neck Logo.png' : '/White Neck Logo.png',
       designFile: resolvedTopDesignFile,
       printType: colorAssets.printType,
       printPosition: colorAssets.printPosition,
