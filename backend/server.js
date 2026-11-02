@@ -129,6 +129,9 @@ app.use(express.static(distPath, {
       res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
       res.setHeader('Pragma', 'no-cache');
       res.setHeader('Expires', '0');
+    } else if (!filePath.includes(`${path.sep}assets${path.sep}`)) {
+      // Unhashed root assets (e.g. /Black Neck Logo.png, /White Neck Logo.png) must revalidate
+      res.setHeader('Cache-Control', 'public, max-age=300, must-revalidate');
     }
   }
 }));

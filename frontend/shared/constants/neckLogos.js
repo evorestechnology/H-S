@@ -78,15 +78,12 @@ export const getRecommendedNeckLogoColor = (colorStr, hexCode) => {
 export const downloadHardcodedNeckLogo = async (color) => {
     const key = color === 'white' ? 'white' : 'black';
     const asset = HARDCODED_NECK_LOGOS[key];
+    const timestamp = Date.now();
     const candidateUrls = [
-        encodeURI(asset.publicUrl),
-        asset.publicUrl,
         asset.assetUrl,
-        encodeURI(`/${asset.fileName}`),
-        `/${asset.fileName}`,
-        encodeURI(`/assests/neckband logo/${asset.fileName}`),
-        encodeURI(`/assests/neckband logo/neck logo ${key}.png`),
-        encodeURI(`/assets/neck-logos/neck-logo-${key}.png`),
+        `${asset.publicUrl}?v=${timestamp}`,
+        encodeURI(`${asset.publicUrl}?v=${timestamp}`),
+        asset.publicUrl,
         asset.dataUri
     ];
     await downloadFileWithFallback(candidateUrls, asset.dataUri, asset.fileName);
