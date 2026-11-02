@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { motion } from 'framer-motion';
 import { useWishlistStore } from '../shared/store/useWishlistStore';
 import { useAuthStore } from '../shared/store/useAuthStore';
 import ProductCard from './ProductCard';
@@ -45,11 +46,16 @@ export default function WishlistPage() {
 
   return (
     <div className="pt-28 sm:pt-32 md:pt-36 pb-16 sm:pb-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 min-h-[100dvh]">
-      <div className="flex items-center gap-4 mb-8 sm:mb-12 border-b border-border pb-6">
+      <motion.div 
+        initial={{ opacity: 0, y: -16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+        className="flex items-center gap-4 mb-8 sm:mb-12 border-b border-border pb-6"
+      >
         <Heart className="w-7 h-7 sm:w-8 sm:h-8" />
         <h1 className="font-heading text-2xl sm:text-4xl font-bold uppercase tracking-tight">Your Wishlist</h1>
         <span className="text-muted-foreground text-xs sm:text-sm font-bold ml-auto">{wishlistItems.length} Items</span>
-      </div>
+      </motion.div>
 
       {wishlistItems.length === 0 ? (
         <div className="text-center py-20 flex flex-col items-center">

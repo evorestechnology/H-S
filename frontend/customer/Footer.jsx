@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { Mail, ChevronDown, X } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -70,7 +71,13 @@ export default function Footer() {
 
   return (
     <footer className="bg-foreground text-background pt-12 md:pt-16 pb-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <motion.div 
+        initial={{ opacity: 0, y: 24 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: '-20px' }}
+        transition={{ duration: 0.5 }}
+        className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"
+      >
         
         {/* Mobile Layout (md:hidden) */}
         <div className="block md:hidden space-y-6 mb-8">
@@ -257,7 +264,7 @@ export default function Footer() {
             </a>
           </p>
         </div>
-      </div>
+      </motion.div>
 
       {/* Subscription Success Modal Popup */}
       {showPopup && (

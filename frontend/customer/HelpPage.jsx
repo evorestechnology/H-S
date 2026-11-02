@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
 
 export default function HelpPage() {
   const faqSections = [
@@ -54,7 +55,13 @@ export default function HelpPage() {
       
       <div className="space-y-12">
         {faqSections.map((section, idx) => (
-          <div key={idx}>
+          <motion.div 
+            key={idx}
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: '-40px' }}
+            transition={{ duration: 0.5, delay: idx * 0.08 }}
+          >
             <h2 className="font-heading text-2xl uppercase font-bold mb-6 border-b border-border pb-2">
               {section.title}
             </h2>
@@ -66,7 +73,7 @@ export default function HelpPage() {
                 </div>
               ))}
             </div>
-          </div>
+          </motion.div>
         ))}
       </div>
 

@@ -56,36 +56,43 @@ export default function ProductCard({ product }) {
   };
 
   return (
-    <Link 
-      to={`/product/${product.id}`}
-      className="group block relative w-full"
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
+    <motion.div
+      initial={{ opacity: 0, y: 18 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: '-20px' }}
+      transition={{ duration: 0.4, ease: 'easeOut' }}
+      className="w-full"
     >
-      {/* Sleek, Non-Dominating Badges on Mobile */}
-      {(product.isBestSeller || product.isNew) && (
-        <div className="absolute top-2 left-2 z-20 flex items-center">
-          {product.isBestSeller ? (
-            <span className="bg-black/80 backdrop-blur-md text-white text-[8px] sm:text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full shadow-xs border border-white/10">
-              Best Seller
-            </span>
-          ) : product.isNew ? (
-            <span className="bg-white/90 backdrop-blur-md text-black text-[8px] sm:text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full shadow-xs border border-black/10">
-              New
-            </span>
-          ) : null}
-        </div>
-      )}
-
-      {/* Wishlist Button - Sleek and compact */}
-      <button 
-        type="button"
-        onClick={handleWishlistToggle}
-        className="group absolute top-2 right-2 z-20 p-1.5 sm:p-2 bg-white/80 hover:bg-white backdrop-blur-md rounded-full transition-all duration-200 shadow-xs hover:shadow-md hover:scale-110 active:scale-95 cursor-pointer"
-        aria-label="Toggle Wishlist"
+      <Link 
+        to={`/product/${product.id}`}
+        className="group block relative w-full"
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
       >
-        <Heart className={`w-3.5 h-3.5 sm:w-4 sm:h-4 transition-transform duration-200 group-hover:scale-110 ${isWishlisted ? 'fill-black text-black' : 'text-neutral-700 group-hover:text-black'}`} />
-      </button>
+        {/* Sleek, Non-Dominating Badges on Mobile */}
+        {(product.isBestSeller || product.isNew) && (
+          <div className="absolute top-2 left-2 z-10 flex items-center pointer-events-none">
+            {product.isBestSeller ? (
+              <span className="bg-black/80 backdrop-blur-md text-white text-[8px] sm:text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full shadow-xs border border-white/10">
+                Best Seller
+              </span>
+            ) : product.isNew ? (
+              <span className="bg-white/90 backdrop-blur-md text-black text-[8px] sm:text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full shadow-xs border border-black/10">
+                New
+              </span>
+            ) : null}
+          </div>
+        )}
+
+        {/* Wishlist Button - Sleek and compact */}
+        <button 
+          type="button"
+          onClick={handleWishlistToggle}
+          className="group absolute top-2 right-2 z-10 p-1.5 sm:p-2 bg-white/80 hover:bg-white backdrop-blur-md rounded-full transition-all duration-200 shadow-xs hover:shadow-md hover:scale-110 active:scale-95 cursor-pointer"
+          aria-label="Toggle Wishlist"
+        >
+          <Heart className={`w-3.5 h-3.5 sm:w-4 sm:h-4 transition-transform duration-200 group-hover:scale-110 ${isWishlisted ? 'fill-black text-black' : 'text-neutral-700 group-hover:text-black'}`} />
+        </button>
 
       {/* Image Container - Fully visible without cropping/trimming */}
       <div className="relative aspect-[3/4] bg-[#F7F7F8] dark:bg-neutral-900 overflow-hidden mb-3 sm:mb-4 rounded-2xl flex items-center justify-center border border-neutral-200/60 dark:border-neutral-800">
@@ -168,5 +175,6 @@ export default function ProductCard({ product }) {
         <p className="text-muted-foreground text-xs sm:text-sm font-semibold">₹{product.price.toFixed(2)}</p>
       </div>
     </Link>
+    </motion.div>
   );
 }

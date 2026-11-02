@@ -57,7 +57,13 @@ export default function Home() {
       <HeroBanner />
 
       {/* Latest Drops Section */}
-      <section className="py-12 sm:py-20 bg-muted">
+      <motion.section 
+        initial={{ opacity: 0, y: 25 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: "-40px" }}
+        transition={{ duration: 0.5, ease: "easeOut" }}
+        className="py-12 sm:py-20 bg-muted"
+      >
         <div className="max-w-9xl mx-auto px-4 sm:px-6 lg:px-8 w-full ">
           <div className="flex justify-between items-end mb-10 ">
             <h2 className="font-heading text-3xl md:text-4xl font-black uppercase tracking-tighter">Latest Drops</h2>
@@ -83,10 +89,16 @@ export default function Home() {
             )}
           </div>
         </div>
-      </section>
+      </motion.section>
 
       {/* Best Sellers Grid */}
-      <section className="py-14 sm:py-20 lg:py-24 max-w-9xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+      <motion.section 
+        initial={{ opacity: 0, y: 25 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: "-40px" }}
+        transition={{ duration: 0.5, ease: "easeOut" }}
+        className="py-14 sm:py-20 lg:py-24 max-w-9xl mx-auto px-4 sm:px-6 lg:px-8 w-full"
+      >
         <div className="flex flex-col items-center mb-16">
           <h2 className="font-heading text-3xl md:text-4xl font-black uppercase tracking-tighter mb-4">Trending in H&S</h2>
           <div className="w-16 h-1 bg-black"></div>
@@ -101,7 +113,7 @@ export default function Home() {
             ))}
           </div>
         )}
-      </section>
+      </motion.section>
 
      
     </div>

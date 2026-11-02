@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { ChevronDown, X } from 'lucide-react';
+import { motion } from 'framer-motion';
 import ProductCard from './ProductCard';
 import { useCatalogStore } from '../shared/store/useCatalogStore';
 
@@ -120,7 +121,12 @@ export default function CategoryPage() {
     <div className="pt-28 sm:pt-32 md:pt-36 pb-16 sm:pb-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 min-h-[100dvh]">
       
       {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 sm:mb-12 border-b border-border pb-6 gap-4">
+      <motion.div 
+        initial={{ opacity: 0, y: 16 }} 
+        animate={{ opacity: 1, y: 0 }} 
+        transition={{ duration: 0.4 }}
+        className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 sm:mb-12 border-b border-border pb-6 gap-4 relative z-30"
+      >
         <div>
           <h1 className="font-heading text-2xl sm:text-4xl font-bold uppercase tracking-tight">
             {categoryTitle}
@@ -142,25 +148,26 @@ export default function CategoryPage() {
           )}
         </div>
         
-        <div className="flex items-center gap-6 text-sm self-end md:self-auto">
-          <div className="relative group" ref={sortRef}>
+        <div className="flex items-center gap-6 text-sm self-end md:self-auto relative z-30">
+          <div className="relative" ref={sortRef}>
             <button 
+              type="button"
               onClick={() => setIsSortOpen(prev => !prev)}
-              className="flex items-center gap-2 font-bold uppercase tracking-widest hover:text-muted-foreground transition-colors"
+              className="flex items-center gap-2 font-bold uppercase tracking-widest hover:text-muted-foreground transition-colors cursor-pointer"
             >
               Sort By <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isSortOpen ? 'rotate-180' : ''}`} />
             </button>
-            <div className={`absolute right-0 top-full mt-2 w-48 bg-background border border-border shadow-xl z-20 transition-all ${
-              isSortOpen ? 'opacity-100 visible' : 'opacity-0 invisible group-hover:opacity-100 group-hover:visible'
+            <div className={`absolute right-0 top-full mt-2 w-52 bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 shadow-2xl z-50 rounded-md overflow-hidden transition-all duration-200 ${
+              isSortOpen ? 'opacity-100 visible translate-y-0 pointer-events-auto' : 'opacity-0 invisible -translate-y-1 pointer-events-none'
             }`}>
-              <button onClick={() => { setSortOption('best-sellers'); setIsSortOpen(false); }} className={`w-full text-left px-4 py-3 text-xs uppercase tracking-widest hover:bg-muted ${sortOption === 'best-sellers' ? 'font-bold' : ''}`}>Best Sellers</button>
-              <button onClick={() => { setSortOption('newest'); setIsSortOpen(false); }} className={`w-full text-left px-4 py-3 text-xs uppercase tracking-widest hover:bg-muted border-t border-border/50 ${sortOption === 'newest' ? 'font-bold' : ''}`}>Newest</button>
-              <button onClick={() => { setSortOption('price-low'); setIsSortOpen(false); }} className={`w-full text-left px-4 py-3 text-xs uppercase tracking-widest hover:bg-muted border-t border-border/50 ${sortOption === 'price-low' ? 'font-bold' : ''}`}>Price: Low to High</button>
-              <button onClick={() => { setSortOption('price-high'); setIsSortOpen(false); }} className={`w-full text-left px-4 py-3 text-xs uppercase tracking-widest hover:bg-muted border-t border-border/50 ${sortOption === 'price-high' ? 'font-bold' : ''}`}>Price: High to Low</button>
+              <button type="button" onClick={() => { setSortOption('best-sellers'); setIsSortOpen(false); }} className={`w-full text-left px-4 py-3 text-xs uppercase tracking-widest hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors ${sortOption === 'best-sellers' ? 'font-bold bg-neutral-50 dark:bg-neutral-800/60' : ''}`}>Best Sellers</button>
+              <button type="button" onClick={() => { setSortOption('newest'); setIsSortOpen(false); }} className={`w-full text-left px-4 py-3 text-xs uppercase tracking-widest hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors border-t border-border/50 ${sortOption === 'newest' ? 'font-bold bg-neutral-50 dark:bg-neutral-800/60' : ''}`}>Newest</button>
+              <button type="button" onClick={() => { setSortOption('price-low'); setIsSortOpen(false); }} className={`w-full text-left px-4 py-3 text-xs uppercase tracking-widest hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors border-t border-border/50 ${sortOption === 'price-low' ? 'font-bold bg-neutral-50 dark:bg-neutral-800/60' : ''}`}>Price: Low to High</button>
+              <button type="button" onClick={() => { setSortOption('price-high'); setIsSortOpen(false); }} className={`w-full text-left px-4 py-3 text-xs uppercase tracking-widest hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors border-t border-border/50 ${sortOption === 'price-high' ? 'font-bold bg-neutral-50 dark:bg-neutral-800/60' : ''}`}>Price: High to Low</button>
             </div>
           </div>
         </div>
-      </div>
+      </motion.div>
 
       {/* Product Grid */}
       <div>

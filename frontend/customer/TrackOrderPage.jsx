@@ -10,6 +10,7 @@
 import { Package, Download, FileText, RotateCcw, AlertTriangle, Eye, Check, Clock } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import { axiosInstance } from '../shared/lib/axios';
 
 const formatOrderDate = (dateVal) => {
@@ -104,7 +105,14 @@ export default function TrackOrderPage() {
           const isRefunded = refundStatus === 'Refunded';
 
           return (
-          <div key={order.id} className="border border-border bg-white shadow-sm hover:shadow-md transition-shadow">
+          <motion.div 
+            key={order.id} 
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: '-30px' }}
+            transition={{ duration: 0.4 }}
+            className="border border-border bg-white shadow-sm hover:shadow-md transition-shadow"
+          >
             
             {/* Card Header */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center bg-muted/20 p-5 border-b border-border gap-6">
@@ -311,7 +319,7 @@ export default function TrackOrderPage() {
                 ))}
               </div>
             </div>
-          </div>
+          </motion.div>
         );
       }) : (
           <div className="p-12 text-center border border-border border-dashed text-muted-foreground text-sm uppercase tracking-widest">
