@@ -3,6 +3,8 @@ import assert from 'node:assert';
 import crypto from 'crypto';
 
 import { verifyCashfreeWebhookSignature, getCashfreeConfig } from '../backend/services/cashfree.service.js';
+import { prisma } from '../backend/lib/prisma.js';
+import { performBackup, isBackupInProgress } from '../backend/services/backup.service.js';
 
 describe('H&S Monolith — Unit & Integration Test Suite', () => {
 
@@ -140,6 +142,42 @@ describe('H&S Monolith — Unit & Integration Test Suite', () => {
         process.env.CASHFREE_APP_ID = origAppId;
         process.env.CASHFREE_SECRET_KEY = origSecret;
       }
+    });
+  });
+
+  // 4. Database Connection Pool & Backup Safety
+  describe('Database Connection Pool & Backup Concurrency', () => {
+    test('PrismaClient is a shared global singleton across the application', () => {
+      assert.ok(prisma, 'Prisma instance must be defined');
+      assert.strictEqual(prisma, globalThis.__hsPrismaInstance, 'Prisma instance must match the global singleton');
+    });
+
+    test('Repeated backup triggers do not create overlapping executions (mutex lock)', async () => {
+      // Trigger two backups simultaneously
+      const backupPromise1 = performBackup('TEST_CONCURRENT_1');
+      const backupPromise2 = performBackup('TEST_CONCURRENT_2');
+
+      assert.strictEqual(isBackupInProgress(), true, 'isBackupInProgress must report true during execution');
+
+      const [res1, res2] = await Promise.all([backupPromise1, backupPromise2]);
+
+      assert.strictEqual(res1.success, true, 'First backup call must succeed');
+      assert.strictEqual(res2.success, true, 'Second backup call must succeed');
+      assert.strictEqual(res1.filename, res2.filename, 'Both callers must share the exact same active backup execution result');
+      assert.strictEqual(isBackupInProgress(), false, 'isBackupInProgress must report false after execution completes');
+    });
+
+    test('Concurrent database queries do not exhaust connection pool', async () => {
+      // Execute 15 concurrent queries against the database
+      const queries = Array.from({ length: 15 }, (_, i) =>
+        prisma.category.findMany().then(items => ({ index: i, count: items.length }))
+      );
+
+      const results = await Promise.all(queries);
+      assert.strictEqual(results.length, 15, 'All 15 concurrent queries must complete successfully');
+      results.forEach(r => {
+        assert.ok(typeof r.count === 'number', `Query ${r.index} must return valid records`);
+      });
     });
   });
 

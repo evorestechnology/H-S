@@ -195,7 +195,9 @@ export default function CheckoutPage() {
       discountAmount = Math.min(baseSubtotalForCoupon, appliedCoupon.discountValue);
     }
   }
-  discountAmount = Number(discountAmount.toFixed(2));
+  // Apply discount first to get discounted price
+  const discountedSubtotal = Math.max(0, subtotal - discountAmount);
+  const discountRatio = subtotal > 0 ? discountedSubtotal / subtotal : 1;
   
   // Destination country determined from selected order shipping address
   const currentShippingCountry = (selectedAddress && !isChangingAddress
@@ -204,17 +206,22 @@ export default function CheckoutPage() {
 
   const isIndianDestination = currentShippingCountry.trim().toLowerCase() === 'india';
 
+  // Calculate GST on the discounted price
   const gst = cartItems.reduce((sum, item) => {
     if (!taxSettings.enableGst) return sum;
+    const itemTotal = item.price * item.quantity;
+    const discountedItemTotal = itemTotal * discountRatio;
+    const effectiveUnitPrice = item.quantity > 0 ? (discountedItemTotal / item.quantity) : 0;
+
     if (isIndianDestination) {
-      const rate = item.price > taxSettings.indianThreshold 
+      const rate = effectiveUnitPrice > taxSettings.indianThreshold 
         ? (taxSettings.indianHighRate / 100) 
         : (taxSettings.indianLowRate / 100);
-      return sum + (item.price * item.quantity * rate);
+      return sum + (discountedItemTotal * rate);
     } else {
       const nonIndianRate = Number(taxSettings.nonIndianRate) || 0;
       const rate = nonIndianRate / 100;
-      return sum + (item.price * item.quantity * rate);
+      return sum + (discountedItemTotal * rate);
     }
   }, 0);
   
@@ -268,7 +275,8 @@ export default function CheckoutPage() {
     shipping = blocks * ratePerBlock;
   }
   
-  const total = Math.max(0, subtotal - discountAmount + gst + shipping);
+  // Final payable amount = discounted price plus GST calculated on discounted amount plus shipping
+  const total = Math.max(0, discountedSubtotal + gst + shipping);
 
   const [showSuccess, setShowSuccess] = useState(false);
   const [createdOrderId, setCreatedOrderId] = useState(null);

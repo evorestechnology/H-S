@@ -131,7 +131,15 @@ async function restore() {
   process.exit(0);
 }
 
-restore().catch(err => {
-  console.error('✗ Restoration failed:', err);
-  process.exit(1);
-});
+restore()
+  .catch((err) => {
+    console.error('✗ Restoration failed:', err);
+    process.exitCode = 1;
+  })
+  .finally(async () => {
+    try {
+      await prisma.$disconnect();
+    } catch (e) {
+      // ignore
+    }
+  });

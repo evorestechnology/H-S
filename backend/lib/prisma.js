@@ -42,26 +42,38 @@ if (dbUrl.includes('postgresql://') || dbUrl.includes('postgres://')) {
     dbUrl += (dbUrl.includes('?') ? '&' : '?') + 'sslmode=require';
   }
 
-  if (dbUrl.includes('pooler.supabase.com') || dbUrl.includes('pgbouncer=true')) {
-    if (!dbUrl.includes('connection_limit')) {
-      dbUrl += (dbUrl.includes('?') ? '&' : '?') + 'connection_limit=15';
-    }
-    if (!dbUrl.includes('pool_timeout')) {
-      dbUrl += (dbUrl.includes('?') ? '&' : '?') + 'pool_timeout=60';
-    } else if (dbUrl.includes('pool_timeout=20') || dbUrl.includes('pool_timeout=10')) {
-      dbUrl = dbUrl.replace(/pool_timeout=\d+/, 'pool_timeout=60');
-    }
+  // Enforce a safe connection limit strictly below the PostgreSQL provider's 15-connection ceiling.
+  // Using 10 connections allows Prisma to queue queries internally while preserving a 5-connection buffer
+  // for handshakes, graceful recycling, background tasks, and health checks.
+  const maxPoolConnections = parseInt(process.env.DB_CONNECTION_LIMIT || '10', 10) || 10;
+  if (dbUrl.includes('connection_limit=')) {
+    dbUrl = dbUrl.replace(/connection_limit=\d+/, `connection_limit=${maxPoolConnections}`);
+  } else {
+    dbUrl += (dbUrl.includes('?') ? '&' : '?') + `connection_limit=${maxPoolConnections}`;
   }
-  if (!dbUrl.includes('connect_timeout')) {
+
+  if (dbUrl.includes('pool_timeout=')) {
+    dbUrl = dbUrl.replace(/pool_timeout=\d+/, 'pool_timeout=60');
+  } else {
+    dbUrl += (dbUrl.includes('?') ? '&' : '?') + 'pool_timeout=60';
+  }
+
+  if (!dbUrl.includes('connect_timeout=')) {
     dbUrl += (dbUrl.includes('?') ? '&' : '?') + 'connect_timeout=30';
   }
 }
 
-export const prisma = new PrismaClient({
+// Preserve a single shared PrismaClient across the process lifecycle (including hot-reloads)
+const globalForPrisma = globalThis;
+
+export const prisma = globalForPrisma.__hsPrismaInstance || new PrismaClient({
   datasources: {
     db: {
       url: dbUrl
     }
   }
 });
+
+globalForPrisma.__hsPrismaInstance = prisma;
+
 

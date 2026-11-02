@@ -25,157 +25,159 @@ const ensureBackupDir = async () => {
   }
 };
 
+// Protection against overlapping backup executions
+let activeBackupPromise = null;
+
+export const isBackupInProgress = () => activeBackupPromise !== null;
+
 /**
  * Perform a full snapshot backup of all PostgreSQL database tables.
  */
 export const performBackup = async (triggerType = 'SCHEDULED_HOURLY') => {
-  const startTime = Date.now();
-  console.log(`[BackupService] Starting database backup (${triggerType})...`);
-  await ensureBackupDir();
+  // Guard against concurrent backup runs: reuse ongoing backup execution
+  if (activeBackupPromise) {
+    console.log(`[BackupService] Backup already in progress. Re-using active run for trigger (${triggerType}).`);
+    return activeBackupPromise;
+  }
 
-  try {
-    // 1. Query all tables concurrently
-    const [
-      users,
-      addresses,
-      categories,
-      drops,
-      products,
-      reviews,
-      carts,
-      cartItems,
-      orders,
-      orderItems,
-      manufacturerAdjustments,
-      coupons,
-      settings
-    ] = await Promise.all([
-      prisma.user.findMany(),
-      prisma.address.findMany(),
-      prisma.category.findMany(),
-      prisma.drop.findMany(),
-      prisma.product.findMany(),
-      prisma.review.findMany(),
-      prisma.cart.findMany(),
-      prisma.cartItem.findMany(),
-      prisma.order.findMany(),
-      prisma.orderItem.findMany(),
-      prisma.manufacturerAdjustment.findMany(),
-      prisma.coupon.findMany(),
-      prisma.setting.findMany()
-    ]);
+  activeBackupPromise = (async () => {
+    const startTime = Date.now();
+    console.log(`[BackupService] Starting database backup (${triggerType})...`);
+    await ensureBackupDir();
 
-    const timestamp = new Date().toISOString();
-    const formattedDate = timestamp.replace(/[:.]/g, '-');
-    const filename = `backup-${formattedDate}.json.gz`;
-    const localFilePath = path.join(BACKUPS_DIR, filename);
-
-    const counts = {
-      users: users.length,
-      addresses: addresses.length,
-      categories: categories.length,
-      drops: drops.length,
-      products: products.length,
-      reviews: reviews.length,
-      carts: carts.length,
-      cartItems: cartItems.length,
-      orders: orders.length,
-      orderItems: orderItems.length,
-      manufacturerAdjustments: manufacturerAdjustments.length,
-      coupons: coupons.length,
-      settings: settings.length
-    };
-
-    const backupPayload = {
-      metadata: {
-        timestamp,
-        triggerType,
-        database: 'H&S Monolith Database',
-        schemaVersion: '1.0',
-        totalRecords: Object.values(counts).reduce((a, b) => a + b, 0),
-        counts
-      },
-      data: {
-        users,
-        addresses,
-        categories,
-        drops,
-        products,
-        reviews,
-        carts,
-        cartItems,
-        orders,
-        orderItems,
-        manufacturerAdjustments,
-        coupons,
-        settings
-      }
-    };
-
-    // 2. Compress data with gzip
-    const jsonString = JSON.stringify(backupPayload);
-    const compressedBuffer = await gzipAsync(Buffer.from(jsonString, 'utf-8'));
-
-    // 3. Write locally to disk
-    await fs.writeFile(localFilePath, compressedBuffer);
-    const fileStats = await fs.stat(localFilePath);
-
-    console.log(`[BackupService] Backup written locally: ${filename} (${(fileStats.size / 1024).toFixed(1)} KB) in ${Date.now() - startTime}ms`);
-
-    // 4. Also upload copy to Supabase Storage if configured
-    let cloudUploadSuccess = false;
-    let cloudPath = null;
     try {
-      if (supabase && process.env.SUPABASE_URL) {
-        // Ensure bucket exists
-        await supabase.storage.createBucket(BACKUP_BUCKET, { public: false }).catch(() => {});
-        const storagePath = `hourly/${filename}`;
-        const { error: uploadErr } = await supabase.storage
-          .from(BACKUP_BUCKET)
-          .upload(storagePath, compressedBuffer, {
-            contentType: 'application/gzip',
-            upsert: true
-          });
+      // Query tables sequentially with controlled concurrency (1 connection at a time)
+      // to completely eliminate connection pool exhaustion under the 15-connection ceiling.
+      const tableDefinitions = [
+        { key: 'users', query: () => prisma.user.findMany() },
+        { key: 'addresses', query: () => prisma.address.findMany() },
+        { key: 'categories', query: () => prisma.category.findMany() },
+        { key: 'drops', query: () => prisma.drop.findMany() },
+        { key: 'products', query: () => prisma.product.findMany() },
+        { key: 'reviews', query: () => prisma.review.findMany() },
+        { key: 'carts', query: () => prisma.cart.findMany() },
+        { key: 'cartItems', query: () => prisma.cartItem.findMany() },
+        { key: 'orders', query: () => prisma.order.findMany() },
+        { key: 'orderItems', query: () => prisma.orderItem.findMany() },
+        { key: 'manufacturerAdjustments', query: () => prisma.manufacturerAdjustment.findMany() },
+        { key: 'coupons', query: () => prisma.coupon.findMany() },
+        { key: 'settings', query: () => prisma.setting.findMany() }
+      ];
 
-        if (!uploadErr) {
-          cloudUploadSuccess = true;
-          cloudPath = `${BACKUP_BUCKET}/${storagePath}`;
-          console.log(`[BackupService] Cloud backup saved to Supabase Storage: ${cloudPath}`);
-        } else {
-          console.warn('[BackupService] Cloud backup note:', uploadErr.message);
+      const data = {};
+      const counts = {};
+
+      for (const { key, query } of tableDefinitions) {
+        try {
+          const records = await query();
+          data[key] = records || [];
+          counts[key] = data[key].length;
+        } catch (tableErr) {
+          console.error(`[BackupService] Error querying table "${key}":`, tableErr.message);
+          throw tableErr;
         }
       }
-    } catch (cloudErr) {
-      console.warn('[BackupService] Cloud upload skipped:', cloudErr.message);
+
+      const timestamp = new Date().toISOString();
+      const formattedDate = timestamp.replace(/[:.]/g, '-');
+      const filename = `backup-${formattedDate}.json.gz`;
+      const localFilePath = path.join(BACKUPS_DIR, filename);
+
+      const backupPayload = {
+        metadata: {
+          timestamp,
+          triggerType,
+          database: 'H&S Monolith Database',
+          schemaVersion: '1.0',
+          totalRecords: Object.values(counts).reduce((a, b) => a + b, 0),
+          counts
+        },
+        data: {
+          users: data.users,
+          addresses: data.addresses,
+          categories: data.categories,
+          drops: data.drops,
+          products: data.products,
+          reviews: data.reviews,
+          carts: data.carts,
+          cartItems: data.cartItems,
+          orders: data.orders,
+          orderItems: data.orderItems,
+          manufacturerAdjustments: data.manufacturerAdjustments,
+          coupons: data.coupons,
+          settings: data.settings
+        }
+      };
+
+      // 2. Compress data with gzip
+      const jsonString = JSON.stringify(backupPayload);
+      const compressedBuffer = await gzipAsync(Buffer.from(jsonString, 'utf-8'));
+
+      // 3. Write locally to disk
+      await fs.writeFile(localFilePath, compressedBuffer);
+      const fileStats = await fs.stat(localFilePath);
+
+      console.log(`[BackupService] Backup written locally: ${filename} (${(fileStats.size / 1024).toFixed(1)} KB) in ${Date.now() - startTime}ms`);
+
+      // 4. Also upload copy to Supabase Storage if configured
+      let cloudUploadSuccess = false;
+      let cloudPath = null;
+      try {
+        if (supabase && process.env.SUPABASE_URL) {
+          // Ensure bucket exists
+          await supabase.storage.createBucket(BACKUP_BUCKET, { public: false }).catch(() => {});
+          const storagePath = `hourly/${filename}`;
+          const { error: uploadErr } = await supabase.storage
+            .from(BACKUP_BUCKET)
+            .upload(storagePath, compressedBuffer, {
+              contentType: 'application/gzip',
+              upsert: true
+            });
+
+          if (!uploadErr) {
+            cloudUploadSuccess = true;
+            cloudPath = `${BACKUP_BUCKET}/${storagePath}`;
+            console.log(`[BackupService] Cloud backup saved to Supabase Storage: ${cloudPath}`);
+          } else {
+            console.warn('[BackupService] Cloud backup note:', uploadErr.message);
+          }
+        }
+      } catch (cloudErr) {
+        console.warn('[BackupService] Cloud upload skipped:', cloudErr.message);
+      }
+
+      // 5. Prune old local backups (keep last 48 hourly backups)
+      await pruneOldBackups(48);
+
+      const result = {
+        success: true,
+        filename,
+        localPath: localFilePath,
+        sizeBytes: fileStats.size,
+        sizeKB: (fileStats.size / 1024).toFixed(1),
+        timestamp,
+        counts,
+        cloudUploaded: cloudUploadSuccess,
+        cloudPath
+      };
+
+      // Update manifest file
+      await updateManifest(result);
+
+      return result;
+    } catch (error) {
+      console.error('[BackupService] Error during database backup:', error);
+      return {
+        success: false,
+        error: error.message,
+        timestamp: new Date().toISOString()
+      };
+    } finally {
+      activeBackupPromise = null;
     }
+  })();
 
-    // 5. Prune old local backups (keep last 48 hourly backups)
-    await pruneOldBackups(48);
-
-    const result = {
-      success: true,
-      filename,
-      localPath: localFilePath,
-      sizeBytes: fileStats.size,
-      sizeKB: (fileStats.size / 1024).toFixed(1),
-      timestamp,
-      counts,
-      cloudUploaded: cloudUploadSuccess,
-      cloudPath
-    };
-
-    // Update manifest file
-    await updateManifest(result);
-
-    return result;
-  } catch (error) {
-    console.error('[BackupService] Error during database backup:', error);
-    return {
-      success: false,
-      error: error.message,
-      timestamp: new Date().toISOString()
-    };
-  }
+  return activeBackupPromise;
 };
 
 /**
@@ -265,19 +267,19 @@ export const listBackups = async () => {
 };
 
 let hourlyBackupTimer = null;
+let startupBackupTimeout = null;
 
 /**
  * Starts the automated 1-hour database backup scheduler.
  */
 export const startHourlyBackupScheduler = () => {
-  if (hourlyBackupTimer) {
-    clearInterval(hourlyBackupTimer);
-  }
+  stopHourlyBackupScheduler();
 
   console.log('[BackupService] Initializing 1-hour automated database backup scheduler...');
 
   // Run initial baseline backup after 15 seconds of server startup
-  setTimeout(() => {
+  startupBackupTimeout = setTimeout(() => {
+    startupBackupTimeout = null;
     performBackup('STARTUP_INITIAL')
       .then(res => {
         if (res.success) {
@@ -309,6 +311,10 @@ export const startHourlyBackupScheduler = () => {
  * Stops the hourly backup scheduler if needed.
  */
 export const stopHourlyBackupScheduler = () => {
+  if (startupBackupTimeout) {
+    clearTimeout(startupBackupTimeout);
+    startupBackupTimeout = null;
+  }
   if (hourlyBackupTimer) {
     clearInterval(hourlyBackupTimer);
     hourlyBackupTimer = null;

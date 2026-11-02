@@ -1159,19 +1159,31 @@ export const createCheckoutOrder = async (orderItems, shippingAddress, paymentMe
     }
   }
 
-  // Authoritative Tax Calculation (in-memory)
+  // Apply discount first to get the discounted price
+  const discountedItemsPrice = Math.max(0, itemsPrice - couponDiscount);
+  const discountRatio = itemsPrice > 0 ? discountedItemsPrice / itemsPrice : 1;
+
+  // Authoritative Tax Calculation (calculated on the discounted price)
   let taxPrice = 0;
   if (taxSettings?.enableGst) {
     if (isDomestic) {
-      taxPrice = itemsPrice > taxSettings.indianThreshold
-        ? itemsPrice * (taxSettings.indianHighRate / 100)
-        : itemsPrice * (taxSettings.indianLowRate / 100);
+      taxPrice = itemsToCreate.reduce((sum, item) => {
+        const itemTotal = item.price * item.quantity;
+        const discountedItemTotal = itemTotal * discountRatio;
+        const effectiveUnitPrice = item.quantity > 0 ? (discountedItemTotal / item.quantity) : 0;
+        const rate = effectiveUnitPrice > taxSettings.indianThreshold
+          ? (taxSettings.indianHighRate / 100)
+          : (taxSettings.indianLowRate / 100);
+        return sum + (discountedItemTotal * rate);
+      }, 0);
     } else {
-      taxPrice = itemsPrice * (taxSettings.nonIndianRate / 100);
+      const nonIndianRate = Number(taxSettings?.nonIndianRate) || 0;
+      taxPrice = discountedItemsPrice * (nonIndianRate / 100);
     }
   }
 
-  const totalPrice = Number((itemsPrice - couponDiscount + taxPrice + shippingPrice).toFixed(2));
+  // Final payable amount = discounted price plus GST calculated on discounted amount plus shipping
+  const totalPrice = Number((discountedItemsPrice + taxPrice + shippingPrice).toFixed(2));
   const mfgPayment = totalMfgPayment;
   const paymentStatus = (paymentMethod === 'COD' || paymentMethod === 'CASHFREE') ? 'PENDING' : 'SUCCESSFUL';
 

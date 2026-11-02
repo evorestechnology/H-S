@@ -23,7 +23,7 @@ import manufacturerAdjustmentRoutes from './routes/manufacturer-adjustment.route
 import cashfreeRoutes from './routes/cashfree.routes.js';
 import backupRoutes from './routes/backup.routes.js';
 import { initCustomTables } from './services/dbInit.service.js';
-import { startHourlyBackupScheduler } from './services/backup.service.js';
+import { startHourlyBackupScheduler, stopHourlyBackupScheduler } from './services/backup.service.js';
 import { prisma } from './lib/prisma.js';
 
 dotenv.config();
@@ -94,11 +94,20 @@ app.use('/api/settings', settingsRoutes);
 app.use('/api/manufacturer-adjustments', manufacturerAdjustmentRoutes);
 app.use('/api/backup', backupRoutes);
 
-// Initialize PostgreSQL custom tables in background
-initCustomTables();
-
-// Start automated 1-hour database backup scheduler
-startHourlyBackupScheduler();
+// Verify PostgreSQL connection, initialize tables, and start automated backup scheduler
+prisma.$connect()
+  .then(() => {
+    console.log('[Database] PostgreSQL connection verified successfully.');
+    return initCustomTables();
+  })
+  .then(() => {
+    startHourlyBackupScheduler();
+  })
+  .catch((err) => {
+    console.error('[Database] Initial connection verification warning:', err.message);
+    initCustomTables().catch(() => {});
+    startHourlyBackupScheduler();
+  });
 
 // Database Health Check
 app.get('/api/health', async (req, res) => {
@@ -177,7 +186,16 @@ const server = app.listen(PORT, () => {
 
 const gracefulShutdown = async (signal) => {
   console.log(`Received ${signal}. Shutting down server gracefully...`);
+  stopHourlyBackupScheduler();
+
+  const forceTimeout = setTimeout(() => {
+    console.warn('[Server] Graceful shutdown timeout reached (5s). Force exiting process...');
+    process.exit(0);
+  }, 5000);
+  if (forceTimeout.unref) forceTimeout.unref();
+
   server.close(async () => {
+    clearTimeout(forceTimeout);
     try {
       await prisma.$disconnect();
       console.log('Database disconnected.');
@@ -190,3 +208,8 @@ const gracefulShutdown = async (signal) => {
 
 process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('[Process] Unhandled Rejection at:', promise, 'reason:', reason);
+});
+
