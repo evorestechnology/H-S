@@ -535,7 +535,7 @@ export default function AuthPage() {
   );
 
   return (
-    <div className="min-h-[100dvh] w-full flex bg-background pt-16 lg:pt-0">
+    <div className="min-h-[100dvh] w-full flex bg-background pt-24 lg:pt-0">
       {/* Left side: Image (hidden on mobile) */}
       <div className="hidden lg:flex lg:w-1/2 sticky top-0 h-[100dvh] items-center justify-center bg-[#f7f7f7] border-r border-border p-8 xl:p-16 select-none overflow-hidden">
         <img 

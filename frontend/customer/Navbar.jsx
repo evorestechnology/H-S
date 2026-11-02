@@ -6,6 +6,7 @@ import { useAuthStore } from '../shared/store/useAuthStore';
 import { useCatalogStore } from '../shared/store/useCatalogStore';
 import { useWishlistStore } from '../shared/store/useWishlistStore';
 import blackLogoImg from '../assets/logo-black.png';
+import AnnouncementBanner from './AnnouncementBanner';
 
 export default function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -172,8 +173,9 @@ export default function Navbar() {
   ];
 
   return (
-    <nav className={`fixed w-full top-0 z-50 transition-all duration-300 border-b ${isScrolled ? 'bg-white/95 backdrop-blur-md py-2.5 sm:py-3 border-border shadow-xs' : 'bg-white py-3 sm:py-3.5 border-border/40'}`}>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+    <header className="fixed w-full top-0 z-50">
+      <nav className={`w-full transition-all duration-300 border-b ${isScrolled ? 'bg-white/95 backdrop-blur-md py-2.5 sm:py-3 border-border shadow-xs' : 'bg-white py-3 sm:py-3.5 border-border/40'}`}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
         <div className="flex justify-between items-center h-full">
           
           {/* Mobile Left: Hamburger */}
@@ -463,6 +465,10 @@ export default function Navbar() {
 
         </div>
       </div>
+    </nav>
+
+    {/* Stylish Announcement Banner Under Logo & Nav */}
+    <AnnouncementBanner />
 
       {/* Mobile Menu Overlay */}
       <AnimatePresence>
@@ -589,6 +595,6 @@ export default function Navbar() {
           </motion.div>
         )}
       </AnimatePresence>
-    </nav>
+    </header>
   );
 }

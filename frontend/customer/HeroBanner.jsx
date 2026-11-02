@@ -1,6 +1,6 @@
 export default function HeroBanner() {
   return (
-    <div className="w-full pt-14 sm:pt-16 md:pt-18 pb-4 sm:pb-8 bg-white">
+    <div className="w-full pt-24 sm:pt-26 md:pt-28 pb-4 sm:pb-8 bg-white">
       <img 
         src="/pranav bro.png" 
         alt="H&S Hero Banner" 
